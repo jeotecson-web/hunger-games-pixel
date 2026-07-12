@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>THE ARENA — Pixel Hunger Games</title>
+<title>The Hunger Games</title>
 <style>
   :root{
     --bg: #0a0d0a;
@@ -145,8 +145,10 @@
      inside a wide frame so it reads as "full screen" without distorting play. */
   #gameFrame{
     position:relative;
-    width: 96vw;
-    height: 96vh;
+    aspect-ratio: 8 / 5;
+    width: min(96vw, 96vh * 8 / 5);
+    max-width: 96vw;
+    max-height: 96vh;
     border: 3px solid #2a2f24;
     outline: 1px solid #000;
     box-shadow: 0 0 0 6px #0a0d0a, 0 0 40px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.6);
@@ -161,26 +163,17 @@
     width: 100%;
     max-width: 100%;
     max-height: 100%;
-    aspect-ratio: 1/1;
+    aspect-ratio: 8 / 5;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     margin: 0 auto;
   }
 
-  /* Portrait mobile: arena is squeezed by width, so let it be as tall as
-     the available width allows and prompt landscape for the full experience */
+  /* Portrait mobile: the rectangular arena is heavily squeezed by a narrow
+     viewport width, so strongly prompt landscape for the full experience. */
   @media (max-width: 759px) and (orientation: portrait){
     #gameFrame{
       width: 96vw;
-      height: 96vw;
-    }
-  }
-  @media (orientation: landscape){
-    #gameFrame{
-      width: 96vh;
-      height: 96vh;
-      max-width: 98vw;
-      max-height: 98vh;
     }
   }
 
@@ -239,10 +232,13 @@
   }
 
   #killFeed{
-    position:absolute; top:52px; left:8px; right:8px;
-    display:flex; flex-direction:column; gap:2px;
+    position:absolute; bottom:64px; left:8px; right:8px;
+    display:flex; flex-direction:column-reverse; gap:2px;
     pointer-events:none; z-index:5;
     align-items:flex-start;
+  }
+  @media (max-width: 759px){
+    #killFeed{ bottom:180px; }
   }
   .feedLine{
     background: rgba(10,13,10,.72);
@@ -392,6 +388,8 @@
       Watch for the <b>Career pack</b> — tributes from Districts 1, 2 and 4 hunt together and gang up
       on a single target, though they'll turn on each other once the field thins out.
       By Day 3 the Gamemakers release <b>mutts</b> into the arena — they hunt everyone alike.
+      Hunger and energy drain over time — forage <b>berries</b> near bushes to stay fed, but some are poisonous
+      and will stun and sicken you.
     </div>
     <div class="districtRow" id="districtRow"></div>
 
@@ -416,12 +414,16 @@
   <!-- GAME -->
   <div class="rotateHint">↻ Rotate your device to landscape for the full arena</div>
   <div id="gameFrame" class="hidden">
-    <canvas id="game" width="1000" height="1000"></canvas>
+    <canvas id="game" width="1600" height="1000"></canvas>
 
     <div id="hud">
       <div class="hudBox">
         <div class="hudLabel">TRIBUTE #12 — YOU</div>
         <div class="hpBarOuter"><div class="hpBarInner" id="hpBar"></div></div>
+        <div class="hudLabel" style="margin-top:4px;">HUNGER</div>
+        <div class="hpBarOuter"><div class="hpBarInner" id="hungerBar"></div></div>
+        <div class="hudLabel" style="margin-top:4px;">ENERGY</div>
+        <div class="hpBarOuter"><div class="hpBarInner" id="energyBar"></div></div>
         <div class="hudLabel" style="margin-top:4px;">WEAPON: <span id="weaponName" style="color:var(--bone);">—</span></div>
         <div class="hudLabel" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
         <div class="hudLabel" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
@@ -467,22 +469,28 @@
   // ============================================================
   // CONFIG
   // ============================================================
-  const WORLD = 1000;               // internal canvas resolution (bigger arena = more room to roam and hide)
-  const CENTER = WORLD/2;
+  const WORLD_W = 1600;              // internal canvas resolution, width — rectangular arena, more ground to cover
+  const WORLD_H = 1000;              // internal canvas resolution, height
+  const CENTER_X = WORLD_W/2;
+  const CENTER_Y = WORLD_H/2;
+  const AREA_SCALE = (WORLD_W*WORLD_H) / (1000*1000); // vs the original 1000x1000 square, used to scale content density
   const TOTAL_TRIBUTES = 24;       // 12 districts x 2 tributes, including player
   const DISTRICTS = [1,2,3,4,5,6,7,8,9,10,11,12];
-  const OBSTACLE_COUNT = 60;        // trees / rocks / bushes scattered through the arena
+  const OBSTACLE_COUNT = Math.round(60 * AREA_SCALE);   // trees / rocks / bushes scattered through the arena
   const TREE_R = 22;                // uniform radius for every tree (was randomized before)
   const ROCK_R = 18;                // uniform radius for every rock
   const BUSH_R = 13;                // uniform radius for every bush
-  const GRASS_ZONE_COUNT = 15;      // patches of tall grass tributes can hide in
+  const GRASS_ZONE_COUNT = Math.round(15 * AREA_SCALE); // patches of tall grass tributes can hide in
   const ZONE_SHRINK_INTERVAL = 45000; // ms — longer days before the zone contracts
-  const ZONE_SHRINK_AMOUNT = 90;
-  const ZONE_MIN_RADIUS = 110;
+  const ZONE_SHRINK_AMOUNT_Y = 90;
+  const ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
+  const ZONE_MIN_RADIUS_Y = 110;
+  const ZONE_MIN_RADIUS_X = ZONE_MIN_RADIUS_Y * (WORLD_W/WORLD_H);
   const ZONE_TICK_DAMAGE = 3;
   const SUPPLY_DROP_INTERVAL = 34000;
   const CAMERA_ZOOM = 1.7;          // classic-Pokemon-style follow camera
-  const VIEW_SIZE = WORLD / CAMERA_ZOOM; // world units visible at once
+  const VIEW_W = WORLD_W / CAMERA_ZOOM; // world units visible at once, horizontally
+  const VIEW_H = WORLD_H / CAMERA_ZOOM; // world units visible at once, vertically
   const PLATE_RADIUS = 320;         // radius of the starting circle around the cornucopia
   const BLOODBATH_COUNTDOWN = 10;   // seconds tributes stand frozen on their plate before the gong
   const BLOODBATH_GRACE = 9000;     // ms after the gong where most tributes scatter instead of brawling
@@ -509,8 +517,8 @@
   // refills them, but not every berry bush is safe to eat.
   const HUNGER_MAX = 100;
   const ENERGY_MAX = 100;
-  const HUNGER_DEPLETE_TIME = 300000;   // ms for hunger to drain fully from 100 to 0
-  const ENERGY_DEPLETE_TIME = 420000;   // ms for energy to drain fully from 100 to 0
+  const HUNGER_DEPLETE_TIME = 90000;    // ms for hunger to drain fully from 100 to 0
+  const ENERGY_DEPLETE_TIME = 130000;   // ms for energy to drain fully from 100 to 0
   const STARVE_TICK_DAMAGE = 2;
   const STARVE_TICK_INTERVAL = 1;       // seconds between starvation damage ticks
   const LOW_ENERGY_THRESHOLD = 20;
@@ -532,10 +540,12 @@
     sword:  { name:'Sword',  type:'melee', dmg:10, cooldown:0.58, range:46, tint:'#cfd6da', desc:'Balanced speed, damage and reach' },
     axe:    { name:'Axe',    type:'melee', dmg:17, cooldown:1.05, range:46, tint:'#e0a55c', desc:'Slow but devastating damage' },
     spear:  { name:'Spear',  type:'melee', dmg:8,  cooldown:0.65, range:64, tint:'#a9caa9', desc:'Long reach keeps foes at bay' },
-    bow:    { name:'Bow', type:'ranged', dmg:12, cooldown:1.25, range:340, projectileSpeed:520, tint:'#c9a13b', desc:'Long range, hits hard, slow to reload' },
-    knives: { name:'Throwing Knives', type:'ranged', dmg:7, cooldown:0.55, range:230, projectileSpeed:460, tint:'#9fb8cf', desc:'Quick ranged jabs, shorter reach' }
+    bow:    { name:'Bow', type:'ranged', dmg:12, cooldown:1.25, range:340, projectileSpeed:520, tint:'#c9a13b', desc:'Long range, hits hard, slow to reload', ammoMax:8 },
+    knives: { name:'Throwing Knives', type:'ranged', dmg:7, cooldown:0.55, range:230, projectileSpeed:460, tint:'#9fb8cf', desc:'Quick ranged jabs, shorter reach', ammoMax:14 }
   };
   const WEAPON_KEYS = Object.keys(WEAPONS);
+  const AMMO_PICKUP_MIN = 3;
+  const AMMO_PICKUP_MAX = 6;
 
   let selectedWeapon = 'sword';
 
@@ -661,6 +671,21 @@
   const ASSET_PATHS = {
     tree: 'assets/tree.png',
     grass: 'assets/path.png',
+    tallGrass: 'assets/grass.png',
+    arrow: 'assets/arrow.png',
+    bow: 'assets/bow.png',
+    axe: 'assets/axe.png',
+    'flower-one': 'assets/flower-one.png',
+    'flower-two': 'assets/flower-two.png',
+    'flower-three': 'assets/flower-three.png',
+    berry: 'assets/berry.png',
+    dagger: 'assets/dagger.png',
+    firstAid: 'assets/first-aid.png',
+    spear: 'assets/spear.png',
+    sword: 'assets/sword.png',
+    shield: 'assets/shield.png',
+    knife: 'assets/knife.png',
+    mutt: 'assets/mutt.png',
     rock: 'assets/rock.png',
     sandPath: 'assets/sand-path.png',
     bush: 'assets/bush.png'
@@ -704,6 +729,8 @@
     ctx.drawImage(img, -w/2, y, w, h);
   }
   const hpBar = document.getElementById('hpBar');
+  const hungerBar = document.getElementById('hungerBar');
+  const energyBar = document.getElementById('energyBar');
   const weaponNameEl = document.getElementById('weaponName');
   const statusTextEl = document.getElementById('statusText');
   const alertTextEl = document.getElementById('alertText');
@@ -761,7 +788,7 @@
   let allianceBroken = false;
   let allianceTarget = null;
   let player = null;
-  let zoneRadius, zoneCenter, nextShrinkAt, nextSupplyAt, dayCount, kills, elapsed;
+  let zoneRadiusX, zoneRadiusY, zoneCenter, nextShrinkAt, nextSupplyAt, dayCount, kills, elapsed;
   let running = false;
   let lastTime = 0;
   let animId = null;
@@ -784,11 +811,11 @@
   // sprite an obstacle in that spot draws as, plus background decoration.
   function biomeAt(x,y){
     // rocky/cave quadrant: bottom-left
-    if(x < CENTER && y > CENTER) return 'cave';
+    if(x < CENTER_X && y > CENTER_Y) return 'cave';
     // forest quadrant: top-left
-    if(x < CENTER && y <= CENTER) return 'forest';
+    if(x < CENTER_X && y <= CENTER_Y) return 'forest';
     // lake quadrant: bottom-right
-    if(x >= CENTER && y > CENTER) return 'water';
+    if(x >= CENTER_X && y > CENTER_Y) return 'water';
     // meadow quadrant: top-right
     return 'meadow';
   }
@@ -798,18 +825,19 @@
     let tries=0;
     while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
       tries++;
-      const x = rand(50, WORLD-50);
-      const y = rand(50, WORLD-50);
-      if(dist({x,y},{x:CENTER,y:CENTER}) < 160) continue; // keep cornucopia clear
+      const x = rand(50, WORLD_W-50);
+      const y = rand(50, WORLD_H-50);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 160) continue; // keep cornucopia clear
       const biome = biomeAt(x,y);
+      const isPath = Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
+      const isWater = biome === 'water';
+      if(isPath || isWater) continue;
       const roll = Math.random();
       let type;
       if(biome === 'cave'){
-        type = roll < 0.4 ? 'cave' : roll < 0.7 ? 'rock' : 'bush';
+        type = roll < 0.7 ? 'rock' : 'bush';
       } else if(biome === 'forest'){
         type = roll < 0.5 ? 'tree' : roll < 0.8 ? 'bush' : 'rock';
-      } else if(biome === 'water'){
-        type = roll < 0.3 ? 'rock' : roll < 0.65 ? 'bush' : 'tree';
       } else { // meadow
         type = roll < 0.28 ? 'tree' : roll < 0.7 ? 'bush' : 'rock';
       }
@@ -830,13 +858,13 @@
   function makeBorderTrees(){
     const step = 52;
     const margin = 24;
-    for(let x=margin; x<WORLD-margin; x+=step){
+    for(let x=margin; x<WORLD_W-margin; x+=step){
       obstacles.push({x: x+rand(-8,8), y: margin+rand(-6,6), r: TREE_R, type:'tree'});
-      obstacles.push({x: x+rand(-8,8), y: WORLD-margin+rand(-6,6), r: TREE_R, type:'tree'});
+      obstacles.push({x: x+rand(-8,8), y: WORLD_H-margin+rand(-6,6), r: TREE_R, type:'tree'});
     }
-    for(let y=margin; y<WORLD-margin; y+=step){
+    for(let y=margin; y<WORLD_H-margin; y+=step){
       obstacles.push({x: margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
-      obstacles.push({x: WORLD-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
+      obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
     }
   }
 
@@ -848,9 +876,9 @@
     let tries = 0;
     while(grassZones.length < GRASS_ZONE_COUNT && tries < 4000){
       tries++;
-      const x = rand(70, WORLD-70);
-      const y = rand(70, WORLD-70);
-      if(dist({x,y},{x:CENTER,y:CENTER}) < 190) continue; // keep cornucopia open
+      const x = rand(70, WORLD_W-70);
+      const y = rand(70, WORLD_H-70);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 190) continue; // keep cornucopia open
       const r = rand(45,85);
       const overlap = grassZones.some(z=> dist(z,{x,y}) < z.r + r*0.3);
       if(overlap) continue;
@@ -868,11 +896,15 @@
   let decorations = [];
   function makeDecorations(){
     decorations = [];
-    for(let i=0;i<260;i++){
-      const x = rand(20, WORLD-20);
-      const y = rand(20, WORLD-20);
-      if(dist({x,y},{x:CENTER,y:CENTER}) < 130) continue;
+    const decorationCount = Math.round(260 * AREA_SCALE);
+    for(let i=0;i<decorationCount;i++){
+      const x = rand(20, WORLD_W-20);
+      const y = rand(20, WORLD_H-20);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 130) continue;
       const biome = biomeAt(x,y);
+      const isPath = Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
+      const isWater = biome === 'water';
+      if(isPath || isWater) continue;
       if(obstacles.some(o=> dist({x,y},o) < o.r+10)) continue;
       let kind;
       if(biome === 'forest') kind = Math.random()<0.6 ? 'tallgrass' : 'flower';
@@ -898,7 +930,7 @@
 
   function spawnItem(x,y,forcedType,forcedWeaponType){
     const roll = Math.random();
-    let type = forcedType || (roll < 0.45 ? 'weapon' : roll < 0.8 ? 'medkit' : 'shield');
+    let type = forcedType || (roll < 0.4 ? 'weapon' : roll < 0.62 ? 'medkit' : roll < 0.8 ? 'shield' : 'berries');
     const weaponType = type==='weapon' ? (forcedWeaponType || WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)]) : null;
     items.push({
       x,y,type,weaponType,
@@ -907,17 +939,50 @@
     });
   }
 
+  // Scatters berry bushes' actual berry pickups near a fraction of the
+  // bush obstacles already placed in the arena, so foraging has a reason
+  // to route players toward bush clusters specifically.
+  function makeBerryBushes(){
+    obstacles.forEach(o=>{
+      if(o.type === 'bush'){
+        const berryChance = Math.random() < 0.55;
+        if(berryChance){
+          const ang = rand(0, Math.PI*2);
+          const x = clamp(o.x + Math.cos(ang)*(o.r+10), 20, WORLD_W-20);
+          const y = clamp(o.y + Math.sin(ang)*(o.r+10), 20, WORLD_H-20);
+          spawnItem(x,y,'berries');
+        }
+        if(Math.random() < 0.28){
+          const ang = rand(0, Math.PI*2);
+          const x = clamp(o.x + Math.cos(ang)*(o.r+14), 20, WORLD_W-20);
+          const y = clamp(o.y + Math.sin(ang)*(o.r+14), 20, WORLD_H-20);
+          spawnItem(x,y,'berries');
+        }
+      }
+    });
+  }
+
   function makeCornucopiaItems(){
     items = [];
-    const n = 9;
+    const n = 12;
     for(let i=0;i<n;i++){
       const ang = (i/n) * Math.PI*2;
-      const r = rand(55,95);
-      spawnItem(CENTER + Math.cos(ang)*r, CENTER + Math.sin(ang)*r);
+      const r = rand(48,88);
+      spawnItem(CENTER_X + Math.cos(ang)*r, CENTER_Y + Math.sin(ang)*r);
     }
-    // a couple scattered far items
     for(let i=0;i<4;i++){
-      spawnItem(rand(60,WORLD-60), rand(60,WORLD-60));
+      const ang = Math.random()*Math.PI*2;
+      const r = rand(28,52);
+      spawnItem(CENTER_X + Math.cos(ang)*r, CENTER_Y + Math.sin(ang)*r, 'berries');
+    }
+    for(let i=0;i<8;i++){
+      spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60), 'medkit');
+    }
+    for(let i=0;i<18;i++){
+      spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60), 'berries');
+    }
+    for(let i=0;i<6;i++){
+      spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60));
     }
   }
 
@@ -929,7 +994,7 @@
       district,
       isPlayer: !!isPlayer,
       isCareer: !isPlayer && CAREER_DISTRICTS.includes(district),
-      x: CENTER, y: CENTER,
+      x: CENTER_X, y: CENTER_Y,
       vx:0, vy:0,
       facing: {x:0,y:1},
       hp: 150, maxHp:150,
@@ -937,6 +1002,7 @@
       weapon: null,
       inventory: [],
       invIndex: -1,
+      ammo: {},
       shield: 0,
       speed: isPlayer ? 58 : rand(40,52),
       alive: true,
@@ -964,13 +1030,22 @@
     const total = tributes.length;
     tributes.forEach((t, i)=>{
       const angle = (i/total) * Math.PI*2 - Math.PI/2;
-      t.x = clamp(CENTER + Math.cos(angle)*PLATE_RADIUS, 40, WORLD-40);
-      t.y = clamp(CENTER + Math.sin(angle)*PLATE_RADIUS, 40, WORLD-40);
+      t.x = clamp(CENTER_X + Math.cos(angle)*PLATE_RADIUS, 40, WORLD_W-40);
+      t.y = clamp(CENTER_Y + Math.sin(angle)*PLATE_RADIUS, 40, WORLD_H-40);
       t.vx = 0; t.vy = 0;
-      const dx = CENTER - t.x, dy = CENTER - t.y;
+      const dx = CENTER_X - t.x, dy = CENTER_Y - t.y;
       const len = Math.hypot(dx,dy) || 1;
       t.facing = {x: dx/len, y: dy/len};
     });
+
+    const guardCount = Math.min(4, Math.max(1, Math.floor(tributes.length * 0.12)));
+    for(let i=0;i<guardCount;i++){
+      const t = tributes[i + 1];
+      if(!t) break;
+      t.aiState = 'guard';
+      t.wanderTarget = {x: CENTER_X, y: CENTER_Y};
+      t.aggression = Math.min(1, t.aggression + 0.25);
+    }
   }
 
   function resetGame(){
@@ -988,6 +1063,9 @@
     player.weapon = selectedWeapon;
     player.inventory = [selectedWeapon];
     player.invIndex = 0;
+    if(WEAPONS[selectedWeapon].type === 'ranged'){
+      player.ammo[selectedWeapon] = Math.ceil(WEAPONS[selectedWeapon].ammoMax * 0.6);
+    }
     tributes.push(player);
     for(let i=0;i<pool.length;i++){
       tributes.push(newTribute(pool[i], false));
@@ -998,8 +1076,10 @@
     makeGrassZones();
     makeDecorations();
     makeCornucopiaItems();
-    zoneRadius = WORLD*0.72;
-    zoneCenter = {x:CENTER,y:CENTER};
+    makeBerryBushes();
+    zoneRadiusY = WORLD_H*0.72;
+    zoneRadiusX = zoneRadiusY * (WORLD_W/WORLD_H);
+    zoneCenter = {x:CENTER_X,y:CENTER_Y};
     nextShrinkAt = ZONE_SHRINK_INTERVAL;
     nextSupplyAt = SUPPLY_DROP_INTERVAL;
     dayCount = 1;
@@ -1029,8 +1109,12 @@
   // INPUT
   // ============================================================
   window.addEventListener('keydown', e=>{
-    keys[e.key.toLowerCase()] = true;
-    if(e.key === ' '){ attackPressed = true; e.preventDefault(); }
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    if(key === ' '){ attackPressed = true; e.preventDefault(); }
+    else if(key === 'q'){ cycleWeapon(-1); e.preventDefault(); }
+    else if(key === 'e'){ cycleWeapon(1); e.preventDefault(); }
+    else if(key >= '1' && key <= '6'){ equipWeaponIndex(Number(key) - 1); e.preventDefault(); }
   });
   window.addEventListener('keyup', e=>{
     keys[e.key.toLowerCase()] = false;
@@ -1051,6 +1135,14 @@
   const atkOn = (e)=>{ e.preventDefault(); attackPressed = true; };
   atkBtn.addEventListener('touchstart', atkOn, {passive:false});
   atkBtn.addEventListener('mousedown', atkOn);
+
+  const swapBtn = document.getElementById('swapBtn');
+  const swapOn = (e)=>{ e.preventDefault(); cycleWeapon(1); };
+  if(swapBtn){
+    swapBtn.addEventListener('touchstart', swapOn, {passive:false});
+    swapBtn.addEventListener('mousedown', swapOn);
+    swapBtn.addEventListener('click', swapOn);
+  }
 
   // ============================================================
   // KILL FEED
@@ -1112,15 +1204,61 @@
     particles.push({x,y,text,color,life:1.0,vy:-30});
   }
 
+  // Effective movement speed after low-energy fatigue is applied.
+  function speedMult(t){
+    return t.energy < LOW_ENERGY_THRESHOLD ? LOW_ENERGY_SPEED_MULT : 1;
+  }
+
+  // Hunger/energy drain, starvation damage, poison damage-over-time, and
+  // stun countdown — runs for every living tribute, player included.
+  function updateSurvival(t, dt){
+    if(!t.alive) return;
+
+    t.hunger = clamp(t.hunger - (dt*1000/HUNGER_DEPLETE_TIME)*HUNGER_MAX, 0, HUNGER_MAX);
+    t.energy = clamp(t.energy - (dt*1000/ENERGY_DEPLETE_TIME)*ENERGY_MAX, 0, ENERGY_MAX);
+
+    if(t.hunger <= 0){
+      t.starveCooldown -= dt;
+      if(t.starveCooldown <= 0){
+        t.starveCooldown = STARVE_TICK_INTERVAL;
+        damageTribute(t, STARVE_TICK_DAMAGE, null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'STARVING', '#e8a33d');
+      }
+    }
+
+    if(t.poisonTicksRemaining > 0){
+      t.poisonTickTimer -= dt;
+      if(t.poisonTickTimer <= 0){
+        t.poisonTickTimer = POISON_DOT_INTERVAL;
+        t.poisonTicksRemaining--;
+        damageTribute(t, POISON_DOT_DAMAGE, null);
+      }
+    }
+
+    if(t.stunTimer > 0){
+      t.stunTimer = Math.max(0, t.stunTimer - dt);
+    }
+  }
+
   function tryAttack(attacker){
     if(attacker.attackCooldown > 0) return;
-    const wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
+    let wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
     const alliedCareer = attacker.isCareer && !allianceBroken;
 
     if(wpn && wpn.type === 'ranged'){
-      attacker.attackCooldown = wpn.cooldown;
-      fireProjectile(attacker, wpn);
-      return;
+      const ammoLeft = attacker.ammo[attacker.weapon] || 0;
+      if(ammoLeft <= 0){
+        if(attacker.isPlayer){
+          spawnFloatText(attacker.x, attacker.y-30, 'OUT OF AMMO', '#e8404a');
+          feed('Your ' + wpn.name + ' is out of ammo.');
+        }
+        wpn = null; // fall through to unarmed melee below instead of firing
+      } else {
+        attacker.ammo[attacker.weapon] = ammoLeft - 1;
+        attacker.attackCooldown = wpn.cooldown;
+        fireProjectile(attacker, wpn);
+        return;
+      }
     }
 
     const range = wpn ? wpn.range : 40;
@@ -1160,7 +1298,8 @@
       x: attacker.x + dx*16, y: attacker.y + dy*16,
       vx: dx*wpn.projectileSpeed, vy: dy*wpn.projectileSpeed,
       dmg: wpn.dmg, range: wpn.range, traveled: 0,
-      owner: attacker, tint: wpn.tint
+      owner: attacker, tint: wpn.tint,
+      assetKey: wpn.name === 'Throwing Knives' ? 'knife' : 'arrow'
     });
     spawnFloatText(attacker.x, attacker.y-30, wpn.name.toUpperCase()+'!', '#e8a33d');
   }
@@ -1207,7 +1346,7 @@
         }
       }
 
-      if(removed || p.traveled > p.range || p.x<0 || p.x>WORLD || p.y<0 || p.y>WORLD){
+      if(removed || p.traveled > p.range || p.x<0 || p.x>WORLD_W || p.y<0 || p.y>WORLD_H){
         projectiles.splice(i,1);
       }
     }
@@ -1240,23 +1379,38 @@
       const it = items[i];
       if(dist(t,it) < 22){
         if(it.type === 'weapon'){
+          const wpnDef = WEAPONS[it.weaponType];
           if(t.isPlayer){
             if(t.inventory.includes(it.weaponType)){
-              spawnFloatText(t.x,t.y-20,'HAVE IT','#8f9086');
-              feed('You already have a ' + WEAPONS[it.weaponType].name + ' in your pack.');
+              if(wpnDef.type === 'ranged'){
+                const gain = randi(AMMO_PICKUP_MIN, AMMO_PICKUP_MAX);
+                t.ammo[it.weaponType] = Math.min(wpnDef.ammoMax, (t.ammo[it.weaponType]||0) + gain);
+                spawnFloatText(t.x,t.y-20,'+AMMO','#ffcf5c');
+                feed('Restocked ' + wpnDef.name + ' ammo (' + t.ammo[it.weaponType] + '/' + wpnDef.ammoMax + ').');
+              } else {
+                spawnFloatText(t.x,t.y-20,'HAVE IT','#8f9086');
+                feed('You already have a ' + wpnDef.name + ' in your pack.');
+              }
             } else {
               t.inventory.push(it.weaponType);
+              if(wpnDef.type === 'ranged'){
+                t.ammo[it.weaponType] = randi(AMMO_PICKUP_MIN, AMMO_PICKUP_MAX);
+              }
               if(!t.weapon){
                 equipWeaponIndex(t.inventory.length-1);
-                spawnFloatText(t.x,t.y-20,'+'+WEAPONS[it.weaponType].name.toUpperCase(),'#ffcf5c');
+                spawnFloatText(t.x,t.y-20,'+'+wpnDef.name.toUpperCase(),'#ffcf5c');
               } else {
                 spawnFloatText(t.x,t.y-20,'PACKED','#7fb0e0');
-                feed('You packed a ' + WEAPONS[it.weaponType].name + '. Press Q/E or SWAP to switch.');
+                feed('You packed a ' + wpnDef.name + '. Press Q/E or SWAP to switch.');
               }
             }
           } else {
             t.weapon = it.weaponType;
-            spawnFloatText(t.x,t.y-20,'+'+WEAPONS[it.weaponType].name.toUpperCase(),'#ffcf5c');
+            if(wpnDef.type === 'ranged'){
+              const gain = randi(AMMO_PICKUP_MIN, AMMO_PICKUP_MAX);
+              t.ammo[it.weaponType] = Math.min(wpnDef.ammoMax, (t.ammo[it.weaponType]||0) + gain);
+            }
+            spawnFloatText(t.x,t.y-20,'+'+wpnDef.name.toUpperCase(),'#ffcf5c');
           }
         } else if(it.type === 'medkit'){
           t.hp = Math.min(t.maxHp, t.hp + 35);
@@ -1266,6 +1420,21 @@
           t.shield = Math.min(40, t.shield + 25);
           spawnFloatText(t.x,t.y-20,'+SHIELD','#7fb0e0');
           if(t.isPlayer) feed('You picked up a shield.');
+        } else if(it.type === 'berries'){
+          if(t.isPlayer) feed('🍓 You found berries.');
+          const poisonous = Math.random() < BERRY_POISON_CHANCE;
+          if(poisonous){
+            t.stunTimer = Math.max(t.stunTimer, POISON_STUN_DURATION);
+            t.poisonTicksRemaining = POISON_DOT_TICKS;
+            t.poisonTickTimer = POISON_DOT_INTERVAL;
+            spawnFloatText(t.x,t.y-20,'POISONED!','#e8404a');
+            if(t.isPlayer) feed('☠ Those berries were poisonous — you feel your legs give out.');
+          } else {
+            t.hunger = Math.min(HUNGER_MAX, t.hunger + 40);
+            t.energy = Math.min(ENERGY_MAX, t.energy + 15);
+            spawnFloatText(t.x,t.y-20,'+HUNGER','#e8c56a');
+            if(t.isPlayer) feed('They\'re safe to eat. Hunger restored.');
+          }
         }
         items.splice(i,1);
       }
@@ -1277,10 +1446,21 @@
   // ============================================================
   function pickWanderTarget(t){
     for(let i=0;i<8;i++){
-      const x = rand(45,WORLD-45), y = rand(45,WORLD-45);
+      const x = rand(45,WORLD_W-45), y = rand(45,WORLD_H-45);
       if(!obstacles.some(o=> dist({x,y},o) < o.r+34)) return {x,y};
     }
-    return { x: rand(45,WORLD-45), y: rand(45,WORLD-45) };
+    return { x: rand(45,WORLD_W-45), y: rand(45,WORLD_H-45) };
+  }
+
+  // Nearest patch of tall grass to a point (used by skittish tributes to
+  // actively seek cover instead of wandering blind).
+  function nearestGrassZone(x,y){
+    let best = null, bd = Infinity;
+    for(const z of grassZones){
+      const d = Math.hypot(z.x-x, z.y-y);
+      if(d < bd){ bd = d; best = z; }
+    }
+    return best;
   }
 
   // The Career pack shares one target at a time so they visibly gang up,
@@ -1313,6 +1493,10 @@
 
   function updateAI(t, dt){
     if(!t.alive) return;
+    if(t.stunTimer > 0){
+      t.vx = 0; t.vy = 0;
+      return;
+    }
     t.hurtCooldown = Math.max(0, t.hurtCooldown-dt);
     const alliedCareer = t.isCareer && !allianceBroken;
 
@@ -1333,7 +1517,8 @@
     }
 
     const wpn = t.weapon ? WEAPONS[t.weapon] : null;
-    const isRanged = wpn && wpn.type === 'ranged';
+    const hasAmmo = wpn && wpn.type === 'ranged' ? (t.ammo[t.weapon]||0) > 0 : true;
+    const isRanged = !!(wpn && wpn.type === 'ranged' && hasAmmo);
     let detectRange = isRanged ? Math.max(200, wpn.range*0.75) : 140;
 
     // Tall grass hides whoever is standing in it — much shorter detection
@@ -1347,10 +1532,20 @@
     // the scattering that follows the bloodbath in the films.
     const inGrace = (elapsed - livePhaseStartTime) < BLOODBATH_GRACE;
 
+    // Skittish, unarmed, or otherwise timid tributes: non-Careers with low
+    // aggression are playing scared, not hunting. They only ever fight back
+    // once a threat is right on top of them (danger range), and otherwise
+    // actively look for grass to hide in and sit tight once they find it.
+    const isSkittish = !t.isCareer && t.aggression < 0.55;
+    const dangerRange = wpn ? Math.min(wpn.range * 0.7, 60) : 42;
+
     const hpRatio = t.hp / t.maxHp;
     let mode = 'wander';
     if(nearest && nd < detectRange){
-      if(hpRatio < 0.35 && t.aggression < 0.8){
+      if(isSkittish){
+        // only ever bare teeth if the threat is basically on top of them
+        mode = (nd < dangerRange) ? 'chase' : 'flee';
+      } else if(hpRatio < 0.35 && t.aggression < 0.8){
         mode = 'flee';
       } else if(inGrace){
         mode = (t.aggression > 0.78) ? 'chase' : 'flee';
@@ -1359,6 +1554,10 @@
       } else {
         mode = 'flee';
       }
+    } else if(isSkittish && !inGrace){
+      // no threat detected — a fearful tribute still tries to get to cover
+      // rather than roam the open arena
+      mode = 'seekHide';
     }
 
     // also seek nearby items if not in combat
@@ -1372,6 +1571,7 @@
     }
 
     let tx=t.x, ty=t.y;
+    let holdStill = false;
     if(mode === 'chase' && nearest){
       if(isRanged){
         // kite: stay near an optimal standoff distance instead of rushing to melee
@@ -1381,8 +1581,8 @@
         if(nd > standoff + 30){
           tx = nearest.x; ty = nearest.y;
         } else if(nd < standoff - 30){
-          tx = clamp(t.x + (dxN/lenN)*60, 45, WORLD-45);
-          ty = clamp(t.y + (dyN/lenN)*60, 45, WORLD-45);
+          tx = clamp(t.x + (dxN/lenN)*60, 45, WORLD_W-45);
+          ty = clamp(t.y + (dyN/lenN)*60, 45, WORLD_H-45);
         } else {
           tx = t.x; ty = t.y; // hold position and fire
         }
@@ -1390,10 +1590,45 @@
         tx = nearest.x; ty = nearest.y;
       }
     } else if(mode === 'flee' && nearest){
-      const dxF = t.x-nearest.x, dyF = t.y-nearest.y;
-      const lenF = Math.hypot(dxF,dyF) || 1;
-      tx = clamp(t.x + (dxF/lenF)*130, 45, WORLD-45);
-      ty = clamp(t.y + (dyF/lenF)*130, 45, WORLD-45);
+      // a skittish tribute already tucked into grass with the threat still
+      // outside detection range for grass-hiders would rather freeze than
+      // bolt into the open and give away its position
+      if(isSkittish && tributeInGrass(t) && nd > dangerRange * 1.4){
+        holdStill = true;
+        tx = t.x; ty = t.y;
+      } else {
+        const dxF = t.x-nearest.x, dyF = t.y-nearest.y;
+        const lenF = Math.hypot(dxF,dyF) || 1;
+        // flee toward the nearest patch of grass when one is reasonably
+        // close, instead of just running directly away in the open
+        const hideZone = isSkittish ? nearestGrassZone(t.x,t.y) : null;
+        if(hideZone && dist(t,hideZone) < 420){
+          tx = hideZone.x; ty = hideZone.y;
+        } else {
+          tx = clamp(t.x + (dxF/lenF)*130, 45, WORLD_W-45);
+          ty = clamp(t.y + (dyF/lenF)*130, 45, WORLD_H-45);
+        }
+      }
+    } else if(mode === 'seekHide'){
+      const hideZone = nearestGrassZone(t.x,t.y);
+      if(hideZone){
+        if(dist(t,hideZone) < hideZone.r*0.6){
+          // already deep enough in cover — stay put and keep watch
+          holdStill = true;
+          tx = t.x; ty = t.y;
+        } else {
+          tx = hideZone.x; ty = hideZone.y;
+        }
+      } else if(seekItem){
+        tx = seekItem.x; ty = seekItem.y;
+      } else {
+        t.wanderTimer -= dt;
+        if(!t.wanderTarget || t.wanderTimer <= 0){
+          t.wanderTarget = pickWanderTarget(t);
+          t.wanderTimer = rand(2,4.5);
+        }
+        tx = t.wanderTarget.x; ty = t.wanderTarget.y;
+      }
     } else if(seekItem){
       tx = seekItem.x; ty = seekItem.y;
     } else {
@@ -1408,16 +1643,34 @@
 
     const dx = tx - t.x, dy = ty - t.y;
     const len = Math.hypot(dx,dy) || 1;
-    if(len > 4){
-      t.vx = (dx/len) * t.speed;
-      t.vy = (dy/len) * t.speed;
-      t.facing = {x:dx/len,y:dy/len};
+    // A tribute only counts as "moving" with a real, sustained direction —
+    // small jitter from obstacle collisions shouldn't flip which way they face.
+    if(len > 4 && !holdStill){
+      t.vx = (dx/len) * t.speed * speedMult(t);
+      t.vy = (dy/len) * t.speed * speedMult(t);
+      // smooth facing instead of snapping instantly, so getting nudged by an
+      // obstacle for one frame doesn't spin the sprite around
+      const smoothing = 10;
+      const blend = Math.min(1, smoothing*dt);
+      let fx = t.facing.x + (dx/len - t.facing.x)*blend;
+      let fy = t.facing.y + (dy/len - t.facing.y)*blend;
+      const flen = Math.hypot(fx,fy) || 1;
+      t.facing = {x:fx/flen, y:fy/flen};
     } else {
       t.vx = 0; t.vy = 0;
-      if(nearest){
+      // while standing still (including deliberately holding in cover),
+      // keep facing whatever the actual nearby threat is, but only if one
+      // exists — otherwise leave facing exactly as it was, rather than
+      // re-deriving it from a wander target that no longer applies.
+      if(nearest && nd < detectRange){
         const dxx = nearest.x-t.x, dyy = nearest.y-t.y;
         const l2 = Math.hypot(dxx,dyy) || 1;
-        t.facing = {x:dxx/l2, y:dyy/l2};
+        const smoothing = 10;
+        const blend = Math.min(1, smoothing*dt);
+        let fx = t.facing.x + (dxx/l2 - t.facing.x)*blend;
+        let fy = t.facing.y + (dyy/l2 - t.facing.y)*blend;
+        const flen = Math.hypot(fx,fy) || 1;
+        t.facing = {x:fx/flen, y:fy/flen};
       }
     }
 
@@ -1432,9 +1685,10 @@
   // ============================================================
   function spawnMutt(){
     const ang = Math.random()*Math.PI*2;
-    const r = Math.min(zoneRadius*0.9, WORLD*0.45);
-    const x = clamp(zoneCenter.x + Math.cos(ang)*r, 40, WORLD-40);
-    const y = clamp(zoneCenter.y + Math.sin(ang)*r, 40, WORLD-40);
+    const rx = Math.min(zoneRadiusX*0.9, WORLD_W*0.45);
+    const ry = Math.min(zoneRadiusY*0.9, WORLD_H*0.45);
+    const x = clamp(zoneCenter.x + Math.cos(ang)*rx, 40, WORLD_W-40);
+    const y = clamp(zoneCenter.y + Math.sin(ang)*ry, 40, WORLD_H-40);
     mutts.push({
       id: Math.random().toString(36).slice(2),
       isMutt: true,
@@ -1478,7 +1732,12 @@
     if(len > 4){
       m.vx = (dx/len)*MUTT_SPEED;
       m.vy = (dy/len)*MUTT_SPEED;
-      m.facing = {x:dx/len,y:dy/len};
+      const smoothing = 10;
+      const blend = Math.min(1, smoothing*dt);
+      let fx = m.facing.x + (dx/len - m.facing.x)*blend;
+      let fy = m.facing.y + (dy/len - m.facing.y)*blend;
+      const flen = Math.hypot(fx,fy) || 1;
+      m.facing = {x:fx/flen, y:fy/flen};
     } else {
       m.vx = 0; m.vy = 0;
     }
@@ -1512,8 +1771,8 @@
       updateMuttAI(m, dt);
       m.x += m.vx*dt;
       m.y += m.vy*dt;
-      m.x = clamp(m.x, 16, WORLD-16);
-      m.y = clamp(m.y, 16, WORLD-16);
+      m.x = clamp(m.x, 16, WORLD_W-16);
+      m.y = clamp(m.y, 16, WORLD_H-16);
       resolveObstacles(m);
     }
     mutts = mutts.filter(m=>m.alive);
@@ -1545,6 +1804,11 @@
   }
 
   function updatePlayerMovement(dt){
+    if(player.stunTimer > 0){
+      player.vx = 0; player.vy = 0;
+      attackPressed = false;
+      return;
+    }
     let dx=0, dy=0;
     if(keys['w']||keys['arrowup']||touchDir.up) dy -= 1;
     if(keys['s']||keys['arrowdown']||touchDir.down) dy += 1;
@@ -1555,8 +1819,8 @@
       dx/=len; dy/=len;
       player.facing = {x:dx,y:dy};
     }
-    player.vx = dx*player.speed;
-    player.vy = dy*player.speed;
+    player.vx = dx*player.speed*speedMult(player);
+    player.vy = dy*player.speed*speedMult(player);
 
     if(attackPressed){
       tryAttack(player);
@@ -1570,29 +1834,32 @@
   function updateZone(dt){
     elapsed += dt*1000;
     nextShrinkAt -= dt*1000;
-    if(nextShrinkAt <= 0 && zoneRadius > ZONE_MIN_RADIUS){
-      zoneRadius = Math.max(ZONE_MIN_RADIUS, zoneRadius - ZONE_SHRINK_AMOUNT);
+    if(nextShrinkAt <= 0 && zoneRadiusY > ZONE_MIN_RADIUS_Y){
+      zoneRadiusY = Math.max(ZONE_MIN_RADIUS_Y, zoneRadiusY - ZONE_SHRINK_AMOUNT_Y);
+      zoneRadiusX = Math.max(ZONE_MIN_RADIUS_X, zoneRadiusX - ZONE_SHRINK_AMOUNT_X);
       nextShrinkAt = ZONE_SHRINK_INTERVAL;
       dayCount++;
       feed('☣ The safe zone has contracted. Day ' + dayCount + ' begins.');
     }
-    zoneWarning.style.display = (nextShrinkAt < 4000 && zoneRadius > ZONE_MIN_RADIUS) ? 'block' : 'none';
+    zoneWarning.style.display = (nextShrinkAt < 4000 && zoneRadiusY > ZONE_MIN_RADIUS_Y) ? 'block' : 'none';
 
     nextSupplyAt -= dt*1000;
     if(nextSupplyAt <= 0){
       nextSupplyAt = SUPPLY_DROP_INTERVAL;
       const ang = Math.random()*Math.PI*2;
-      const r = Math.random()*zoneRadius*0.7;
-      const x = clamp(zoneCenter.x + Math.cos(ang)*r, 40, WORLD-40);
-      const y = clamp(zoneCenter.y + Math.sin(ang)*r, 40, WORLD-40);
+      const frac = Math.random()*0.7;
+      const x = clamp(zoneCenter.x + Math.cos(ang)*zoneRadiusX*frac, 40, WORLD_W-40);
+      const y = clamp(zoneCenter.y + Math.sin(ang)*zoneRadiusY*frac, 40, WORLD_H-40);
       spawnItem(x,y, Math.random()<0.5?'weapon':'medkit');
       feed('🎁 A supply parachute has dropped into the arena.');
     }
 
     for(const t of tributes){
       if(!t.alive) continue;
-      const d = dist(t, zoneCenter);
-      if(d > zoneRadius){
+      // ellipse containment test, since the safe zone matches the arena's aspect ratio
+      const nx = (t.x - zoneCenter.x) / zoneRadiusX;
+      const ny = (t.y - zoneCenter.y) / zoneRadiusY;
+      if((nx*nx + ny*ny) > 1){
         t.hurtCooldown -= dt;
         if(t.hurtCooldown <= 0){
           t.hurtCooldown = 0.5;
@@ -1639,12 +1906,13 @@
       if(!t.alive) continue;
       t.x += t.vx*dt;
       t.y += t.vy*dt;
-      t.x = clamp(t.x, 16, WORLD-16);
-      t.y = clamp(t.y, 16, WORLD-16);
+      t.x = clamp(t.x, 16, WORLD_W-16);
+      t.y = clamp(t.y, 16, WORLD_H-16);
       resolveObstacles(t);
       t.attackCooldown = Math.max(0, t.attackCooldown - dt);
       t.hitFlash = Math.max(0, t.hitFlash - dt);
       checkItemPickup(t);
+      updateSurvival(t, dt);
     }
     const nowHidden = tributeInGrass(player);
     if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
@@ -1732,34 +2000,58 @@
     // weapon indicator
     if(t.weapon){
       const wpn = WEAPONS[t.weapon];
-      ctx.fillStyle = wpn.tint;
-      if(wpn.type === 'melee'){
+      const assetKey = t.weapon === 'bow' ? 'bow' : t.weapon === 'knives' ? 'knife' : t.weapon;
+      const hasAsset = assetReady(assetKey);
+      ctx.save();
+      ctx.translate(9,-2);
+      if(hasAsset){
+        ctx.rotate(t.weapon === 'spear' ? -0.16 : 0);
+        drawAssetAspect(assetKey, t.weapon === 'bow' ? 8 : 14, false);
+      } else if(t.weapon === 'bow'){
+        ctx.strokeStyle = '#e8e3d3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-2,-5);
+        ctx.lineTo(4,-2);
+        ctx.lineTo(4,2);
+        ctx.lineTo(-2,5);
+        ctx.stroke();
+      } else if(wpn.type === 'melee'){
+        ctx.fillStyle = wpn.tint;
         const len = t.weapon==='spear' ? 20 : t.weapon==='axe' ? 12 : t.weapon==='dagger' ? 8 : 14;
-        ctx.fillRect(8, -6, t.weapon==='axe'?5:3, len);
+        ctx.fillRect(0, -6, t.weapon==='axe'?5:3, len);
         if(t.weapon==='axe'){
           ctx.fillStyle = '#8a6a3a';
-          ctx.fillRect(6,-6,9,4);
+          ctx.fillRect(-2,-6,9,4);
         }
       } else if(t.weapon==='bow'){
         ctx.strokeStyle = wpn.tint;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(10,-1, 7, -1.15, 1.15);
+        ctx.arc(0,0, 7, -1.15, 1.15);
         ctx.stroke();
       } else {
         // throwing knives — small diamonds
-        ctx.fillRect(9,-8,3,3);
-        ctx.fillRect(9,-2,3,3);
-        ctx.fillRect(9,4,3,3);
+        ctx.fillRect(0,-8,3,3);
+        ctx.fillRect(0,-2,3,3);
+        ctx.fillRect(0,4,3,3);
       }
+      ctx.restore();
     }
     // shield indicator
     if(t.shield > 0){
-      ctx.strokeStyle = '#7fb0e0';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0,-2, 16, 0, Math.PI*2);
-      ctx.stroke();
+      if(assetReady('shield')){
+        ctx.save();
+        ctx.translate(0,-2);
+        drawAssetAspect('shield', 18, false);
+        ctx.restore();
+      } else {
+        ctx.strokeStyle = '#7fb0e0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0,-2, 16, 0, Math.PI*2);
+        ctx.stroke();
+      }
     }
     // Career pack marker — small gold dot, hollow once the alliance breaks
     if(t.isCareer){
@@ -1801,6 +2093,9 @@
     ctx.save();
     ctx.translate(m.x, m.y);
     const flash = m.hitFlash > 0;
+    const bob = Math.sin(performance.now()/220 + m.id.length)*2;
+    const walk = Math.sin(performance.now()/180 + m.id.length)*1.2;
+    const facingSign = m.vx > 0 ? -1 : 1;
 
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -1808,31 +2103,36 @@
     ctx.ellipse(0, 10, 9, 3, 0, 0, Math.PI*2);
     ctx.fill();
 
-    ctx.save();
-    ctx.scale(1.2,1.2);
-    // hunched, low-slung body
-    ctx.fillStyle = flash ? '#ffffff' : '#241a1a';
-    ctx.beginPath();
-    ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
-    ctx.fill();
-    // legs
-    ctx.fillStyle = flash ? '#ffffff' : '#181010';
-    ctx.fillRect(-7, 4, 3, 6);
-    ctx.fillRect(4, 4, 3, 6);
-    // head, pointed toward its facing direction
-    const hx = m.facing.x*7, hy = m.facing.y*4 - 3;
-    ctx.fillStyle = flash ? '#ffffff' : '#2e2222';
-    ctx.beginPath();
-    ctx.ellipse(hx, hy, 6, 4.5, 0, 0, Math.PI*2);
-    ctx.fill();
-    // glowing eyes
-    ctx.fillStyle = '#e8404a';
-    ctx.beginPath(); ctx.arc(hx-2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(hx+2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
+    if(assetReady('mutt')){
+      ctx.save();
+      ctx.translate(0, bob - 2);
+      ctx.scale(facingSign * 1.18, 1.18);
+      ctx.rotate(walk * 0.04);
+      drawAssetAspect('mutt', 28, false);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.translate(0, bob);
+      ctx.scale(1.2,1.2);
+      ctx.fillStyle = flash ? '#ffffff' : '#241a1a';
+      ctx.beginPath();
+      ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = flash ? '#ffffff' : '#181010';
+      ctx.fillRect(-7, 4, 3, 6);
+      ctx.fillRect(4, 4, 3, 6);
+      const hx = m.facing.x*7, hy = m.facing.y*4 - 3;
+      ctx.fillStyle = flash ? '#ffffff' : '#2e2222';
+      ctx.beginPath();
+      ctx.ellipse(hx, hy, 6, 4.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#e8404a';
+      ctx.beginPath(); ctx.arc(hx-2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx+2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
     ctx.restore();
 
-    // health bar
     ctx.save();
     ctx.translate(m.x, m.y);
     ctx.fillStyle = 'rgba(0,0,0,.6)';
@@ -1863,36 +2163,77 @@
     ctx.translate(it.x, it.y + bob);
     if(it.type === 'weapon'){
       const wpn = WEAPONS[it.weaponType];
-      const tint = wpn ? wpn.tint : '#cfd6da';
-      if(wpn && wpn.type === 'ranged'){
-        if(it.weaponType === 'bow'){
-          ctx.strokeStyle = tint;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(0,0,8,-1.2,1.2);
-          ctx.stroke();
-          ctx.strokeStyle = '#e8e3d3';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(0,-8); ctx.lineTo(0,8);
-          ctx.stroke();
+      const assetKey = it.weaponType === 'bow' ? 'bow' : it.weaponType === 'knives' ? 'knife' : it.weaponType;
+      if(assetReady(assetKey)){
+        drawAssetAspect(assetKey, it.weaponType === 'bow' ? 8 : 14, false);
+      } else if(it.weaponType === 'bow'){
+        ctx.strokeStyle = '#e8e3d3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-2,-5);
+        ctx.lineTo(4,-2);
+        ctx.lineTo(4,2);
+        ctx.lineTo(-2,5);
+        ctx.stroke();
+      } else {
+        const tint = wpn ? wpn.tint : '#cfd6da';
+        if(wpn && wpn.type === 'ranged'){
+          if(it.weaponType === 'bow'){
+            ctx.strokeStyle = tint;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0,0,8,-1.2,1.2);
+            ctx.stroke();
+            ctx.strokeStyle = '#e8e3d3';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0,-8); ctx.lineTo(0,8);
+            ctx.stroke();
+          } else {
+            ctx.fillStyle = tint;
+            ctx.fillRect(-1,-8,2,7);
+            ctx.fillRect(-1,1,2,7);
+          }
         } else {
           ctx.fillStyle = tint;
-          ctx.fillRect(-1,-8,2,7);
-          ctx.fillRect(-1,1,2,7);
+          ctx.fillRect(-1,-8,2,16);
+          ctx.fillStyle = '#8a6a3a';
+          ctx.fillRect(-4,4,8,3);
         }
+      }
+    } else if(it.type === 'shield'){
+      if(assetReady('shield')){
+        drawAssetAspect('shield', 14, false);
       } else {
-        ctx.fillStyle = tint;
-        ctx.fillRect(-1,-8,2,16);
-        ctx.fillStyle = '#8a6a3a';
-        ctx.fillRect(-4,4,8,3);
+        ctx.strokeStyle = '#7fb0e0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0,0,7,0,Math.PI*2);
+        ctx.stroke();
       }
     } else if(it.type === 'medkit'){
-      ctx.fillStyle = '#e8e3d3';
-      ctx.fillRect(-7,-6,14,12);
-      ctx.fillStyle = '#c81d25';
-      ctx.fillRect(-1,-4,2,8);
-      ctx.fillRect(-4,-1,8,2);
+      if(assetReady('firstAid')){
+        drawAssetAspect('firstAid', 14, false);
+      } else {
+        ctx.fillStyle = '#e8e3d3';
+        ctx.fillRect(-7,-6,14,12);
+        ctx.fillStyle = '#c81d25';
+        ctx.fillRect(-1,-4,2,8);
+        ctx.fillRect(-4,-1,8,2);
+      }
+    } else if(it.type === 'berries'){
+      if(assetReady('berry')){
+        drawAssetAspect('berry', 14, false);
+      } else {
+        ctx.fillStyle = '#2f6a3a';
+        ctx.beginPath(); ctx.moveTo(0,4); ctx.lineTo(0,-2); ctx.lineWidth=2; ctx.strokeStyle='#2f6a3a'; ctx.stroke();
+        const berryColors = ['#8a2a4a','#a83a5a','#6a2040'];
+        const spots = [[-4,-2],[3,-3],[-1,3],[4,2]];
+        spots.forEach((s,i)=>{
+          ctx.fillStyle = berryColors[i%berryColors.length];
+          ctx.beginPath(); ctx.arc(s[0],s[1],2.6,0,Math.PI*2); ctx.fill();
+        });
+      }
     } else {
       ctx.strokeStyle = '#7fb0e0';
       ctx.lineWidth = 2;
@@ -1908,22 +2249,29 @@
     ctx.translate(p.x,p.y);
     const ang = Math.atan2(p.vy,p.vx);
     ctx.rotate(ang);
-    ctx.fillStyle = p.tint || '#e8e3d3';
-    ctx.fillRect(-7,-1,14,2);
-    ctx.beginPath();
-    ctx.moveTo(7,-3);
-    ctx.lineTo(11,0);
-    ctx.lineTo(7,3);
-    ctx.closePath();
-    ctx.fill();
+    const assetKey = p.assetKey || 'arrow';
+    if(assetReady(assetKey)){
+      drawAssetAspect(assetKey, 12, false);
+    } else {
+      ctx.fillStyle = p.tint || '#e8e3d3';
+      ctx.fillRect(-7,-1,14,2);
+      ctx.beginPath();
+      ctx.moveTo(7,-3);
+      ctx.lineTo(11,0);
+      ctx.lineTo(7,3);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.restore();
   }
 
   function drawObstacle(o){
     ctx.save();
     ctx.translate(o.x,o.y);
-    ctx.fillStyle = 'rgba(0,0,0,.35)';
-    ctx.beginPath(); ctx.ellipse(0,o.r*0.6,o.r*0.9,o.r*0.3,0,0,Math.PI*2); ctx.fill();
+    if(o.type !== 'tree'){
+      ctx.fillStyle = 'rgba(0,0,0,.35)';
+      ctx.beginPath(); ctx.ellipse(0,o.r*0.6,o.r*0.9,o.r*0.3,0,0,Math.PI*2); ctx.fill();
+    }
 
     if(o.type === 'rock'){
       if(assetReady('rock')){
@@ -1948,7 +2296,7 @@
         ctx.fillRect(-o.r*0.15,o.r*0.05,o.r*0.4,o.r*0.15);
       }
     } else if(o.type === 'cave'){
-      // Cave-mouth boulder cluster: dark rock ring around a black entrance
+      // Rocky boulder cluster
       ctx.fillStyle = '#4a4640';
       ctx.beginPath();
       ctx.arc(0,0,o.r,0,Math.PI*2);
@@ -1956,14 +2304,6 @@
       ctx.strokeStyle = '#252220';
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.fillStyle = '#645e54';
-      ctx.beginPath();
-      ctx.arc(-o.r*0.3,-o.r*0.35,o.r*0.3,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = '#0c0a08';
-      ctx.beginPath();
-      ctx.ellipse(0,o.r*0.05,o.r*0.55,o.r*0.62,0,0,Math.PI*2);
-      ctx.fill();
     } else if(o.type === 'bush'){
       if(assetReady('bush')){
         drawAssetAspect('bush', o.r*2.1, false);
@@ -2009,21 +2349,35 @@
     ctx.translate(d.x,d.y);
     if(d.kind === 'tallgrass'){
       const sway = Math.sin(performance.now()/500 + d.phase)*2;
-      ctx.fillStyle = '#2f6a3a';
-      for(let i=-1;i<=1;i++){
-        ctx.beginPath();
-        ctx.moveTo(i*4,6);
-        ctx.quadraticCurveTo(i*4+sway, -4, i*4+sway*1.4, -10);
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#2f6a3a';
-        ctx.stroke();
+      if(assetReady('tallGrass')){
+        ctx.save();
+        ctx.translate(sway * 0.6, -2);
+        ctx.rotate(sway * 0.03);
+        ctx.drawImage(assetImages.tallGrass, -10, -12, 20, 20);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#2f6a3a';
+        for(let i=-1;i<=1;i++){
+          ctx.beginPath();
+          ctx.moveTo(i*4,6);
+          ctx.quadraticCurveTo(i*4+sway, -4, i*4+sway*1.4, -10);
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = '#2f6a3a';
+          ctx.stroke();
+        }
       }
     } else if(d.kind === 'flower'){
-      const colors = ['#e8637a','#e8c04a','#e8e3d3'];
-      ctx.fillStyle = '#2f6a3a';
-      ctx.fillRect(-1,-2,2,6);
-      ctx.fillStyle = colors[Math.floor(d.phase*10)%colors.length];
-      ctx.beginPath(); ctx.arc(0,-4,2.4,0,Math.PI*2); ctx.fill();
+      const flowerAssets = ['flower-one','flower-two','flower-three'];
+      const assetKey = flowerAssets[Math.floor(d.phase * 10) % flowerAssets.length];
+      if(assetReady(assetKey)){
+        drawAssetAspect(assetKey, 10, false);
+      } else {
+        const colors = ['#e8637a','#e8c04a','#e8e3d3'];
+        ctx.fillStyle = '#2f6a3a';
+        ctx.fillRect(-1,-2,2,6);
+        ctx.fillStyle = colors[Math.floor(d.phase*10)%colors.length];
+        ctx.beginPath(); ctx.arc(0,-4,2.4,0,Math.PI*2); ctx.fill();
+      }
     } else if(d.kind === 'pebble'){
       ctx.fillStyle = '#6b6459';
       ctx.beginPath(); ctx.ellipse(0,0,4,2.6,0,0,Math.PI*2); ctx.fill();
@@ -2047,26 +2401,26 @@
   const TILE = 40;
 
   function render(){
-    ctx.clearRect(0,0,WORLD,WORLD);
+    ctx.clearRect(0,0,WORLD_W,WORLD_H);
 
     // classic-Pokemon-style follow camera: zoom in and pan so the world
     // feels larger and only the area around the player is ever on screen.
-    const camX = clamp(player.x, VIEW_SIZE/2, WORLD - VIEW_SIZE/2);
-    const camY = clamp(player.y, VIEW_SIZE/2, WORLD - VIEW_SIZE/2);
+    const camX = clamp(player.x, VIEW_W/2, WORLD_W - VIEW_W/2);
+    const camY = clamp(player.y, VIEW_H/2, WORLD_H - VIEW_H/2);
     ctx.save();
     ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
-    ctx.translate(VIEW_SIZE/2 - camX, VIEW_SIZE/2 - camY);
+    ctx.translate(VIEW_W/2 - camX, VIEW_H/2 - camY);
 
     // --- base ground tiles: pixel-art grass texture, tiled across the arena ---
     const gPattern = getGrassPattern();
     if(gPattern){
       ctx.save();
       ctx.fillStyle = gPattern;
-      ctx.fillRect(0,0,WORLD,WORLD);
+      ctx.fillRect(0,0,WORLD_W,WORLD_H);
       ctx.restore();
     } else {
-      for(let ty=0; ty<WORLD; ty+=TILE){
-        for(let tx=0; tx<WORLD; tx+=TILE){
+      for(let ty=0; ty<WORLD_H; ty+=TILE){
+        for(let tx=0; tx<WORLD_W; tx+=TILE){
           const biome = biomeAt(tx+TILE/2, ty+TILE/2);
           const checker = ((tx/TILE + ty/TILE) % 2 === 0);
           ctx.fillStyle = checker ? BIOME_BASE[biome] : shade(BIOME_BASE[biome], -10);
@@ -2075,21 +2429,11 @@
       }
     }
 
-    // darker ground tint under each tall-grass patch, like route hiding grass
-    ctx.save();
-    grassZones.forEach(z=>{
-      ctx.fillStyle = 'rgba(18,54,22,0.4)';
-      ctx.beginPath();
-      ctx.arc(z.x, z.y, z.r, 0, Math.PI*2);
-      ctx.fill();
-    });
-    ctx.restore();
-
     // lake in the water quadrant
     ctx.save();
     ctx.fillStyle = '#2c5f78';
     ctx.beginPath();
-    ctx.ellipse(WORLD*0.74, WORLD*0.78, 175, 140, 0.15, 0, Math.PI*2);
+    ctx.ellipse(WORLD_W*0.74, WORLD_H*0.78, 220, 140, 0.15, 0, Math.PI*2);
     ctx.fill();
     ctx.strokeStyle = '#1f4658';
     ctx.lineWidth = 4;
@@ -2097,7 +2441,7 @@
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     for(let i=0;i<6;i++){
       ctx.beginPath();
-      ctx.ellipse(WORLD*0.74 + Math.sin(i*1.3)*70, WORLD*0.78 + Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+      ctx.ellipse(WORLD_W*0.74 + Math.sin(i*1.3)*70, WORLD_H*0.78 + Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.restore();
@@ -2106,13 +2450,13 @@
     ctx.save();
     const sPattern = getSandPattern();
     ctx.fillStyle = sPattern || '#8a7550';
-    ctx.fillRect(CENTER-34, 0, 68, WORLD);
-    ctx.fillRect(0, CENTER-34, WORLD, 68);
+    ctx.fillRect(CENTER_X-34, 0, 68, WORLD_H);
+    ctx.fillRect(0, CENTER_Y-34, WORLD_W, 68);
     if(!sPattern){
       ctx.strokeStyle = 'rgba(0,0,0,.12)';
       ctx.lineWidth = 1;
-      for(let x=0;x<WORLD;x+=20){ ctx.beginPath(); ctx.moveTo(x,CENTER-34); ctx.lineTo(x,CENTER+34); ctx.stroke(); }
-      for(let y=0;y<WORLD;y+=20){ ctx.beginPath(); ctx.moveTo(CENTER-34,y); ctx.lineTo(CENTER+34,y); ctx.stroke(); }
+      for(let x=0;x<WORLD_W;x+=20){ ctx.beginPath(); ctx.moveTo(x,CENTER_Y-34); ctx.lineTo(x,CENTER_Y+34); ctx.stroke(); }
+      for(let y=0;y<WORLD_H;y+=20){ ctx.beginPath(); ctx.moveTo(CENTER_X-34,y); ctx.lineTo(CENTER_X+34,y); ctx.stroke(); }
     }
     ctx.restore();
 
@@ -2120,7 +2464,7 @@
     ctx.save();
     ctx.fillStyle = 'rgba(60,56,50,0.35)';
     ctx.beginPath();
-    ctx.ellipse(WORLD*0.24, WORLD*0.76, 190, 150, 0, 0, Math.PI*2);
+    ctx.ellipse(WORLD_W*0.24, WORLD_H*0.76, 220, 150, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.restore();
 
@@ -2128,7 +2472,7 @@
 
     // cornucopia clearing marker (camp-style ring, same footprint as before)
     ctx.save();
-    ctx.translate(CENTER,CENTER);
+    ctx.translate(CENTER_X,CENTER_Y);
     ctx.fillStyle = '#a68a55';
     ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#6e5a36';
@@ -2161,15 +2505,15 @@
     // gas / danger zone overlay
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0,0,WORLD,WORLD);
-    ctx.arc(zoneCenter.x, zoneCenter.y, zoneRadius, 0, Math.PI*2, true);
+    ctx.rect(0,0,WORLD_W,WORLD_H);
+    ctx.ellipse(zoneCenter.x, zoneCenter.y, zoneRadiusX, zoneRadiusY, 0, 0, Math.PI*2, true);
     ctx.closePath();
     ctx.fillStyle = 'rgba(122,37,48,0.38)';
     ctx.fill('evenodd');
     ctx.strokeStyle = 'rgba(232,64,74,0.9)';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(zoneCenter.x, zoneCenter.y, zoneRadius, 0, Math.PI*2);
+    ctx.ellipse(zoneCenter.x, zoneCenter.y, zoneRadiusX, zoneRadiusY, 0, 0, Math.PI*2);
     ctx.stroke();
     ctx.restore();
 
@@ -2190,19 +2534,39 @@
   // HUD
   // ============================================================
   function updateHud(){
-    hpBar.style.width = Math.max(0,player.hp) + '%';
+    hpBar.style.width = Math.max(0, (player.hp/player.maxHp)*100) + '%';
     hpBar.style.background = player.hp>50 ? 'linear-gradient(90deg,#7ac97a,#3f9c3f)' : player.hp>25 ? 'linear-gradient(90deg,#e8c56a,#e8a33d)' : 'linear-gradient(90deg,#e87a7a,#c81d25)';
+
+    hungerBar.style.width = Math.max(0,player.hunger) + '%';
+    hungerBar.style.background = player.hunger>50 ? 'linear-gradient(90deg,#d9b45c,#e8a33d)' : player.hunger>20 ? 'linear-gradient(90deg,#e89a3d,#c9701f)' : 'linear-gradient(90deg,#c81d25,#7a2530)';
+
+    energyBar.style.width = Math.max(0,player.energy) + '%';
+    energyBar.style.background = player.energy>=LOW_ENERGY_THRESHOLD ? 'linear-gradient(90deg,#7fb0e0,#3a6f9c)' : 'linear-gradient(90deg,#c81d25,#7a2530)';
+
     const aliveCount = tributes.filter(t=>t.alive).length;
     tributesLeftEl.textContent = aliveCount;
     dayText.textContent = dayCount;
-    weaponNameEl.textContent = player.weapon ? WEAPONS[player.weapon].name : 'Unarmed';
+    if(player.weapon){
+      const wpnDef = WEAPONS[player.weapon];
+      if(wpnDef.type === 'ranged'){
+        weaponNameEl.textContent = wpnDef.name + ' (' + (player.ammo[player.weapon]||0) + '/' + wpnDef.ammoMax + ')';
+      } else {
+        weaponNameEl.textContent = wpnDef.name;
+      }
+    } else {
+      weaponNameEl.textContent = 'Unarmed';
+    }
     const hidden = tributeInGrass(player);
-    statusTextEl.textContent = hidden ? 'Hidden in grass' : 'In the open';
-    statusTextEl.style.color = hidden ? '#7ac97a' : 'var(--bone)';
+    statusTextEl.textContent = player.stunTimer > 0 ? 'Poisoned — reeling' : (hidden ? 'Hidden in grass' : 'In the open');
+    statusTextEl.style.color = player.stunTimer > 0 ? '#e8404a' : (hidden ? '#7ac97a' : 'var(--bone)');
 
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
     if(muttsUnlocked) alerts.push('Mutts loose');
+    if(player.hunger <= 0) alerts.push('Starving');
+    if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
+    if(player.stunTimer > 0) alerts.push('Stunned by poison');
+    if(player.weapon && WEAPONS[player.weapon].type === 'ranged' && (player.ammo[player.weapon]||0) <= 0) alerts.push('Out of ammo');
     alertTextEl.textContent = alerts.length ? alerts.join(' · ') : 'All quiet';
     alertTextEl.style.color = alerts.length ? '#e8404a' : 'var(--bone)';
   }
