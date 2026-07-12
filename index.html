@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>THE ARENA — Pixel Hunger Games</title>
+<style>
+  :root{
+    --bg: #0a0d0a;
+    --bg2: #12160f;
+    --panel: #1a1f18;
+    --line: #33392f;
+    --bone: #e8e3d3;
+    --gold: #d4af37;
+    --blood: #b8232b;
+    --blood-bright: #e8404a;
+    --amber: #e8a33d;
+    --green-safe: #4a7a4a;
+    --gas: #7a2530;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: radial-gradient(ellipse at center, var(--bg2) 0%, var(--bg) 70%);
+    color: var(--bone);
+    font-family: 'Courier New', Courier, monospace;
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select:none;
+  }
+  #app{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100%; width:100%;
+    padding: 8px;
+  }
+
+  /* ---------- Screens ---------- */
+  .screen{
+    position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 50% 30%, #1a2418 0%, #060806 75%);
+    text-align:center; padding:20px; z-index:20;
+    overflow-y:auto;
+  }
+  .hidden{display:none !important;}
+
+  .seal{
+    width:90px; height:90px; border-radius:50%;
+    border:3px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:18px;
+    box-shadow: 0 0 24px rgba(212,175,55,.35), inset 0 0 12px rgba(212,175,55,.25);
+    background: repeating-conic-gradient(from 0deg, #2a2a1a 0deg 15deg, #1a1a10 15deg 30deg);
+  }
+  .seal svg{width:52px;height:52px;fill:var(--gold);}
+
+  h1.title{
+    font-size: clamp(28px, 7vw, 54px);
+    letter-spacing: 6px;
+    margin: 0 0 6px 0;
+    color: var(--bone);
+    text-shadow: 0 0 18px rgba(232,64,74,.55), 3px 3px 0 #000;
+  }
+  h1.title span{color:var(--blood-bright);}
+  .subtitle{
+    color: var(--amber);
+    letter-spacing:3px;
+    font-size: clamp(11px,2.6vw,14px);
+    margin-bottom: 26px;
+    text-transform:uppercase;
+  }
+  .brief{
+    max-width: 480px;
+    font-size: 12px;
+    line-height:1.8;
+    color:#a9a596;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding: 14px 4px;
+    margin-bottom: 26px;
+  }
+  .brief b{color:var(--bone);}
+  .districtRow{
+    display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:420px; margin-bottom:22px;
+  }
+  .districtChip{
+    font-size:9px; padding:4px 7px; border:1px solid var(--line); color:#8f9086; letter-spacing:1px;
+  }
+
+  .weaponPickLabel{
+    color: var(--amber);
+    letter-spacing:2px;
+    font-size: 10px;
+    text-transform:uppercase;
+    margin-bottom: 10px;
+  }
+  .weaponRow{
+    display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+    max-width: 460px; margin-bottom: 24px;
+  }
+  .weaponCard{
+    width: 100px;
+    background: var(--panel);
+    border: 2px solid var(--line);
+    padding: 10px 6px;
+    cursor: pointer;
+    color: #a9a596;
+    transition: border-color .12s ease, transform .12s ease;
+  }
+  .weaponCard:hover{ transform: translateY(-2px); }
+  .weaponCard.selected{
+    border-color: var(--gold);
+    color: var(--bone);
+    box-shadow: 0 0 12px rgba(212,175,55,.35);
+  }
+  .weaponCard .wIcon{
+    height: 30px; display:flex; align-items:center; justify-content:center; margin-bottom:6px;
+  }
+  .weaponCard .wName{
+    font-size: 11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;
+  }
+  .weaponCard .wDesc{
+    font-size: 8.5px; line-height:1.4; color:#8f9086;
+  }
+
+  button.bigBtn{
+    font-family:inherit;
+    background: linear-gradient(180deg, var(--blood-bright), var(--blood));
+    color:#fff5ea;
+    border: 2px solid #7a1418;
+    padding: 14px 34px;
+    font-size: 15px;
+    letter-spacing:3px;
+    cursor:pointer;
+    text-transform:uppercase;
+    box-shadow: 0 4px 0 #5c0f13, 0 0 20px rgba(184,35,43,.4);
+    transition: transform .08s ease;
+  }
+  button.bigBtn:active{transform: translateY(3px); box-shadow: 0 1px 0 #5c0f13;}
+  button.bigBtn:hover{filter:brightness(1.12);}
+
+  .footNote{margin-top:16px; font-size:10px; color:#5c5f54; letter-spacing:1px;}
+
+  /* ---------- Game frame ---------- */
+  /* Desktop / landscape: fill nearly the whole viewport, arena stays square
+     inside a wide frame so it reads as "full screen" without distorting play. */
+  #gameFrame{
+    position:relative;
+    width: 96vw;
+    height: 96vh;
+    border: 3px solid #2a2f24;
+    outline: 1px solid #000;
+    box-shadow: 0 0 0 6px #0a0d0a, 0 0 40px rgba(0,0,0,.7), inset 0 0 40px rgba(0,0,0,.6);
+    background:#0d1109;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  canvas#game{
+    display:block;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1/1;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    margin: 0 auto;
+  }
+
+  /* Portrait mobile: arena is squeezed by width, so let it be as tall as
+     the available width allows and prompt landscape for the full experience */
+  @media (max-width: 759px) and (orientation: portrait){
+    #gameFrame{
+      width: 96vw;
+      height: 96vw;
+    }
+  }
+  @media (orientation: landscape){
+    #gameFrame{
+      width: 96vh;
+      height: 96vh;
+      max-width: 98vw;
+      max-height: 98vh;
+    }
+  }
+
+  .rotateHint{
+    display:none;
+    position:fixed; top:8px; left:50%; transform:translateX(-50%);
+    background: rgba(10,13,10,.85);
+    border:1px solid var(--line);
+    color: var(--amber);
+    font-size:10px; letter-spacing:1px; text-transform:uppercase;
+    padding:6px 10px; z-index:15; pointer-events:none;
+  }
+  @media (max-width: 759px) and (orientation: portrait){
+    .rotateHint{ display:block; }
+  }
+
+  /* HUD */
+  #hud{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:8px 10px;
+    pointer-events:none;
+    font-size: 11px;
+    letter-spacing:1px;
+    z-index:5;
+  }
+  .hudBox{
+    background: rgba(10,13,10,.72);
+    border:1px solid var(--line);
+    padding:6px 9px;
+    min-width: 128px;
+  }
+  .hudLabel{color:var(--amber); font-size:9px; letter-spacing:2px; margin-bottom:3px;}
+  .hpBarOuter{
+    width:120px; height:10px; background:#2a1010; border:1px solid #000;
+  }
+  .hpBarInner{height:100%; background:linear-gradient(90deg,#7ac97a,#3f9c3f); width:100%;}
+  #tributesLeft{color:var(--bone); font-size:13px;}
+  #timerText{color:var(--bone); font-size:13px;}
+  #dayText{color:#8f9086; font-size:9px;}
+
+  #invRow{
+    display:flex; gap:4px; margin-top:3px;
+  }
+  .invSlot{
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+    border:1px solid var(--line);
+    background: rgba(0,0,0,.3);
+  }
+  .invSlot.active{
+    border-color: var(--gold);
+    background: rgba(212,175,55,.28);
+    box-shadow: 0 0 6px rgba(212,175,55,.5);
+  }
+
+  #killFeed{
+    position:absolute; top:52px; left:8px; right:8px;
+    display:flex; flex-direction:column; gap:2px;
+    pointer-events:none; z-index:5;
+    align-items:flex-start;
+  }
+  .feedLine{
+    background: rgba(10,13,10,.72);
+    border-left: 2px solid var(--blood-bright);
+    color:#d8d4c4;
+    font-size:10px;
+    padding:3px 7px;
+    animation: fadeOut 5.5s forwards;
+    max-width: 260px;
+  }
+  @keyframes fadeOut{
+    0%{opacity:1;} 75%{opacity:1;} 100%{opacity:0;}
+  }
+
+  #zoneWarning{
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    color: var(--blood-bright);
+    font-size: 11px; letter-spacing:2px;
+    text-shadow:0 0 8px rgba(232,64,74,.8);
+    animation: pulse 1s infinite;
+    pointer-events:none;
+    z-index:6;
+    display:none;
+    text-align:center;
+    white-space:nowrap;
+  }
+  @keyframes pulse{ 50%{opacity:.25;} }
+
+  /* Bloodbath countdown overlay — the "on your plate" moment before the gong */
+  #countdownOverlay{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:12; pointer-events:none;
+  }
+  #countdownNum{
+    font-size: clamp(64px, 15vw, 130px);
+    font-weight:bold;
+    color: var(--gold);
+    text-shadow: 0 0 34px rgba(212,175,55,.75), 3px 3px 0 #000;
+    letter-spacing:2px;
+    line-height:1;
+    animation: countPulse .5s ease-out;
+  }
+  @keyframes countPulse{
+    0%{ transform:scale(1.5); opacity:0; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+  .countdownLabel{
+    margin-top:8px;
+    color: var(--blood-bright);
+    letter-spacing:3px;
+    font-size: clamp(10px,2.4vw,14px);
+    text-transform:uppercase;
+    text-shadow: 1px 1px 0 #000;
+    background: rgba(10,13,10,.55);
+    padding: 4px 10px;
+  }
+
+  /* Touch controls */
+  #touchControls{
+    position:absolute; bottom:10px; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-end;
+    padding: 0 10px;
+    z-index:8;
+    pointer-events:none;
+  }
+  .dpad{
+    display:grid;
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(3, 46px);
+    gap:3px;
+    pointer-events:auto;
+  }
+  .dpad button{
+    background: rgba(26,31,24,.85);
+    border:1px solid var(--line);
+    color: var(--bone);
+    font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    touch-action: none;
+  }
+  .dpad button:active, .dpad button.active{ background: rgba(184,35,43,.55); }
+  #atkBtn{
+    pointer-events:auto;
+    width:76px; height:76px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, var(--blood-bright), var(--blood) 70%);
+    border:2px solid #7a1418;
+    color:#fff5ea;
+    font-size:11px;
+    letter-spacing:1px;
+    box-shadow: 0 4px 0 #5c0f13;
+    touch-action:none;
+  }
+  #atkBtn:active{ box-shadow:0 1px 0 #5c0f13; transform:translateY(3px);}
+
+  .actionStack{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    pointer-events:auto;
+  }
+  #swapBtn{
+    width:54px; height:54px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #7fa0d0, #3a5f8a 70%);
+    border:2px solid #1a3a5a;
+    color:#fff5ea;
+    font-size:9px;
+    letter-spacing:1px;
+    box-shadow: 0 3px 0 #16304a;
+    touch-action:none;
+  }
+  #swapBtn:active{ box-shadow:0 1px 0 #16304a; transform:translateY(2px); }
+
+  .hint{
+    position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
+    font-size:9px; color:#6b6e60; letter-spacing:1px; z-index:5; pointer-events:none;
+    white-space:nowrap;
+  }
+
+  @media (min-width: 760px){
+    #touchControls{ display:none; }
+  }
+  @media (max-width: 759px){
+    .hint{ display:none; }
+  }
+
+  /* End screen stats */
+  .statLine{font-size:13px; margin:4px 0; color:#c9c5b4;}
+  .statLine b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START SCREEN -->
+  <div id="startScreen" class="screen">
+    <div class="seal">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
+    </div>
+    <h1 class="title">THE <span>ARENA</span></h1>
+    <div class="subtitle">75th Annual Pixel Games</div>
+    <div class="brief">
+      You are <b>Tribute #12</b>. Twenty-three others from all twelve districts have been dropped into this arena with you.
+      Grab a weapon from the Cornucopia, survive the bloodbath, and be the <b>last one standing</b>.
+      Patches of tall grass across the arena will hide you from a distance — use them.
+      The safe zone will shrink — the gas outside it does not forgive.
+      Watch for the <b>Career pack</b> — tributes from Districts 1, 2 and 4 hunt together and gang up
+      on a single target, though they'll turn on each other once the field thins out.
+      By Day 3 the Gamemakers release <b>mutts</b> into the arena — they hunt everyone alike.
+    </div>
+    <div class="districtRow" id="districtRow"></div>
+
+    <div class="weaponPickLabel">Choose Your Starting Weapon</div>
+    <div class="weaponRow" id="weaponRow"></div>
+
+    <button class="bigBtn" id="startBtn">Enter The Arena</button>
+    <div class="footNote">WASD / Arrows to move · Space or tap ATTACK to strike · Q/E or 1-6 to switch weapons · Rotate to landscape on mobile</div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="endScreen" class="screen hidden">
+    <div class="seal" id="endSeal">
+      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
+    </div>
+    <h1 class="title" id="endTitle">—</h1>
+    <div class="subtitle" id="endSubtitle">—</div>
+    <div id="endStats" style="margin-bottom:22px;"></div>
+    <button class="bigBtn" id="restartBtn">Return To The Reaping</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="rotateHint">↻ Rotate your device to landscape for the full arena</div>
+  <div id="gameFrame" class="hidden">
+    <canvas id="game" width="1000" height="1000"></canvas>
+
+    <div id="hud">
+      <div class="hudBox">
+        <div class="hudLabel">TRIBUTE #12 — YOU</div>
+        <div class="hpBarOuter"><div class="hpBarInner" id="hpBar"></div></div>
+        <div class="hudLabel" style="margin-top:4px;">WEAPON: <span id="weaponName" style="color:var(--bone);">—</span></div>
+        <div class="hudLabel" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
+        <div class="hudLabel" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
+        <div class="hudLabel" style="margin-top:4px;">BACKPACK <span style="color:#6b6e60;">(Q/E or 1-6)</span></div>
+        <div id="invRow"></div>
+      </div>
+      <div class="hudBox" style="text-align:right;">
+        <div class="hudLabel">TRIBUTES REMAINING</div>
+        <div id="tributesLeft">24</div>
+        <div class="hudLabel" style="margin-top:4px;">DAY</div>
+        <div id="dayText">1</div>
+      </div>
+    </div>
+
+    <div id="zoneWarning">⚠ THE ARENA IS SHRINKING ⚠</div>
+    <div id="killFeed"></div>
+
+    <div id="countdownOverlay" class="hidden">
+      <div id="countdownNum">10</div>
+      <div class="countdownLabel" id="countdownLabel">STAY ON YOUR PLATE</div>
+    </div>
+
+    <div id="touchControls">
+      <div class="dpad">
+        <div></div><button data-dir="up">▲</button><div></div>
+        <button data-dir="left">◀</button><div></div><button data-dir="right">▶</button>
+        <div></div><button data-dir="down">▼</button><div></div>
+      </div>
+      <div class="actionStack">
+        <button id="swapBtn">SWAP</button>
+        <button id="atkBtn">ATTACK</button>
+      </div>
+    </div>
+    <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const WORLD = 1000;               // internal canvas resolution (bigger arena = more room to roam and hide)
+  const CENTER = WORLD/2;
+  const TOTAL_TRIBUTES = 24;       // 12 districts x 2 tributes, including player
+  const DISTRICTS = [1,2,3,4,5,6,7,8,9,10,11,12];
+  const OBSTACLE_COUNT = 60;        // trees / rocks / bushes scattered through the arena
+  const TREE_R = 22;                // uniform radius for every tree (was randomized before)
+  const ROCK_R = 18;                // uniform radius for every rock
+  const BUSH_R = 13;                // uniform radius for every bush
+  const GRASS_ZONE_COUNT = 15;      // patches of tall grass tributes can hide in
+  const ZONE_SHRINK_INTERVAL = 45000; // ms — longer days before the zone contracts
+  const ZONE_SHRINK_AMOUNT = 90;
+  const ZONE_MIN_RADIUS = 110;
+  const ZONE_TICK_DAMAGE = 3;
+  const SUPPLY_DROP_INTERVAL = 34000;
+  const CAMERA_ZOOM = 1.7;          // classic-Pokemon-style follow camera
+  const VIEW_SIZE = WORLD / CAMERA_ZOOM; // world units visible at once
+  const PLATE_RADIUS = 320;         // radius of the starting circle around the cornucopia
+  const BLOODBATH_COUNTDOWN = 10;   // seconds tributes stand frozen on their plate before the gong
+  const BLOODBATH_GRACE = 9000;     // ms after the gong where most tributes scatter instead of brawling
+
+  // Career alliance — tributes from these districts start banded together,
+  // gang up on a shared target, and splinter once the field gets small.
+  const CAREER_DISTRICTS = [1,2,4];
+  const ALLIANCE_BREAK_ALIVE_CAREERS = 2;   // alliance frays once this few Careers remain
+  const ALLIANCE_BREAK_TOTAL_ALIVE = 6;     // ...or once the whole field shrinks to this size
+  const ALLIANCE_TARGET_RANGE = 520;        // how far the pack will commit to chasing a shared target
+
+  // Mutts — Gamemaker-released creatures that hunt everyone, tributes included
+  const MUTT_SPAWN_DAY = 3;         // mutts start appearing once this day count is reached
+  const MUTT_COUNT_MAX = 5;
+  const MUTT_SPAWN_INTERVAL = 20000; // ms between spawns once active
+  const MUTT_HP = 60;
+  const MUTT_DMG = 14;
+  const MUTT_SPEED = 70;
+  const MUTT_ATTACK_RANGE = 30;
+  const MUTT_ATTACK_COOLDOWN = 0.9;
+  const MUTT_DETECT_RANGE = 260;
+
+  // Survival — hunger and energy drain over time; food found in the arena
+  // refills them, but not every berry bush is safe to eat.
+  const HUNGER_MAX = 100;
+  const ENERGY_MAX = 100;
+  const HUNGER_DEPLETE_TIME = 300000;   // ms for hunger to drain fully from 100 to 0
+  const ENERGY_DEPLETE_TIME = 420000;   // ms for energy to drain fully from 100 to 0
+  const STARVE_TICK_DAMAGE = 2;
+  const STARVE_TICK_INTERVAL = 1;       // seconds between starvation damage ticks
+  const LOW_ENERGY_THRESHOLD = 20;
+  const LOW_ENERGY_SPEED_MULT = 0.65;
+  const BERRY_POISON_CHANCE = 0.35;
+  const POISON_STUN_DURATION = 3.5;     // seconds a poisoned tribute is stunned
+  const POISON_DOT_DAMAGE = 4;
+  const POISON_DOT_TICKS = 3;
+  const POISON_DOT_INTERVAL = 1;        // seconds between poison damage ticks
+
+  const COLORS = {
+    12: "#5b7fb0", 1:"#c9a13b", 2:"#8a3a3a", 3:"#5c8a6a", 4:"#3a7a8a",
+    5:"#8a5c3a", 6:"#7a5c8a", 7:"#4a8a4a", 8:"#a35c8a", 9:"#8a8a3a",
+    10:"#8a6a4a", 11:"#6a9a4a"
+  };
+
+  const WEAPONS = {
+    dagger: { name:'Dagger', type:'melee', dmg:5,  cooldown:0.34, range:36, tint:'#cfd6da', desc:'Fast strikes, low damage, short reach' },
+    sword:  { name:'Sword',  type:'melee', dmg:10, cooldown:0.58, range:46, tint:'#cfd6da', desc:'Balanced speed, damage and reach' },
+    axe:    { name:'Axe',    type:'melee', dmg:17, cooldown:1.05, range:46, tint:'#e0a55c', desc:'Slow but devastating damage' },
+    spear:  { name:'Spear',  type:'melee', dmg:8,  cooldown:0.65, range:64, tint:'#a9caa9', desc:'Long reach keeps foes at bay' },
+    bow:    { name:'Bow', type:'ranged', dmg:12, cooldown:1.25, range:340, projectileSpeed:520, tint:'#c9a13b', desc:'Long range, hits hard, slow to reload' },
+    knives: { name:'Throwing Knives', type:'ranged', dmg:7, cooldown:0.55, range:230, projectileSpeed:460, tint:'#9fb8cf', desc:'Quick ranged jabs, shorter reach' }
+  };
+  const WEAPON_KEYS = Object.keys(WEAPONS);
+
+  let selectedWeapon = 'sword';
+
+  const rand = (a,b)=> a + Math.random()*(b-a);
+  const randi = (a,b)=> Math.floor(rand(a,b+1));
+  const dist = (a,b)=> Math.hypot(a.x-b.x, a.y-b.y);
+  const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
+  function shade(hex, amt){
+    const n = parseInt(hex.slice(1),16);
+    let r = (n>>16)+amt, g = ((n>>8)&0xff)+amt, b=(n&0xff)+amt;
+    r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255);
+    return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+  }
+
+  // ============================================================
+  // AUDIO — synthesized cannon boom + starting gong (no external files)
+  // ============================================================
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){
+      audioCtx.resume().catch(()=>{});
+    }
+    return audioCtx;
+  }
+
+  function playCannonSound(){
+    const ctxA = getAudioCtx();
+    if(!ctxA) return;
+    const now = ctxA.currentTime;
+
+    // low boom
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(130, now);
+    osc.frequency.exponentialRampToValueAtTime(32, now + 0.55);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.9, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    osc.connect(gain);
+    gain.connect(ctxA.destination);
+    osc.start(now);
+    osc.stop(now + 1.3);
+
+    // crack / noise burst
+    const bufferSize = Math.floor(ctxA.sampleRate * 0.3);
+    const buffer = ctxA.createBuffer(1, bufferSize, ctxA.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){
+      data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2);
+    }
+    const noise = ctxA.createBufferSource();
+    noise.buffer = buffer;
+    const noiseFilter = ctxA.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 700;
+    const noiseGain = ctxA.createGain();
+    noiseGain.gain.setValueAtTime(0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(ctxA.destination);
+    noise.start(now);
+  }
+
+  function playGongSound(){
+    const ctxA = getAudioCtx();
+    if(!ctxA) return;
+    const now = ctxA.currentTime;
+    [220, 330, 440].forEach((freq,i)=>{
+      const osc = ctxA.createOscillator();
+      const gain = ctxA.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.5/(i+1), now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+      osc.connect(gain);
+      gain.connect(ctxA.destination);
+      osc.start(now);
+      osc.stop(now + 2.3);
+    });
+  }
+
+  function playTickSound(){
+    const ctxA = getAudioCtx();
+    if(!ctxA) return;
+    const now = ctxA.currentTime;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    osc.connect(gain);
+    gain.connect(ctxA.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  }
+
+  // ============================================================
+  // DOM refs
+  // ============================================================
+  const startScreen = document.getElementById('startScreen');
+  const endScreen = document.getElementById('endScreen');
+  const gameFrame = document.getElementById('gameFrame');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const districtRow = document.getElementById('districtRow');
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // ============================================================
+  // PIXEL-ART ASSETS — small square sprites swapped in for the
+  // procedurally-drawn terrain/obstacles. Falls back to the original
+  // vector art below if an asset hasn't loaded (or is missing) yet.
+  // ============================================================
+  const ASSET_PATHS = {
+    tree: 'assets/tree.png',
+    grass: 'assets/path.png',
+    rock: 'assets/rock.png',
+    sandPath: 'assets/sand-path.png',
+    bush: 'assets/bush.png'
+  };
+  const assetImages = {};
+  Object.keys(ASSET_PATHS).forEach(key=>{
+    const img = new Image();
+    img.src = ASSET_PATHS[key];
+    assetImages[key] = img;
+  });
+  function assetReady(key){
+    const img = assetImages[key];
+    return !!(img && img.complete && img.naturalWidth > 0);
+  }
+  // Tiling patterns for the ground/path textures — built lazily once the
+  // source image has actually finished loading, then cached.
+  let grassPattern = null, sandPattern = null;
+  function getGrassPattern(){
+    if(!grassPattern && assetReady('grass')){
+      grassPattern = ctx.createPattern(assetImages.grass, 'repeat');
+    }
+    return grassPattern;
+  }
+  function getSandPattern(){
+    if(!sandPattern && assetReady('sandPath')){
+      sandPattern = ctx.createPattern(assetImages.sandPath, 'repeat');
+    }
+    return sandPattern;
+  }
+  // Draws an asset centered at the current translated origin, scaled to
+  // targetW while preserving the source image's native aspect ratio (so
+  // non-square sprites never get stretched). bottomAnchor=true sits the
+  // image's bottom edge near the origin (good for trees standing on a base
+  // point) instead of centering it vertically.
+  function drawAssetAspect(imgKey, targetW, bottomAnchor){
+    const img = assetImages[imgKey];
+    const iw = img.naturalWidth || 1, ih = img.naturalHeight || 1;
+    const w = targetW;
+    const h = targetW * (ih / iw);
+    const y = bottomAnchor ? -h*0.92 : -h/2;
+    ctx.drawImage(img, -w/2, y, w, h);
+  }
+  const hpBar = document.getElementById('hpBar');
+  const weaponNameEl = document.getElementById('weaponName');
+  const statusTextEl = document.getElementById('statusText');
+  const alertTextEl = document.getElementById('alertText');
+  const invRowEl = document.getElementById('invRow');
+  const tributesLeftEl = document.getElementById('tributesLeft');
+  const dayText = document.getElementById('dayText');
+  const zoneWarning = document.getElementById('zoneWarning');
+  const killFeed = document.getElementById('killFeed');
+  const endTitle = document.getElementById('endTitle');
+  const endSubtitle = document.getElementById('endSubtitle');
+  const endStats = document.getElementById('endStats');
+  const endSeal = document.getElementById('endSeal');
+  const countdownOverlay = document.getElementById('countdownOverlay');
+  const countdownNum = document.getElementById('countdownNum');
+  const countdownLabel = document.getElementById('countdownLabel');
+
+  DISTRICTS.forEach(d=>{
+    const chip = document.createElement('div');
+    chip.className='districtChip';
+    chip.textContent = 'DISTRICT ' + d;
+    chip.style.borderColor = COLORS[d];
+    districtRow.appendChild(chip);
+  });
+
+  const weaponRow = document.getElementById('weaponRow');
+  const WEAPON_ICONS = { dagger:'🗡', sword:'⚔', axe:'🪓', spear:'🔱', bow:'🏹', knives:'🔪' };
+  WEAPON_KEYS.forEach(key=>{
+    const w = WEAPONS[key];
+    const card = document.createElement('div');
+    card.className = 'weaponCard' + (key===selectedWeapon ? ' selected' : '');
+    card.dataset.weapon = key;
+    card.innerHTML =
+      '<div class="wIcon" style="font-size:20px;">'+WEAPON_ICONS[key]+'</div>'+
+      '<div class="wName">'+w.name+'</div>'+
+      '<div class="wDesc">'+w.desc+'</div>';
+    card.addEventListener('click', ()=>{
+      selectedWeapon = key;
+      weaponRow.querySelectorAll('.weaponCard').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+    weaponRow.appendChild(card);
+  });
+
+  // ============================================================
+  // GAME STATE
+  // ============================================================
+  let tributes = [];
+  let items = [];
+  let obstacles = [];
+  let particles = [];
+  let projectiles = [];
+  let mutts = [];
+  let muttsUnlocked = false;
+  let nextMuttSpawnAt = 0;
+  let allianceBroken = false;
+  let allianceTarget = null;
+  let player = null;
+  let zoneRadius, zoneCenter, nextShrinkAt, nextSupplyAt, dayCount, kills, elapsed;
+  let running = false;
+  let lastTime = 0;
+  let animId = null;
+
+  // 'countdown' = frozen on plates before the gong, 'live' = bloodbath/gameplay
+  let gamePhase = 'countdown';
+  let countdownRemaining = BLOODBATH_COUNTDOWN;
+  let lastCountdownTick = -1;
+  let livePhaseStartTime = 0;
+
+  const keys = {};
+  const touchDir = {up:false,down:false,left:false,right:false};
+  let attackPressed = false;
+
+  // ============================================================
+  // SETUP
+  // ============================================================
+  // Purely cosmetic terrain regions (Pokemon-style biomes). These do NOT
+  // touch obstacle count, collision radius, or spawn logic — only which
+  // sprite an obstacle in that spot draws as, plus background decoration.
+  function biomeAt(x,y){
+    // rocky/cave quadrant: bottom-left
+    if(x < CENTER && y > CENTER) return 'cave';
+    // forest quadrant: top-left
+    if(x < CENTER && y <= CENTER) return 'forest';
+    // lake quadrant: bottom-right
+    if(x >= CENTER && y > CENTER) return 'water';
+    // meadow quadrant: top-right
+    return 'meadow';
+  }
+
+  function makeObstacles(){
+    obstacles = [];
+    let tries=0;
+    while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
+      tries++;
+      const x = rand(50, WORLD-50);
+      const y = rand(50, WORLD-50);
+      if(dist({x,y},{x:CENTER,y:CENTER}) < 160) continue; // keep cornucopia clear
+      const biome = biomeAt(x,y);
+      const roll = Math.random();
+      let type;
+      if(biome === 'cave'){
+        type = roll < 0.4 ? 'cave' : roll < 0.7 ? 'rock' : 'bush';
+      } else if(biome === 'forest'){
+        type = roll < 0.5 ? 'tree' : roll < 0.8 ? 'bush' : 'rock';
+      } else if(biome === 'water'){
+        type = roll < 0.3 ? 'rock' : roll < 0.65 ? 'bush' : 'tree';
+      } else { // meadow
+        type = roll < 0.28 ? 'tree' : roll < 0.7 ? 'bush' : 'rock';
+      }
+      let r;
+      if(type === 'tree') r = TREE_R;
+      else if(type === 'cave') r = rand(20,30);
+      else if(type === 'rock') r = ROCK_R;
+      else r = BUSH_R; // bush — smaller, meant to cluster densely for cover
+
+      let overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + (type==='bush'?6:14));
+      if(overlap) continue;
+      obstacles.push({x,y,r,type});
+    }
+  }
+
+  // A treeline hugging the map edge, like the solid forest border that
+  // encloses every Pokemon route — also doubles as extra cover near the walls.
+  function makeBorderTrees(){
+    const step = 52;
+    const margin = 24;
+    for(let x=margin; x<WORLD-margin; x+=step){
+      obstacles.push({x: x+rand(-8,8), y: margin+rand(-6,6), r: TREE_R, type:'tree'});
+      obstacles.push({x: x+rand(-8,8), y: WORLD-margin+rand(-6,6), r: TREE_R, type:'tree'});
+    }
+    for(let y=margin; y<WORLD-margin; y+=step){
+      obstacles.push({x: margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
+      obstacles.push({x: WORLD-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
+    }
+  }
+
+  // Patches of tall grass — standing inside one makes a tribute harder to
+  // spot from a distance, giving players real places to hide and wait out foes.
+  let grassZones = [];
+  function makeGrassZones(){
+    grassZones = [];
+    let tries = 0;
+    while(grassZones.length < GRASS_ZONE_COUNT && tries < 4000){
+      tries++;
+      const x = rand(70, WORLD-70);
+      const y = rand(70, WORLD-70);
+      if(dist({x,y},{x:CENTER,y:CENTER}) < 190) continue; // keep cornucopia open
+      const r = rand(45,85);
+      const overlap = grassZones.some(z=> dist(z,{x,y}) < z.r + r*0.3);
+      if(overlap) continue;
+      grassZones.push({x,y,r});
+    }
+  }
+
+  function tributeInGrass(t){
+    return grassZones.some(z => dist(t,z) < z.r);
+  }
+
+  // Non-collidable decoration: tall grass tufts, flowers and lily-pads,
+  // generated once per game so the arena reads as a lived-in overworld
+  // without touching any obstacle/collision/AI logic.
+  let decorations = [];
+  function makeDecorations(){
+    decorations = [];
+    for(let i=0;i<260;i++){
+      const x = rand(20, WORLD-20);
+      const y = rand(20, WORLD-20);
+      if(dist({x,y},{x:CENTER,y:CENTER}) < 130) continue;
+      const biome = biomeAt(x,y);
+      if(obstacles.some(o=> dist({x,y},o) < o.r+10)) continue;
+      let kind;
+      if(biome === 'forest') kind = Math.random()<0.6 ? 'tallgrass' : 'flower';
+      else if(biome === 'meadow') kind = Math.random()<0.5 ? 'flower' : 'tallgrass';
+      else if(biome === 'cave') kind = Math.random()<0.7 ? 'pebble' : 'flower';
+      else kind = Math.random()<0.6 ? 'lilypad' : 'tallgrass';
+      decorations.push({x,y,kind,phase:Math.random()*Math.PI*2});
+    }
+
+    // pack each grass zone with dense tufts so it visibly reads as cover
+    grassZones.forEach(z=>{
+      const tuftCount = Math.floor(z.r/5);
+      for(let i=0;i<tuftCount;i++){
+        const ang = Math.random()*Math.PI*2;
+        const rr = Math.random()*z.r*0.92;
+        const x = z.x + Math.cos(ang)*rr;
+        const y = z.y + Math.sin(ang)*rr;
+        if(obstacles.some(o=> dist({x,y},o) < o.r+6)) continue;
+        decorations.push({x,y,kind:'tallgrass',phase:Math.random()*Math.PI*2});
+      }
+    });
+  }
+
+  function spawnItem(x,y,forcedType,forcedWeaponType){
+    const roll = Math.random();
+    let type = forcedType || (roll < 0.45 ? 'weapon' : roll < 0.8 ? 'medkit' : 'shield');
+    const weaponType = type==='weapon' ? (forcedWeaponType || WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)]) : null;
+    items.push({
+      x,y,type,weaponType,
+      id: Math.random().toString(36).slice(2),
+      bob: Math.random()*Math.PI*2
+    });
+  }
+
+  function makeCornucopiaItems(){
+    items = [];
+    const n = 9;
+    for(let i=0;i<n;i++){
+      const ang = (i/n) * Math.PI*2;
+      const r = rand(55,95);
+      spawnItem(CENTER + Math.cos(ang)*r, CENTER + Math.sin(ang)*r);
+    }
+    // a couple scattered far items
+    for(let i=0;i<4;i++){
+      spawnItem(rand(60,WORLD-60), rand(60,WORLD-60));
+    }
+  }
+
+  function newTribute(district, isPlayer){
+    // Position is assigned afterward by positionTributesOnPlates() so every
+    // tribute starts evenly spaced around the cornucopia, like the reaping circle.
+    return {
+      id: Math.random().toString(36).slice(2),
+      district,
+      isPlayer: !!isPlayer,
+      isCareer: !isPlayer && CAREER_DISTRICTS.includes(district),
+      x: CENTER, y: CENTER,
+      vx:0, vy:0,
+      facing: {x:0,y:1},
+      hp: 150, maxHp:150,
+      baseDamage: 4,
+      weapon: null,
+      inventory: [],
+      invIndex: -1,
+      shield: 0,
+      speed: isPlayer ? 58 : rand(40,52),
+      alive: true,
+      attackCooldown: 0,
+      hitFlash: 0,
+      aggression: Math.random(), // 0 = coward, 1 = killer
+      aiState: 'bloodbath',
+      wanderTarget: null,
+      wanderTimer: 0,
+      color: COLORS[district],
+      kills:0,
+      hurtCooldown:0,
+      hunger: HUNGER_MAX,
+      energy: ENERGY_MAX,
+      starveCooldown: 0,
+      stunTimer: 0,
+      poisonTicksRemaining: 0,
+      poisonTickTimer: 0
+    };
+  }
+
+  // Arrange every tribute evenly around the cornucopia on their starting
+  // "plate", all facing inward — the classic Hunger Games reaping circle.
+  function positionTributesOnPlates(){
+    const total = tributes.length;
+    tributes.forEach((t, i)=>{
+      const angle = (i/total) * Math.PI*2 - Math.PI/2;
+      t.x = clamp(CENTER + Math.cos(angle)*PLATE_RADIUS, 40, WORLD-40);
+      t.y = clamp(CENTER + Math.sin(angle)*PLATE_RADIUS, 40, WORLD-40);
+      t.vx = 0; t.vy = 0;
+      const dx = CENTER - t.x, dy = CENTER - t.y;
+      const len = Math.hypot(dx,dy) || 1;
+      t.facing = {x: dx/len, y: dy/len};
+    });
+  }
+
+  function resetGame(){
+    tributes = [];
+    // Build every district's two reaping slots, then pull the player out
+    // as one of District 12's tributes and shuffle the rest for spawn order.
+    let pool = [];
+    DISTRICTS.forEach(d=>{ pool.push(d, d); });
+    pool.splice(pool.indexOf(12), 1);
+    for(let i=pool.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    player = newTribute(12, true);
+    player.weapon = selectedWeapon;
+    player.inventory = [selectedWeapon];
+    player.invIndex = 0;
+    tributes.push(player);
+    for(let i=0;i<pool.length;i++){
+      tributes.push(newTribute(pool[i], false));
+    }
+    positionTributesOnPlates();
+    makeObstacles();
+    makeBorderTrees();
+    makeGrassZones();
+    makeDecorations();
+    makeCornucopiaItems();
+    zoneRadius = WORLD*0.72;
+    zoneCenter = {x:CENTER,y:CENTER};
+    nextShrinkAt = ZONE_SHRINK_INTERVAL;
+    nextSupplyAt = SUPPLY_DROP_INTERVAL;
+    dayCount = 1;
+    kills = 0;
+    elapsed = 0;
+    particles = [];
+    projectiles = [];
+    mutts = [];
+    muttsUnlocked = false;
+    nextMuttSpawnAt = 0;
+    allianceBroken = false;
+    allianceTarget = null;
+    killFeed.innerHTML = '';
+
+    gamePhase = 'countdown';
+    countdownRemaining = BLOODBATH_COUNTDOWN;
+    lastCountdownTick = -1;
+    livePhaseStartTime = 0;
+    countdownOverlay.classList.remove('hidden');
+    countdownNum.textContent = Math.ceil(countdownRemaining);
+    countdownLabel.textContent = 'STAY ON YOUR PLATE';
+
+    updateHud();
+  }
+
+  // ============================================================
+  // INPUT
+  // ============================================================
+  window.addEventListener('keydown', e=>{
+    keys[e.key.toLowerCase()] = true;
+    if(e.key === ' '){ attackPressed = true; e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e=>{
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  document.querySelectorAll('.dpad button').forEach(btn=>{
+    const dir = btn.dataset.dir;
+    const on = (e)=>{ e.preventDefault(); touchDir[dir]=true; btn.classList.add('active'); };
+    const off = (e)=>{ e.preventDefault(); touchDir[dir]=false; btn.classList.remove('active'); };
+    btn.addEventListener('touchstart', on, {passive:false});
+    btn.addEventListener('touchend', off, {passive:false});
+    btn.addEventListener('touchcancel', off, {passive:false});
+    btn.addEventListener('mousedown', on);
+    btn.addEventListener('mouseup', off);
+    btn.addEventListener('mouseleave', off);
+  });
+  const atkBtn = document.getElementById('atkBtn');
+  const atkOn = (e)=>{ e.preventDefault(); attackPressed = true; };
+  atkBtn.addEventListener('touchstart', atkOn, {passive:false});
+  atkBtn.addEventListener('mousedown', atkOn);
+
+  // ============================================================
+  // KILL FEED
+  // ============================================================
+  function feed(msg){
+    const el = document.createElement('div');
+    el.className = 'feedLine';
+    el.textContent = msg;
+    killFeed.appendChild(el);
+    setTimeout(()=> el.remove(), 5600);
+    while(killFeed.children.length > 5){ killFeed.removeChild(killFeed.firstChild); }
+  }
+
+  // ============================================================
+  // COMBAT / DAMAGE
+  // ============================================================
+  function damageTribute(t, amount, source){
+    if(!t.alive) return;
+    let dmg = amount;
+    if(t.shield > 0){
+      const absorbed = Math.min(t.shield, dmg);
+      t.shield -= absorbed;
+      dmg -= absorbed;
+    }
+    t.hp -= dmg;
+    t.hitFlash = 0.25;
+    spawnFloatText(t.x, t.y-20, '-'+Math.round(amount), '#e8404a');
+    if(t.hp <= 0 && t.alive){
+      t.alive = false;
+      t.hp = 0;
+      if(source && source.alive && !source.isMutt){ source.kills++; if(source.isPlayer) kills++; }
+      const name = t.isPlayer ? 'YOU' : 'District '+t.district;
+      let killerName = 'the arena';
+      if(source && source.isMutt) killerName = 'a mutt';
+      else if(source) killerName = source.isPlayer ? 'you' : 'District '+source.district;
+      feed('🔔 A cannon sounds. ' + name + ' has fallen' + (source ? (' — slain by ' + killerName) : '') + '.');
+      spawnFloatText(t.x, t.y-30, 'ELIMINATED', '#ffcf5c');
+      playCannonSound();
+      if(t.weapon){
+        spawnItem(t.x, t.y, 'weapon', t.weapon);
+        t.weapon = null;
+      }
+    }
+  }
+
+  function damageMutt(m, amount, source){
+    if(!m.alive) return;
+    m.hp -= amount;
+    m.hitFlash = 0.25;
+    spawnFloatText(m.x, m.y-16, '-'+Math.round(amount), '#e8404a');
+    if(m.hp <= 0 && m.alive){
+      m.alive = false;
+      spawnFloatText(m.x, m.y-26, 'MUTT DOWN', '#7ac97a');
+      if(source && source.isPlayer) feed('You put down a mutt.');
+    }
+  }
+
+  function spawnFloatText(x,y,text,color){
+    particles.push({x,y,text,color,life:1.0,vy:-30});
+  }
+
+  function tryAttack(attacker){
+    if(attacker.attackCooldown > 0) return;
+    const wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
+    const alliedCareer = attacker.isCareer && !allianceBroken;
+
+    if(wpn && wpn.type === 'ranged'){
+      attacker.attackCooldown = wpn.cooldown;
+      fireProjectile(attacker, wpn);
+      return;
+    }
+
+    const range = wpn ? wpn.range : 40;
+    // find nearest alive target within range — tributes and mutts are both valid;
+    // Careers still banded together never target their own pack
+    let target = null, best = 9999;
+    for(const other of tributes){
+      if(other === attacker || !other.alive) continue;
+      if(alliedCareer && other.isCareer) continue;
+      const d = dist(attacker, other);
+      if(d < range && d < best){ best = d; target = other; }
+    }
+    for(const m of mutts){
+      if(!m.alive) continue;
+      const d = dist(attacker, m);
+      if(d < range && d < best){ best = d; target = m; }
+    }
+    attacker.attackCooldown = wpn ? wpn.cooldown : 0.45;
+    if(target){
+      const dmg = (wpn ? wpn.dmg : attacker.baseDamage) + rand(-2,4);
+      if(target.isMutt){ damageMutt(target, Math.max(3,dmg), attacker); }
+      else { damageTribute(target, Math.max(3,dmg), attacker); }
+      // knockback
+      const dx = target.x-attacker.x, dy = target.y-attacker.y;
+      const len = Math.hypot(dx,dy)||1;
+      target.x += (dx/len)*10;
+      target.y += (dy/len)*10;
+      spawnFloatText(attacker.x, attacker.y-30, 'STRIKE!', '#e8a33d');
+    }
+  }
+
+  function fireProjectile(attacker, wpn){
+    let dx = attacker.facing.x, dy = attacker.facing.y;
+    const len = Math.hypot(dx,dy) || 1;
+    dx/=len; dy/=len;
+    projectiles.push({
+      x: attacker.x + dx*16, y: attacker.y + dy*16,
+      vx: dx*wpn.projectileSpeed, vy: dy*wpn.projectileSpeed,
+      dmg: wpn.dmg, range: wpn.range, traveled: 0,
+      owner: attacker, tint: wpn.tint
+    });
+    spawnFloatText(attacker.x, attacker.y-30, wpn.name.toUpperCase()+'!', '#e8a33d');
+  }
+
+  function updateProjectiles(dt){
+    for(let i=projectiles.length-1;i>=0;i--){
+      const p = projectiles[i];
+      const stepX = p.vx*dt, stepY = p.vy*dt;
+      p.x += stepX; p.y += stepY;
+      p.traveled += Math.hypot(stepX,stepY);
+
+      let removed = false;
+
+      // blocked by obstacle
+      for(const o of obstacles){
+        if(dist(p,o) < o.r){ removed = true; break; }
+      }
+
+      // hits a tribute
+      if(!removed){
+        const ownerAlliedCareer = p.owner.isCareer && !allianceBroken;
+        for(const t of tributes){
+          if(!t.alive || t === p.owner) continue;
+          if(ownerAlliedCareer && t.isCareer) continue;
+          if(dist(p,t) < 15){
+            const dmg = p.dmg + rand(-2,3);
+            damageTribute(t, Math.max(3,dmg), p.owner);
+            removed = true;
+            break;
+          }
+        }
+      }
+
+      // hits a mutt
+      if(!removed){
+        for(const m of mutts){
+          if(!m.alive) continue;
+          if(dist(p,m) < 15){
+            const dmg = p.dmg + rand(-2,3);
+            damageMutt(m, Math.max(3,dmg), p.owner);
+            removed = true;
+            break;
+          }
+        }
+      }
+
+      if(removed || p.traveled > p.range || p.x<0 || p.x>WORLD || p.y<0 || p.y>WORLD){
+        projectiles.splice(i,1);
+      }
+    }
+  }
+
+  // ============================================================
+  // BACKPACK / WEAPON SWITCHING (player only)
+  // ============================================================
+  function equipWeaponIndex(idx){
+    if(!player || !player.inventory.length) return;
+    const n = player.inventory.length;
+    const clampedIdx = ((idx % n) + n) % n;
+    player.invIndex = clampedIdx;
+    player.weapon = player.inventory[clampedIdx];
+    spawnFloatText(player.x, player.y-20, WEAPONS[player.weapon].name.toUpperCase(), '#7fb0e0');
+    feed('Switched to ' + WEAPONS[player.weapon].name + '.');
+  }
+
+  function cycleWeapon(dir){
+    if(!player || !player.inventory.length) return;
+    const cur = player.invIndex >= 0 ? player.invIndex : 0;
+    equipWeaponIndex(cur + dir);
+  }
+
+  // ============================================================
+  // ITEM PICKUP
+  // ============================================================
+  function checkItemPickup(t){
+    for(let i=items.length-1;i>=0;i--){
+      const it = items[i];
+      if(dist(t,it) < 22){
+        if(it.type === 'weapon'){
+          if(t.isPlayer){
+            if(t.inventory.includes(it.weaponType)){
+              spawnFloatText(t.x,t.y-20,'HAVE IT','#8f9086');
+              feed('You already have a ' + WEAPONS[it.weaponType].name + ' in your pack.');
+            } else {
+              t.inventory.push(it.weaponType);
+              if(!t.weapon){
+                equipWeaponIndex(t.inventory.length-1);
+                spawnFloatText(t.x,t.y-20,'+'+WEAPONS[it.weaponType].name.toUpperCase(),'#ffcf5c');
+              } else {
+                spawnFloatText(t.x,t.y-20,'PACKED','#7fb0e0');
+                feed('You packed a ' + WEAPONS[it.weaponType].name + '. Press Q/E or SWAP to switch.');
+              }
+            }
+          } else {
+            t.weapon = it.weaponType;
+            spawnFloatText(t.x,t.y-20,'+'+WEAPONS[it.weaponType].name.toUpperCase(),'#ffcf5c');
+          }
+        } else if(it.type === 'medkit'){
+          t.hp = Math.min(t.maxHp, t.hp + 35);
+          spawnFloatText(t.x,t.y-20,'+35 HP','#7ac97a');
+          if(t.isPlayer) feed('You picked up a medkit.');
+        } else if(it.type === 'shield'){
+          t.shield = Math.min(40, t.shield + 25);
+          spawnFloatText(t.x,t.y-20,'+SHIELD','#7fb0e0');
+          if(t.isPlayer) feed('You picked up a shield.');
+        }
+        items.splice(i,1);
+      }
+    }
+  }
+
+  // ============================================================
+  // AI
+  // ============================================================
+  function pickWanderTarget(t){
+    for(let i=0;i<8;i++){
+      const x = rand(45,WORLD-45), y = rand(45,WORLD-45);
+      if(!obstacles.some(o=> dist({x,y},o) < o.r+34)) return {x,y};
+    }
+    return { x: rand(45,WORLD-45), y: rand(45,WORLD-45) };
+  }
+
+  // The Career pack shares one target at a time so they visibly gang up,
+  // and dissolves into every-tribute-for-themselves once the field is small.
+  function updateAlliance(){
+    if(allianceBroken) return;
+    const aliveCareers = tributes.filter(t=>t.alive && t.isCareer);
+    const totalAlive = tributes.filter(t=>t.alive).length;
+    if(aliveCareers.length <= ALLIANCE_BREAK_ALIVE_CAREERS || totalAlive <= ALLIANCE_BREAK_TOTAL_ALIVE){
+      allianceBroken = true;
+      allianceTarget = null;
+      feed('⚔ The Career pack has turned on each other — the alliance is over.');
+      return;
+    }
+    if(allianceTarget && allianceTarget.alive && !allianceTarget.isCareer) return;
+    let cx=0, cy=0;
+    aliveCareers.forEach(c=>{ cx+=c.x; cy+=c.y; });
+    cx/=aliveCareers.length; cy/=aliveCareers.length;
+    let best=null, bd=9999;
+    tributes.forEach(o=>{
+      if(!o.alive || o.isCareer) return;
+      const d = dist({x:cx,y:cy}, o);
+      if(d < bd){ bd = d; best = o; }
+    });
+    if(best && bd < ALLIANCE_TARGET_RANGE){
+      allianceTarget = best;
+      feed('The Career pack has marked ' + (best.isPlayer ? 'YOU' : 'District '+best.district) + ' as prey.');
+    }
+  }
+
+  function updateAI(t, dt){
+    if(!t.alive) return;
+    t.hurtCooldown = Math.max(0, t.hurtCooldown-dt);
+    const alliedCareer = t.isCareer && !allianceBroken;
+
+    // find nearest alive other tribute — Careers still in the pack don't
+    // treat each other as threats or targets while the alliance holds
+    let nearest = null, nd = 9999;
+    for(const o of tributes){
+      if(o===t || !o.alive) continue;
+      if(alliedCareer && o.isCareer) continue;
+      const d = dist(t,o);
+      if(d < nd){ nd = d; nearest = o; }
+    }
+
+    // the pack prioritizes its shared target over anything else it spots
+    if(alliedCareer && allianceTarget && allianceTarget.alive){
+      const dTarget = dist(t, allianceTarget);
+      if(!nearest || dTarget < nd*1.6){ nearest = allianceTarget; nd = dTarget; }
+    }
+
+    const wpn = t.weapon ? WEAPONS[t.weapon] : null;
+    const isRanged = wpn && wpn.type === 'ranged';
+    let detectRange = isRanged ? Math.max(200, wpn.range*0.75) : 140;
+
+    // Tall grass hides whoever is standing in it — much shorter detection
+    // range unless the searcher gets close, so it's a real place to lie low.
+    if(nearest && tributeInGrass(nearest) && dist(t,nearest) > 55){
+      detectRange *= 0.4;
+    }
+
+    // Grace period right after the gong: most tributes are grabbing supplies
+    // and fleeing the cornucopia rather than immediately fighting, just like
+    // the scattering that follows the bloodbath in the films.
+    const inGrace = (elapsed - livePhaseStartTime) < BLOODBATH_GRACE;
+
+    const hpRatio = t.hp / t.maxHp;
+    let mode = 'wander';
+    if(nearest && nd < detectRange){
+      if(hpRatio < 0.35 && t.aggression < 0.8){
+        mode = 'flee';
+      } else if(inGrace){
+        mode = (t.aggression > 0.78) ? 'chase' : 'flee';
+      } else if(t.aggression > 0.5 || (t.weapon && t.aggression > 0.3)){
+        mode = 'chase';
+      } else {
+        mode = 'flee';
+      }
+    }
+
+    // also seek nearby items if not in combat
+    let seekItem = null;
+    if(mode === 'wander'){
+      let bd = 9999;
+      for(const it of items){
+        const d = dist(t,it);
+        if(d < 220 && d < bd){ bd = d; seekItem = it; }
+      }
+    }
+
+    let tx=t.x, ty=t.y;
+    if(mode === 'chase' && nearest){
+      if(isRanged){
+        // kite: stay near an optimal standoff distance instead of rushing to melee
+        const standoff = wpn.range * 0.55;
+        const dxN = t.x-nearest.x, dyN = t.y-nearest.y;
+        const lenN = Math.hypot(dxN,dyN) || 1;
+        if(nd > standoff + 30){
+          tx = nearest.x; ty = nearest.y;
+        } else if(nd < standoff - 30){
+          tx = clamp(t.x + (dxN/lenN)*60, 45, WORLD-45);
+          ty = clamp(t.y + (dyN/lenN)*60, 45, WORLD-45);
+        } else {
+          tx = t.x; ty = t.y; // hold position and fire
+        }
+      } else {
+        tx = nearest.x; ty = nearest.y;
+      }
+    } else if(mode === 'flee' && nearest){
+      const dxF = t.x-nearest.x, dyF = t.y-nearest.y;
+      const lenF = Math.hypot(dxF,dyF) || 1;
+      tx = clamp(t.x + (dxF/lenF)*130, 45, WORLD-45);
+      ty = clamp(t.y + (dyF/lenF)*130, 45, WORLD-45);
+    } else if(seekItem){
+      tx = seekItem.x; ty = seekItem.y;
+    } else {
+      // wander
+      t.wanderTimer -= dt;
+      if(!t.wanderTarget || t.wanderTimer <= 0){
+        t.wanderTarget = pickWanderTarget(t);
+        t.wanderTimer = rand(2,4.5);
+      }
+      tx = t.wanderTarget.x; ty = t.wanderTarget.y;
+    }
+
+    const dx = tx - t.x, dy = ty - t.y;
+    const len = Math.hypot(dx,dy) || 1;
+    if(len > 4){
+      t.vx = (dx/len) * t.speed;
+      t.vy = (dy/len) * t.speed;
+      t.facing = {x:dx/len,y:dy/len};
+    } else {
+      t.vx = 0; t.vy = 0;
+      if(nearest){
+        const dxx = nearest.x-t.x, dyy = nearest.y-t.y;
+        const l2 = Math.hypot(dxx,dyy) || 1;
+        t.facing = {x:dxx/l2, y:dyy/l2};
+      }
+    }
+
+    const atkRange = wpn ? wpn.range : 40;
+    if(mode === 'chase' && nearest && nd < atkRange){
+      tryAttack(t);
+    }
+  }
+
+  // ============================================================
+  // MUTTS — Gamemaker creatures that hunt every tribute, player included
+  // ============================================================
+  function spawnMutt(){
+    const ang = Math.random()*Math.PI*2;
+    const r = Math.min(zoneRadius*0.9, WORLD*0.45);
+    const x = clamp(zoneCenter.x + Math.cos(ang)*r, 40, WORLD-40);
+    const y = clamp(zoneCenter.y + Math.sin(ang)*r, 40, WORLD-40);
+    mutts.push({
+      id: Math.random().toString(36).slice(2),
+      isMutt: true,
+      x, y, vx:0, vy:0,
+      facing: {x:0,y:1},
+      hp: MUTT_HP, maxHp: MUTT_HP,
+      alive: true,
+      attackCooldown: 0,
+      hitFlash: 0,
+      wanderTarget: null,
+      wanderTimer: 0
+    });
+    feed('👁 A shriek echoes — a mutt has entered the arena.');
+  }
+
+  function updateMuttAI(m, dt){
+    m.attackCooldown = Math.max(0, m.attackCooldown-dt);
+    m.hitFlash = Math.max(0, m.hitFlash-dt);
+
+    let nearest = null, nd = 9999;
+    for(const t of tributes){
+      if(!t.alive) continue;
+      const d = dist(m,t);
+      if(d < nd){ nd = d; nearest = t; }
+    }
+
+    let tx = m.x, ty = m.y;
+    if(nearest && nd < MUTT_DETECT_RANGE){
+      tx = nearest.x; ty = nearest.y;
+    } else {
+      m.wanderTimer -= dt;
+      if(!m.wanderTarget || m.wanderTimer <= 0){
+        m.wanderTarget = pickWanderTarget(m);
+        m.wanderTimer = rand(2,4);
+      }
+      tx = m.wanderTarget.x; ty = m.wanderTarget.y;
+    }
+
+    const dx = tx-m.x, dy = ty-m.y;
+    const len = Math.hypot(dx,dy) || 1;
+    if(len > 4){
+      m.vx = (dx/len)*MUTT_SPEED;
+      m.vy = (dy/len)*MUTT_SPEED;
+      m.facing = {x:dx/len,y:dy/len};
+    } else {
+      m.vx = 0; m.vy = 0;
+    }
+
+    if(nearest && nd < MUTT_ATTACK_RANGE && m.attackCooldown <= 0){
+      m.attackCooldown = MUTT_ATTACK_COOLDOWN;
+      const dmg = MUTT_DMG + rand(-3,4);
+      damageTribute(nearest, Math.max(6,dmg), m);
+      spawnFloatText(m.x, m.y-20, 'BITE!', '#e8404a');
+    }
+  }
+
+  function updateMutts(dt){
+    if(!muttsUnlocked){
+      if(dayCount >= MUTT_SPAWN_DAY){
+        muttsUnlocked = true;
+        nextMuttSpawnAt = 4000;
+        feed('🐺 Mutts have been released into the arena. Stay alert.');
+      } else {
+        return;
+      }
+    }
+    nextMuttSpawnAt -= dt*1000;
+    const aliveMuttCount = mutts.filter(m=>m.alive).length;
+    if(nextMuttSpawnAt <= 0 && aliveMuttCount < MUTT_COUNT_MAX){
+      nextMuttSpawnAt = MUTT_SPAWN_INTERVAL;
+      spawnMutt();
+    }
+    for(const m of mutts){
+      if(!m.alive) continue;
+      updateMuttAI(m, dt);
+      m.x += m.vx*dt;
+      m.y += m.vy*dt;
+      m.x = clamp(m.x, 16, WORLD-16);
+      m.y = clamp(m.y, 16, WORLD-16);
+      resolveObstacles(m);
+    }
+    mutts = mutts.filter(m=>m.alive);
+  }
+
+  // ============================================================
+  // MOVEMENT / COLLISION
+  // ============================================================
+  function resolveObstacles(t){
+    let pushX = 0, pushY = 0;
+    for(const o of obstacles){
+      const d = dist(t,o);
+      const minD = o.r + 10;
+      if(d < minD && d > 0.0001){
+        const overlap = (minD-d);
+        const nx = (t.x-o.x)/d, ny = (t.y-o.y)/d;
+        pushX += nx*overlap;
+        pushY += ny*overlap;
+      }
+    }
+    const mag = Math.hypot(pushX,pushY);
+    const maxPush = 7;
+    if(mag > maxPush){
+      pushX = pushX/mag*maxPush;
+      pushY = pushY/mag*maxPush;
+    }
+    t.x += pushX;
+    t.y += pushY;
+  }
+
+  function updatePlayerMovement(dt){
+    let dx=0, dy=0;
+    if(keys['w']||keys['arrowup']||touchDir.up) dy -= 1;
+    if(keys['s']||keys['arrowdown']||touchDir.down) dy += 1;
+    if(keys['a']||keys['arrowleft']||touchDir.left) dx -= 1;
+    if(keys['d']||keys['arrowright']||touchDir.right) dx += 1;
+    const len = Math.hypot(dx,dy);
+    if(len>0){
+      dx/=len; dy/=len;
+      player.facing = {x:dx,y:dy};
+    }
+    player.vx = dx*player.speed;
+    player.vy = dy*player.speed;
+
+    if(attackPressed){
+      tryAttack(player);
+      attackPressed = false;
+    }
+  }
+
+  // ============================================================
+  // ZONE / GAS
+  // ============================================================
+  function updateZone(dt){
+    elapsed += dt*1000;
+    nextShrinkAt -= dt*1000;
+    if(nextShrinkAt <= 0 && zoneRadius > ZONE_MIN_RADIUS){
+      zoneRadius = Math.max(ZONE_MIN_RADIUS, zoneRadius - ZONE_SHRINK_AMOUNT);
+      nextShrinkAt = ZONE_SHRINK_INTERVAL;
+      dayCount++;
+      feed('☣ The safe zone has contracted. Day ' + dayCount + ' begins.');
+    }
+    zoneWarning.style.display = (nextShrinkAt < 4000 && zoneRadius > ZONE_MIN_RADIUS) ? 'block' : 'none';
+
+    nextSupplyAt -= dt*1000;
+    if(nextSupplyAt <= 0){
+      nextSupplyAt = SUPPLY_DROP_INTERVAL;
+      const ang = Math.random()*Math.PI*2;
+      const r = Math.random()*zoneRadius*0.7;
+      const x = clamp(zoneCenter.x + Math.cos(ang)*r, 40, WORLD-40);
+      const y = clamp(zoneCenter.y + Math.sin(ang)*r, 40, WORLD-40);
+      spawnItem(x,y, Math.random()<0.5?'weapon':'medkit');
+      feed('🎁 A supply parachute has dropped into the arena.');
+    }
+
+    for(const t of tributes){
+      if(!t.alive) continue;
+      const d = dist(t, zoneCenter);
+      if(d > zoneRadius){
+        t.hurtCooldown -= dt;
+        if(t.hurtCooldown <= 0){
+          t.hurtCooldown = 0.5;
+          damageTribute(t, ZONE_TICK_DAMAGE, null);
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // MAIN UPDATE
+  // ============================================================
+  function update(dt){
+    if(!running) return;
+
+    if(gamePhase === 'countdown'){
+      attackPressed = false;
+      countdownRemaining -= dt;
+      const shownNum = Math.max(0, Math.ceil(countdownRemaining));
+      if(shownNum !== lastCountdownTick){
+        lastCountdownTick = shownNum;
+        countdownNum.textContent = shownNum;
+        if(shownNum > 0) playTickSound();
+      }
+      if(countdownRemaining <= 0){
+        gamePhase = 'live';
+        livePhaseStartTime = elapsed;
+        countdownOverlay.classList.add('hidden');
+        playGongSound();
+        feed('🔔 The gong sounds! Let the Games begin.');
+      }
+      // keep camera/render fresh but skip movement, AI, zone, combat
+      return;
+    }
+
+    updatePlayerMovement(dt);
+    updateAlliance();
+    for(const t of tributes){
+      if(t.isPlayer) continue;
+      updateAI(t, dt);
+    }
+    updateMutts(dt);
+    for(const t of tributes){
+      if(!t.alive) continue;
+      t.x += t.vx*dt;
+      t.y += t.vy*dt;
+      t.x = clamp(t.x, 16, WORLD-16);
+      t.y = clamp(t.y, 16, WORLD-16);
+      resolveObstacles(t);
+      t.attackCooldown = Math.max(0, t.attackCooldown - dt);
+      t.hitFlash = Math.max(0, t.hitFlash - dt);
+      checkItemPickup(t);
+    }
+    const nowHidden = tributeInGrass(player);
+    if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
+    else if(!nowHidden && player._inGrass){ feed('You step back out into the open.'); }
+    player._inGrass = nowHidden;
+
+    updateZone(dt);
+    updateProjectiles(dt);
+
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.life -= dt*0.8;
+      p.y += p.vy*dt;
+      if(p.life<=0) particles.splice(i,1);
+    }
+
+    updateHud();
+    checkEndConditions();
+  }
+
+  function checkEndConditions(){
+    const aliveTributes = tributes.filter(t=>t.alive);
+    if(!player.alive){
+      endGame(false, aliveTributes.length);
+      return;
+    }
+    if(aliveTributes.length <= 1 && player.alive){
+      endGame(true, 1);
+    }
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function drawPixelChar(t){
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.scale(1.3, 1.3); // chunkier overworld-trainer sized sprite (visual only)
+    const flash = t.hitFlash > 0;
+    const bodyColor = flash ? '#ffffff' : t.color;
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(0, 12, 10, 4, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // legs (denim-blue trainer trousers)
+    ctx.fillStyle = '#33455c';
+    ctx.fillRect(-6,4,4,8);
+    ctx.fillRect(2,4,4,8);
+    ctx.fillStyle = '#25303f';
+    ctx.fillRect(-6,10,4,2);
+    ctx.fillRect(2,10,4,2);
+
+    // torso — district-colored jacket with a light undershirt seam
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(-8,-8,16,14);
+    ctx.fillStyle = flash ? '#ffffff' : shade(bodyColor,-30);
+    ctx.fillRect(-8,-8,3,14);
+    ctx.fillRect(5,-8,3,14);
+    ctx.fillStyle = '#e8e3d3';
+    ctx.fillRect(-2,-6,4,10);
+
+    // head
+    ctx.fillStyle = '#d9b48f';
+    ctx.fillRect(-6,-18,12,10);
+
+    // hair, peeking from under a trainer cap
+    ctx.fillStyle = '#3a2a1e';
+    ctx.fillRect(-6,-18,12,3);
+    ctx.fillRect(-6,-16,2,4);
+    ctx.fillRect(4,-16,2,4);
+    // cap brim tinted with district color
+    ctx.fillStyle = shade(bodyColor,10);
+    ctx.fillRect(-7,-20,14,4);
+    ctx.fillRect(3,-18,7,3);
+
+    // eyes (facing indicator)
+    ctx.fillStyle = '#000';
+    const ex = t.facing.x*2, ey = t.facing.y*2;
+    ctx.fillRect(-3+ex,-14+ey,2,2);
+    ctx.fillRect(2+ex,-14+ey,2,2);
+
+    // weapon indicator
+    if(t.weapon){
+      const wpn = WEAPONS[t.weapon];
+      ctx.fillStyle = wpn.tint;
+      if(wpn.type === 'melee'){
+        const len = t.weapon==='spear' ? 20 : t.weapon==='axe' ? 12 : t.weapon==='dagger' ? 8 : 14;
+        ctx.fillRect(8, -6, t.weapon==='axe'?5:3, len);
+        if(t.weapon==='axe'){
+          ctx.fillStyle = '#8a6a3a';
+          ctx.fillRect(6,-6,9,4);
+        }
+      } else if(t.weapon==='bow'){
+        ctx.strokeStyle = wpn.tint;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(10,-1, 7, -1.15, 1.15);
+        ctx.stroke();
+      } else {
+        // throwing knives — small diamonds
+        ctx.fillRect(9,-8,3,3);
+        ctx.fillRect(9,-2,3,3);
+        ctx.fillRect(9,4,3,3);
+      }
+    }
+    // shield indicator
+    if(t.shield > 0){
+      ctx.strokeStyle = '#7fb0e0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0,-2, 16, 0, Math.PI*2);
+      ctx.stroke();
+    }
+    // Career pack marker — small gold dot, hollow once the alliance breaks
+    if(t.isCareer){
+      ctx.fillStyle = allianceBroken ? 'rgba(212,175,55,0)' : '#d4af37';
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0,-24,2.2,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    // player crown marker
+    if(t.isPlayer){
+      ctx.fillStyle = '#ffcf5c';
+      ctx.fillRect(-5,-23,10,3);
+      ctx.fillRect(-5,-23,2,5);
+      ctx.fillRect(-1,-23,2,5);
+      ctx.fillRect(3,-23,2,5);
+    }
+    ctx.restore();
+
+    // name + hp bar
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.font = '8px monospace';
+    ctx.fillStyle = 'rgba(0,0,0,.6)';
+    ctx.fillRect(-16,-33,32,4);
+    ctx.fillStyle = t.hp/t.maxHp > 0.5 ? '#5fbf5f' : t.hp/t.maxHp>0.25 ? '#e8a33d' : '#e8404a';
+    ctx.fillRect(-15,-32,30*(t.hp/t.maxHp),2);
+    if(!t.isPlayer){
+      ctx.fillStyle = '#cfcabb';
+      ctx.textAlign = 'center';
+      ctx.fillText('D'+t.district, 0, -36);
+    }
+    ctx.restore();
+  }
+
+  function drawMutt(m){
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    const flash = m.hitFlash > 0;
+
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(0, 10, 9, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.scale(1.2,1.2);
+    // hunched, low-slung body
+    ctx.fillStyle = flash ? '#ffffff' : '#241a1a';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // legs
+    ctx.fillStyle = flash ? '#ffffff' : '#181010';
+    ctx.fillRect(-7, 4, 3, 6);
+    ctx.fillRect(4, 4, 3, 6);
+    // head, pointed toward its facing direction
+    const hx = m.facing.x*7, hy = m.facing.y*4 - 3;
+    ctx.fillStyle = flash ? '#ffffff' : '#2e2222';
+    ctx.beginPath();
+    ctx.ellipse(hx, hy, 6, 4.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // glowing eyes
+    ctx.fillStyle = '#e8404a';
+    ctx.beginPath(); ctx.arc(hx-2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx+2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+
+    // health bar
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.fillStyle = 'rgba(0,0,0,.6)';
+    ctx.fillRect(-14,-24,28,3);
+    ctx.fillStyle = '#e8404a';
+    ctx.fillRect(-13,-23.5,26*(m.hp/m.maxHp),2);
+    ctx.restore();
+  }
+
+  function drawPlate(t){
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.strokeStyle = t.isPlayer ? 'rgba(212,175,55,0.9)' : 'rgba(232,227,211,0.45)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 13, 17, 6, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.fillStyle = t.isPlayer ? 'rgba(212,175,55,0.12)' : 'rgba(232,227,211,0.08)';
+    ctx.beginPath();
+    ctx.ellipse(0, 13, 17, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawItem(it){
+    const bob = Math.sin(performance.now()/300 + it.bob)*3;
+    ctx.save();
+    ctx.translate(it.x, it.y + bob);
+    if(it.type === 'weapon'){
+      const wpn = WEAPONS[it.weaponType];
+      const tint = wpn ? wpn.tint : '#cfd6da';
+      if(wpn && wpn.type === 'ranged'){
+        if(it.weaponType === 'bow'){
+          ctx.strokeStyle = tint;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0,0,8,-1.2,1.2);
+          ctx.stroke();
+          ctx.strokeStyle = '#e8e3d3';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(0,-8); ctx.lineTo(0,8);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = tint;
+          ctx.fillRect(-1,-8,2,7);
+          ctx.fillRect(-1,1,2,7);
+        }
+      } else {
+        ctx.fillStyle = tint;
+        ctx.fillRect(-1,-8,2,16);
+        ctx.fillStyle = '#8a6a3a';
+        ctx.fillRect(-4,4,8,3);
+      }
+    } else if(it.type === 'medkit'){
+      ctx.fillStyle = '#e8e3d3';
+      ctx.fillRect(-7,-6,14,12);
+      ctx.fillStyle = '#c81d25';
+      ctx.fillRect(-1,-4,2,8);
+      ctx.fillRect(-4,-1,8,2);
+    } else {
+      ctx.strokeStyle = '#7fb0e0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0,0,7,0,Math.PI*2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawProjectile(p){
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    const ang = Math.atan2(p.vy,p.vx);
+    ctx.rotate(ang);
+    ctx.fillStyle = p.tint || '#e8e3d3';
+    ctx.fillRect(-7,-1,14,2);
+    ctx.beginPath();
+    ctx.moveTo(7,-3);
+    ctx.lineTo(11,0);
+    ctx.lineTo(7,3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawObstacle(o){
+    ctx.save();
+    ctx.translate(o.x,o.y);
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.beginPath(); ctx.ellipse(0,o.r*0.6,o.r*0.9,o.r*0.3,0,0,Math.PI*2); ctx.fill();
+
+    if(o.type === 'rock'){
+      if(assetReady('rock')){
+        drawAssetAspect('rock', o.r*2, false);
+      } else {
+        // GBA-route ore boulder: grey block with darker outline + lighter facets
+        ctx.fillStyle = '#7a7268';
+        ctx.beginPath();
+        ctx.moveTo(-o.r,o.r*0.35);
+        ctx.lineTo(-o.r*0.65,-o.r*0.75);
+        ctx.lineTo(o.r*0.5,-o.r*0.85);
+        ctx.lineTo(o.r,o.r*0.25);
+        ctx.lineTo(o.r*0.2,o.r*0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#3a3630';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#a39a8c';
+        ctx.fillRect(-o.r*0.35,-o.r*0.5,o.r*0.55,o.r*0.3);
+        ctx.fillStyle = '#5c564c';
+        ctx.fillRect(-o.r*0.15,o.r*0.05,o.r*0.4,o.r*0.15);
+      }
+    } else if(o.type === 'cave'){
+      // Cave-mouth boulder cluster: dark rock ring around a black entrance
+      ctx.fillStyle = '#4a4640';
+      ctx.beginPath();
+      ctx.arc(0,0,o.r,0,Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = '#252220';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#645e54';
+      ctx.beginPath();
+      ctx.arc(-o.r*0.3,-o.r*0.35,o.r*0.3,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#0c0a08';
+      ctx.beginPath();
+      ctx.ellipse(0,o.r*0.05,o.r*0.55,o.r*0.62,0,0,Math.PI*2);
+      ctx.fill();
+    } else if(o.type === 'bush'){
+      if(assetReady('bush')){
+        drawAssetAspect('bush', o.r*2.1, false);
+      } else {
+        // Pokemon-style rounded bush: layered leafy pompom, no trunk
+        ctx.fillStyle = '#2c5c30';
+        ctx.beginPath(); ctx.arc(0,-o.r*0.15,o.r*0.85,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#18321a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#3a7a3f';
+        ctx.beginPath(); ctx.arc(-o.r*0.32,-o.r*0.4,o.r*0.55,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#4f9a52';
+        ctx.beginPath(); ctx.arc(o.r*0.2,-o.r*0.55,o.r*0.32,0,Math.PI*2); ctx.fill();
+      }
+    } else {
+      // tree
+      if(assetReady('tree')){
+        drawAssetAspect('tree', o.r*2.4, true);
+      } else {
+        // tree: layered round canopy like FR/LG route trees
+        ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(-3,-o.r*0.3,6,o.r*0.9);
+        ctx.fillStyle = '#255c2e';
+        ctx.beginPath();
+        ctx.arc(0,-o.r*0.5,o.r*0.9,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#316f38';
+        ctx.beginPath();
+        ctx.arc(-o.r*0.32,-o.r*0.72,o.r*0.58,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#4a9450';
+        ctx.beginPath();
+        ctx.arc(-o.r*0.15,-o.r*0.9,o.r*0.3,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawDecoration(d){
+    ctx.save();
+    ctx.translate(d.x,d.y);
+    if(d.kind === 'tallgrass'){
+      const sway = Math.sin(performance.now()/500 + d.phase)*2;
+      ctx.fillStyle = '#2f6a3a';
+      for(let i=-1;i<=1;i++){
+        ctx.beginPath();
+        ctx.moveTo(i*4,6);
+        ctx.quadraticCurveTo(i*4+sway, -4, i*4+sway*1.4, -10);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#2f6a3a';
+        ctx.stroke();
+      }
+    } else if(d.kind === 'flower'){
+      const colors = ['#e8637a','#e8c04a','#e8e3d3'];
+      ctx.fillStyle = '#2f6a3a';
+      ctx.fillRect(-1,-2,2,6);
+      ctx.fillStyle = colors[Math.floor(d.phase*10)%colors.length];
+      ctx.beginPath(); ctx.arc(0,-4,2.4,0,Math.PI*2); ctx.fill();
+    } else if(d.kind === 'pebble'){
+      ctx.fillStyle = '#6b6459';
+      ctx.beginPath(); ctx.ellipse(0,0,4,2.6,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#8a8276';
+      ctx.beginPath(); ctx.ellipse(-1,-1,1.6,1,0,0,Math.PI*2); ctx.fill();
+    } else if(d.kind === 'lilypad'){
+      ctx.fillStyle = 'rgba(58,122,138,0.55)';
+      ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#3f8a52';
+      ctx.beginPath(); ctx.arc(0,0,5,0.4,Math.PI*1.8); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  const BIOME_BASE = {
+    forest: '#2e5c33',
+    meadow: '#3f7a42',
+    cave:   '#4a5245',
+    water:  '#356a4a'
+  };
+  const TILE = 40;
+
+  function render(){
+    ctx.clearRect(0,0,WORLD,WORLD);
+
+    // classic-Pokemon-style follow camera: zoom in and pan so the world
+    // feels larger and only the area around the player is ever on screen.
+    const camX = clamp(player.x, VIEW_SIZE/2, WORLD - VIEW_SIZE/2);
+    const camY = clamp(player.y, VIEW_SIZE/2, WORLD - VIEW_SIZE/2);
+    ctx.save();
+    ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+    ctx.translate(VIEW_SIZE/2 - camX, VIEW_SIZE/2 - camY);
+
+    // --- base ground tiles: pixel-art grass texture, tiled across the arena ---
+    const gPattern = getGrassPattern();
+    if(gPattern){
+      ctx.save();
+      ctx.fillStyle = gPattern;
+      ctx.fillRect(0,0,WORLD,WORLD);
+      ctx.restore();
+    } else {
+      for(let ty=0; ty<WORLD; ty+=TILE){
+        for(let tx=0; tx<WORLD; tx+=TILE){
+          const biome = biomeAt(tx+TILE/2, ty+TILE/2);
+          const checker = ((tx/TILE + ty/TILE) % 2 === 0);
+          ctx.fillStyle = checker ? BIOME_BASE[biome] : shade(BIOME_BASE[biome], -10);
+          ctx.fillRect(tx,ty,TILE,TILE);
+        }
+      }
+    }
+
+    // darker ground tint under each tall-grass patch, like route hiding grass
+    ctx.save();
+    grassZones.forEach(z=>{
+      ctx.fillStyle = 'rgba(18,54,22,0.4)';
+      ctx.beginPath();
+      ctx.arc(z.x, z.y, z.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // lake in the water quadrant
+    ctx.save();
+    ctx.fillStyle = '#2c5f78';
+    ctx.beginPath();
+    ctx.ellipse(WORLD*0.74, WORLD*0.78, 175, 140, 0.15, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#1f4658';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    for(let i=0;i<6;i++){
+      ctx.beginPath();
+      ctx.ellipse(WORLD*0.74 + Math.sin(i*1.3)*70, WORLD*0.78 + Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // dirt path crossroads radiating from the cornucopia, like a route hub
+    ctx.save();
+    const sPattern = getSandPattern();
+    ctx.fillStyle = sPattern || '#8a7550';
+    ctx.fillRect(CENTER-34, 0, 68, WORLD);
+    ctx.fillRect(0, CENTER-34, WORLD, 68);
+    if(!sPattern){
+      ctx.strokeStyle = 'rgba(0,0,0,.12)';
+      ctx.lineWidth = 1;
+      for(let x=0;x<WORLD;x+=20){ ctx.beginPath(); ctx.moveTo(x,CENTER-34); ctx.lineTo(x,CENTER+34); ctx.stroke(); }
+      for(let y=0;y<WORLD;y+=20){ ctx.beginPath(); ctx.moveTo(CENTER-34,y); ctx.lineTo(CENTER+34,y); ctx.stroke(); }
+    }
+    ctx.restore();
+
+    // cave clearing patch (rocky ground) under the cave quadrant's cluster
+    ctx.save();
+    ctx.fillStyle = 'rgba(60,56,50,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(WORLD*0.24, WORLD*0.76, 190, 150, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    decorations.forEach(drawDecoration);
+
+    // cornucopia clearing marker (camp-style ring, same footprint as before)
+    ctx.save();
+    ctx.translate(CENTER,CENTER);
+    ctx.fillStyle = '#a68a55';
+    ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#6e5a36';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(212,175,55,0.18)';
+    ctx.beginPath(); ctx.arc(0,0,58,0,Math.PI*2); ctx.fill();
+    // a little signpost so it reads like a Pokemon landmark
+    ctx.fillStyle = '#5c4a2c';
+    ctx.fillRect(-2,-14,4,14);
+    ctx.fillStyle = '#c9a13b';
+    ctx.fillRect(-10,-20,20,8);
+    ctx.restore();
+
+    obstacles.forEach(drawObstacle);
+    items.forEach(drawItem);
+
+    if(gamePhase === 'countdown'){
+      tributes.forEach(drawPlate);
+    }
+
+    const drawOrder = [...tributes.filter(t=>t.alive), ...mutts.filter(m=>m.alive)].sort((a,b)=>a.y-b.y);
+    drawOrder.forEach(e => e.isMutt ? drawMutt(e) : drawPixelChar(e));
+
+    // tall grass drawn again on top so it visually swallows tributes' feet
+    decorations.forEach(d=>{ if(d.kind === 'tallgrass') drawDecoration(d); });
+
+    projectiles.forEach(drawProjectile);
+
+    // gas / danger zone overlay
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0,0,WORLD,WORLD);
+    ctx.arc(zoneCenter.x, zoneCenter.y, zoneRadius, 0, Math.PI*2, true);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(122,37,48,0.38)';
+    ctx.fill('evenodd');
+    ctx.strokeStyle = 'rgba(232,64,74,0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(zoneCenter.x, zoneCenter.y, zoneRadius, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    // particles / floating text
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    particles.forEach(p=>{
+      ctx.globalAlpha = clamp(p.life,0,1);
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x, p.y);
+    });
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
+  // ============================================================
+  // HUD
+  // ============================================================
+  function updateHud(){
+    hpBar.style.width = Math.max(0,player.hp) + '%';
+    hpBar.style.background = player.hp>50 ? 'linear-gradient(90deg,#7ac97a,#3f9c3f)' : player.hp>25 ? 'linear-gradient(90deg,#e8c56a,#e8a33d)' : 'linear-gradient(90deg,#e87a7a,#c81d25)';
+    const aliveCount = tributes.filter(t=>t.alive).length;
+    tributesLeftEl.textContent = aliveCount;
+    dayText.textContent = dayCount;
+    weaponNameEl.textContent = player.weapon ? WEAPONS[player.weapon].name : 'Unarmed';
+    const hidden = tributeInGrass(player);
+    statusTextEl.textContent = hidden ? 'Hidden in grass' : 'In the open';
+    statusTextEl.style.color = hidden ? '#7ac97a' : 'var(--bone)';
+
+    const alerts = [];
+    if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
+    if(muttsUnlocked) alerts.push('Mutts loose');
+    alertTextEl.textContent = alerts.length ? alerts.join(' · ') : 'All quiet';
+    alertTextEl.style.color = alerts.length ? '#e8404a' : 'var(--bone)';
+  }
+
+  // ============================================================
+  // GAME LOOP
+  // ============================================================
+  function loop(ts){
+    if(!running) return;
+    const dt = Math.min(0.05, (ts-lastTime)/1000 || 0);
+    lastTime = ts;
+    update(dt);
+    render();
+    animId = requestAnimationFrame(loop);
+  }
+
+  // ============================================================
+  // START / END
+  // ============================================================
+  function startGame(){
+    getAudioCtx(); // unlock audio on this user gesture
+    resetGame();
+    startScreen.classList.add('hidden');
+    endScreen.classList.add('hidden');
+    gameFrame.classList.remove('hidden');
+    running = true;
+    lastTime = performance.now();
+    feed('Welcome to the arena. Hold your position — the gong will sound soon.');
+    animId = requestAnimationFrame(loop);
+  }
+
+  function endGame(won, remaining){
+    running = false;
+    if(animId) cancelAnimationFrame(animId);
+    setTimeout(()=>{
+      gameFrame.classList.add('hidden');
+      endScreen.classList.remove('hidden');
+      if(won){
+        endTitle.innerHTML = 'YOU ARE THE <span style="color:#d4af37;">VICTOR</span>';
+        endSubtitle.textContent = 'District 12 has won the 75th Games';
+        endSeal.style.borderColor = '#d4af37';
+      } else {
+        endTitle.innerHTML = 'YOU HAVE <span style="color:#e8404a;">FALLEN</span>';
+        endSubtitle.textContent = remaining + ' tribute' + (remaining===1?'':'s') + ' remained when the cannon sounded for you';
+        endSeal.style.borderColor = '#b8232b';
+      }
+      endStats.innerHTML =
+        '<div class="statLine">Tributes eliminated by you: <b>'+player.kills+'</b></div>' +
+        '<div class="statLine">Days survived: <b>'+dayCount+'</b></div>';
+    }, 900);
+  }
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+
+})();
+</script>
+</body>
+</html>
