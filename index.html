@@ -321,6 +321,52 @@
   }
   @keyframes pulse{ 50%{opacity:.25;} }
 
+  /* Mobile: the screen area itself is small, so the HUD/feed can't eat
+     most of it the way it does on a big desktop frame. Shrink everything,
+     drop the secondary rows, and keep the kill feed to a couple of tiny
+     lines tucked in a corner instead of a wide banner across the screen. */
+  @media (max-width: 759px){
+    #hud{
+      padding: 3px 4px;
+      font-size: 6px;
+      letter-spacing: 0.5px;
+    }
+    .hudBox{
+      padding: 2px 4px;
+      min-width: 0;
+      border-width: 1px;
+    }
+    .hudLabel{ font-size: 5.5px; letter-spacing: 0.5px; margin-bottom: 1px; }
+    .hpBarOuter{ width: 46px; height: 4px; }
+    #tributesLeft{ font-size: 9px; }
+    #dayText{ font-size: 6px; }
+    /* Weapon/status/alert/backpack rows and the plate-select row take up
+       lines the tiny mobile screen doesn't have room for; the essentials
+       (HP/hunger/energy bars, tributes left, day) stay visible instead. */
+    #weaponName, #statusText, #alertText{ display: none; }
+    .hudBox .hudLabel:has(#weaponName),
+    .hudBox .hudLabel:has(#statusText),
+    .hudBox .hudLabel:has(#alertText){ display: none; }
+    #invRow{ display: none; }
+    .hudBox .hudLabel:last-of-type{ display: none; } /* "BACKPACK (Q/E or 1-6)" line */
+
+    #killFeed{
+      bottom: auto;
+      top: 4px;
+      left: 4px;
+      right: auto;
+      max-width: 56%;
+    }
+    .feedLine{
+      font-size: 6px;
+      padding: 2px 4px;
+      max-width: 180px;
+      animation-duration: 2.6s;
+    }
+    #killFeed .feedLine:nth-child(n+3){ display:none; } /* only show the newest couple */
+    #zoneWarning{ font-size: 7px; letter-spacing: 1px; top: 3px; }
+  }
+
   /* Bloodbath countdown overlay — the "on your plate" moment before the gong */
   #countdownOverlay{
     position:absolute; inset:0;
@@ -566,10 +612,10 @@
         <div class="hpBarOuter"><div class="hpBarInner" id="hungerBar"></div></div>
         <div class="hudLabel" style="margin-top:4px;">ENERGY</div>
         <div class="hpBarOuter"><div class="hpBarInner" id="energyBar"></div></div>
-        <div class="hudLabel" style="margin-top:4px;">WEAPON: <span id="weaponName" style="color:var(--bone);">—</span></div>
-        <div class="hudLabel" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
-        <div class="hudLabel" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
-        <div class="hudLabel" style="margin-top:4px;">BACKPACK <span style="color:#6b6e60;">(Q/E or 1-6)</span></div>
+        <div class="hudLabel hudRowWeapon" style="margin-top:4px;">WEAPON: <span id="weaponName" style="color:var(--bone);">—</span></div>
+        <div class="hudLabel hudRowStatus" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
+        <div class="hudLabel hudRowAlert" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
+        <div class="hudLabel hudRowBackpack" style="margin-top:4px;">BACKPACK <span style="color:#6b6e60;">(Q/E or 1-6)</span></div>
         <div id="invRow"></div>
       </div>
       <div class="hudBox" style="text-align:right;">
