@@ -169,25 +169,38 @@
     margin: 0 auto;
   }
 
-  /* Portrait mobile: the rectangular arena is heavily squeezed by a narrow
-     viewport width, so strongly prompt landscape for the full experience. */
-  @media (max-width: 759px) and (orientation: portrait){
-    #gameFrame{
-      width: 96vw;
-    }
+  /* The screen area wraps the canvas plus all its overlays (HUD, kill feed,
+     zone warning, countdown). On desktop it simply fills the frame; on
+     mobile it becomes the "screen" half of a Game Boy-style shell, with
+     the aspect ratio previously carried by #gameFrame itself. */
+  #screenArea{
+    position:relative;
+    width:100%;
+    height:100%;
   }
 
-  .rotateHint{
-    display:none;
-    position:fixed; top:8px; left:50%; transform:translateX(-50%);
-    background: rgba(10,13,10,.85);
-    border:1px solid var(--line);
-    color: var(--amber);
-    font-size:10px; letter-spacing:1px; text-transform:uppercase;
-    padding:6px 10px; z-index:15; pointer-events:none;
-  }
-  @media (max-width: 759px) and (orientation: portrait){
-    .rotateHint{ display:block; }
+  /* Mobile: always render like a handheld — the screen up top, a D-pad and
+     action buttons in a control deck below it, regardless of orientation.
+     No landscape prompt; this is the intended phone layout. */
+  @media (max-width: 759px){
+    #gameFrame{
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      width: 94vw;
+      max-width: 460px;
+      aspect-ratio: unset;
+      height: auto;
+      max-height: 96vh;
+      background: #b6b0a0;
+      border-color: #6f6a5c;
+    }
+    #screenArea{
+      position: relative;
+      width: 100%;
+      aspect-ratio: 8 / 5;
+      flex: 0 0 auto;
+    }
   }
 
   /* HUD */
@@ -236,9 +249,6 @@
     display:flex; flex-direction:column-reverse; gap:2px;
     pointer-events:none; z-index:5;
     align-items:flex-start;
-  }
-  @media (max-width: 759px){
-    #killFeed{ bottom:180px; }
   }
   .feedLine{
     background: rgba(10,13,10,.72);
@@ -363,6 +373,28 @@
   }
   @media (max-width: 759px){
     .hint{ display:none; }
+    #touchControls{
+      position: static;
+      flex: 1 1 auto;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 20px 18px 26px;
+      background: linear-gradient(180deg, #d7d2c5, #b6b0a0);
+      border-top: 3px solid #8c8776;
+    }
+    .dpad button{
+      width: 50px;
+      height: 50px;
+    }
+    .dpad{
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+    }
+    #atkBtn{
+      width: 84px;
+      height: 84px;
+    }
   }
 
   /* End screen stats */
@@ -397,7 +429,7 @@
     <div class="weaponRow" id="weaponRow"></div>
 
     <button class="bigBtn" id="startBtn">Enter The Arena</button>
-    <div class="footNote">WASD / Arrows to move · Space or tap ATTACK to strike · Q/E or 1-6 to switch weapons · Rotate to landscape on mobile</div>
+    <div class="footNote">WASD / Arrows to move · Space or tap ATTACK to strike · Q/E or 1-6 to switch weapons</div>
   </div>
 
   <!-- END SCREEN -->
@@ -412,8 +444,8 @@
   </div>
 
   <!-- GAME -->
-  <div class="rotateHint">↻ Rotate your device to landscape for the full arena</div>
   <div id="gameFrame" class="hidden">
+    <div id="screenArea">
     <canvas id="game" width="1600" height="1000"></canvas>
 
     <div id="hud">
@@ -444,6 +476,7 @@
     <div id="countdownOverlay" class="hidden">
       <div id="countdownNum">10</div>
       <div class="countdownLabel" id="countdownLabel">STAY ON YOUR PLATE</div>
+    </div>
     </div>
 
     <div id="touchControls">
@@ -488,7 +521,8 @@
   const ZONE_MIN_RADIUS_X = ZONE_MIN_RADIUS_Y * (WORLD_W/WORLD_H);
   const ZONE_TICK_DAMAGE = 3;
   const SUPPLY_DROP_INTERVAL = 34000;
-  const CAMERA_ZOOM = 1.7;          // classic-Pokemon-style follow camera
+  const IS_MOBILE_LAYOUT = window.matchMedia('(max-width: 759px)').matches;
+  const CAMERA_ZOOM = IS_MOBILE_LAYOUT ? 2.3 : 1.7; // classic-Pokemon-style follow camera; zoomed in further on the small phone-sized Game Boy screen
   const VIEW_W = WORLD_W / CAMERA_ZOOM; // world units visible at once, horizontally
   const VIEW_H = WORLD_H / CAMERA_ZOOM; // world units visible at once, vertically
   const PLATE_RADIUS = 320;         // radius of the starting circle around the cornucopia
