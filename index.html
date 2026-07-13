@@ -994,7 +994,31 @@
     mutt: 'assets/mutt.png',
     rock: 'assets/rock.png',
     sandPath: 'assets/sand-path.png',
-    bush: 'assets/bush.png'
+    bush: 'assets/bush.png',
+    'district-1-male': 'assets/tributes/district-1-male.png',
+    'district-1-female': 'assets/tributes/district-1-female.png',
+    'district-2-male': 'assets/tributes/district-2-male.png',
+    'district-2-female': 'assets/tributes/district-2-female.png',
+    'district-3-male': 'assets/tributes/district-3-male.png',
+    'district-3-female': 'assets/tributes/district-3-female.png',
+    'district-4-male': 'assets/tributes/district-4-male.png',
+    'district-4-female': 'assets/tributes/district-4-female.png',
+    'district-5-male': 'assets/tributes/district-5-male.png',
+    'district-5-female': 'assets/tributes/district-5-female.png',
+    'district-6-male': 'assets/tributes/district-6-male.png',
+    'district-6-female': 'assets/tributes/district-6-female.png',
+    'district-7-male': 'assets/tributes/district-7-male.png',
+    'district-7-female': 'assets/tributes/district-7-female.png',
+    'district-8-male': 'assets/tributes/district-8-male.png',
+    'district-8-female': 'assets/tributes/district-8-female.png',
+    'district-9-male': 'assets/tributes/district-9-male.png',
+    'district-9-female': 'assets/tributes/district-9-female.png',
+    'district-10-male': 'assets/tributes/district-10-male.png',
+    'district-10-female': 'assets/tributes/district-10-female.png',
+    'district-11-male': 'assets/tributes/district-11-male.png',
+    'district-11-female': 'assets/tributes/district-11-female.png',
+    'district-12-male': 'assets/tributes/district-12-male.png',
+    'district-12-female': 'assets/tributes/district-12-female.png'
   };
   const assetImages = {};
   Object.keys(ASSET_PATHS).forEach(key=>{
@@ -1270,12 +1294,26 @@
 
   function makeCornucopiaItems(){
     items = [];
-    const n = 12;
-    for(let i=0;i<n;i++){
-      const ang = (i/n) * Math.PI*2;
-      const r = rand(48,88);
-      spawnItem(CENTER_X + Math.cos(ang)*r, CENTER_Y + Math.sin(ang)*r);
+
+    const weaponPool = [...WEAPON_KEYS];
+    const fullWeaponCount = TOTAL_TRIBUTES;
+    const weaponRingRadius = 120;
+
+    for(let i=0;i<fullWeaponCount;i++){
+      const ang = (i / fullWeaponCount) * Math.PI * 2;
+      const x = CENTER_X + Math.cos(ang) * (weaponRingRadius + (i % 3) * 16);
+      const y = CENTER_Y + Math.sin(ang) * (weaponRingRadius + (i % 3) * 16);
+      const weaponType = weaponPool[i % weaponPool.length];
+      items.push({
+        x,
+        y,
+        type: 'weapon',
+        weaponType,
+        id: Math.random().toString(36).slice(2),
+        bob: Math.random() * Math.PI * 2
+      });
     }
+
     for(let i=0;i<4;i++){
       const ang = Math.random()*Math.PI*2;
       const r = rand(28,52);
@@ -1376,6 +1414,7 @@
     for(let i=0;i<pool.length;i++){
       tributes.push(newTribute(pool[i], false));
     }
+
     positionTributesOnPlates();
     makeObstacles();
     makeBorderTrees();
@@ -2267,49 +2306,58 @@
     ctx.scale(1.3, 1.3); // chunkier overworld-trainer sized sprite (visual only)
     const flash = t.hitFlash > 0;
     const bodyColor = flash ? '#ffffff' : t.color;
+    const tributeImgKey = t.district % 2 === 0 ? 'district-' + t.district + '-female' : 'district-' + t.district + '-male';
 
-    // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(0, 12, 10, 4, 0, 0, Math.PI*2);
-    ctx.fill();
+    if(assetReady(tributeImgKey)){
+      ctx.save();
+      ctx.translate(0, 0);
+      ctx.scale(t.facing.x < 0 ? -1 : 1, 1);
+      drawAssetAspect(tributeImgKey, 30, true);
+      ctx.restore();
+    } else {
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, 12, 10, 4, 0, 0, Math.PI*2);
+      ctx.fill();
 
-    // legs (denim-blue trainer trousers)
-    ctx.fillStyle = '#33455c';
-    ctx.fillRect(-6,4,4,8);
-    ctx.fillRect(2,4,4,8);
-    ctx.fillStyle = '#25303f';
-    ctx.fillRect(-6,10,4,2);
-    ctx.fillRect(2,10,4,2);
+      // legs (denim-blue trainer trousers)
+      ctx.fillStyle = '#33455c';
+      ctx.fillRect(-6,4,4,8);
+      ctx.fillRect(2,4,4,8);
+      ctx.fillStyle = '#25303f';
+      ctx.fillRect(-6,10,4,2);
+      ctx.fillRect(2,10,4,2);
 
-    // torso — district-colored jacket with a light undershirt seam
-    ctx.fillStyle = bodyColor;
-    ctx.fillRect(-8,-8,16,14);
-    ctx.fillStyle = flash ? '#ffffff' : shade(bodyColor,-30);
-    ctx.fillRect(-8,-8,3,14);
-    ctx.fillRect(5,-8,3,14);
-    ctx.fillStyle = '#e8e3d3';
-    ctx.fillRect(-2,-6,4,10);
+      // torso — district-colored jacket with a light undershirt seam
+      ctx.fillStyle = bodyColor;
+      ctx.fillRect(-8,-8,16,14);
+      ctx.fillStyle = flash ? '#ffffff' : shade(bodyColor,-30);
+      ctx.fillRect(-8,-8,3,14);
+      ctx.fillRect(5,-8,3,14);
+      ctx.fillStyle = '#e8e3d3';
+      ctx.fillRect(-2,-6,4,10);
 
-    // head
-    ctx.fillStyle = '#d9b48f';
-    ctx.fillRect(-6,-18,12,10);
+      // head
+      ctx.fillStyle = '#d9b48f';
+      ctx.fillRect(-6,-18,12,10);
 
-    // hair, peeking from under a trainer cap
-    ctx.fillStyle = '#3a2a1e';
-    ctx.fillRect(-6,-18,12,3);
-    ctx.fillRect(-6,-16,2,4);
-    ctx.fillRect(4,-16,2,4);
-    // cap brim tinted with district color
-    ctx.fillStyle = shade(bodyColor,10);
-    ctx.fillRect(-7,-20,14,4);
-    ctx.fillRect(3,-18,7,3);
+      // hair, peeking from under a trainer cap
+      ctx.fillStyle = '#3a2a1e';
+      ctx.fillRect(-6,-18,12,3);
+      ctx.fillRect(-6,-16,2,4);
+      ctx.fillRect(4,-16,2,4);
+      // cap brim tinted with district color
+      ctx.fillStyle = shade(bodyColor,10);
+      ctx.fillRect(-7,-20,14,4);
+      ctx.fillRect(3,-18,7,3);
 
-    // eyes (facing indicator)
-    ctx.fillStyle = '#000';
-    const ex = t.facing.x*2, ey = t.facing.y*2;
-    ctx.fillRect(-3+ex,-14+ey,2,2);
-    ctx.fillRect(2+ex,-14+ey,2,2);
+      // eyes (facing indicator)
+      ctx.fillStyle = '#000';
+      const ex = t.facing.x*2, ey = t.facing.y*2;
+      ctx.fillRect(-3+ex,-14+ey,2,2);
+      ctx.fillRect(2+ex,-14+ey,2,2);
+    }
 
     // weapon indicator
     if(t.weapon){
