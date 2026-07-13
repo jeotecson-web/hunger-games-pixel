@@ -550,37 +550,62 @@
 
   /* Mobile landscape: rebuild the shell so it reads like the real handheld
      turned on its side — D-pad on the left of the screen, A/B on the
-     right, SELECT/START tucked underneath — instead of the portrait
-     stack-everything-below-the-screen layout above. */
+     right — instead of the portrait stack-everything-below-the-screen
+     layout above. Fully self-contained (doesn't lean on the max-width:759
+     portrait rules above, which don't apply on wider landscape phones
+     like an iPhone in landscape) so it can't end up half-styled. The
+     screen's size is capped by BOTH viewport height and viewport width
+     (accounting for the fixed-size d-pad/buttons on either side) so it
+     can never push the buttons off-screen or leave leftover space that
+     shows up as gaps down the sides. */
   @media (max-width: 932px) and (orientation: landscape){
+    .hint{ display:none; }
+    #app{ padding:0; height:100dvh; }
     #gameFrame{
       flex-direction: row;
       align-items: center;
-      justify-content: center;
-      gap: min(3vw, 22px);
+      justify-content: space-between;
+      gap: 10px;
       width: 100vw;
       height: 100dvh;
       max-width: 100vw;
       max-height: 100dvh;
-      padding: env(safe-area-inset-top,0) max(10px, env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(10px, env(safe-area-inset-left,0));
+      aspect-ratio: auto;
+      border: none;
+      outline: none;
+      box-shadow: none;
+      background: #0a0d0a;
+      padding: max(6px, env(safe-area-inset-top,0)) max(10px, env(safe-area-inset-right,0)) max(6px, env(safe-area-inset-bottom,0)) max(10px, env(safe-area-inset-left,0));
     }
+    #bezelTopRow{ display:none; }
     #screenBezel{
       order: 2;
+      position: relative;
       flex: 0 0 auto;
       width: auto;
-      height: min(88vh, 100%);
-      margin-top: 0;
-      border-radius: 14px;
-      padding: 10px 10px 12px;
+      /* 232px ≈ d-pad width + both button widths + the two inter-element
+         gaps + side padding, so the screen's own width (height * 1.6)
+         never eats into that reserved space. */
+      height: min(84dvh, calc((100vw - 232px) / 1.6));
+      margin: 0;
+      background: linear-gradient(155deg, #4a4a46, #2c2c29);
+      border-radius: 10px;
+      padding: 6px;
+      box-shadow: inset 0 0 0 2px #1a1a17, 0 3px 6px rgba(0,0,0,.35);
     }
     #screenArea{
+      position: relative;
       width: auto;
       height: 100%;
       aspect-ratio: 8 / 5;
+      flex: none;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 2px #14140f;
     }
-    /* Dissolve the wrapper so its three children (dpad, midDeck,
-       actionStack) become direct flex items of #gameFrame, sitting on
-       either side of #screenBezel instead of in a row below it. */
+    /* Dissolve the wrapper so its children (dpad, actionStack) become
+       direct flex items of #gameFrame, sitting on either side of
+       #screenBezel instead of in a row below it. */
     #touchControls{
       display: contents;
     }
@@ -588,30 +613,45 @@
       order: 1;
       align-self: center;
       flex: 0 0 auto;
-      grid-template-columns: repeat(3, 40px);
-      grid-template-rows: repeat(3, 40px);
+      grid-template-columns: repeat(3, 34px);
+      grid-template-rows: repeat(3, 34px);
+      gap: 2px;
     }
-    .dpad button{ width:40px; height:40px; }
-    #midDeck{
-      order: 3;
-      flex: 0 0 auto;
-      align-self: flex-end;
-      padding-bottom: 4px;
-      gap: 8px;
-    }
-    #midDeck .pillRow{
-      transform: none;
-      gap: 8px;
-    }
-    #grille{ display:none; }
+    .dpad button{ width:34px; height:34px; font-size:13px; }
+    /* SELECT/START dropped in landscape — no room for a third column
+       without shrinking the screen further, and B already cycles weapons. */
+    #midDeck{ display:none; }
     .actionStack{
-      order: 4;
+      order: 3;
       align-self: center;
+      flex: 0 0 auto;
       flex-direction: row;
-      transform: none;
+      align-items: center;
       gap: 8px;
+      transform: none;
     }
-    #bBtn.actionBtnB{ margin-bottom: 0; }
+    #bBtn.actionBtnB{ width:34px; height:34px; margin-bottom:0; font-size:11px; }
+    #atkBtn.actionBtnA{ width:44px; height:44px; font-size:11px; }
+
+    /* Compact HUD so it fits the smaller landscape screen area — same
+       shrink treatment as the portrait phone layout above. */
+    #hud{ padding:3px 4px; font-size:6px; letter-spacing:0.5px; }
+    .hudBox{ padding:2px 4px; min-width:0; border-width:1px; }
+    .hudLabel{ font-size:5.5px; letter-spacing:0.5px; margin-bottom:1px; }
+    .hpBarOuter{ width:46px; height:4px; }
+    #tributesLeft{ font-size:9px; }
+    #dayText{ font-size:6px; }
+    #weaponName, #statusText, #alertText{ display:none; }
+    .hudBox .hudLabel:has(#weaponName),
+    .hudBox .hudLabel:has(#statusText),
+    .hudBox .hudLabel:has(#alertText){ display:none; }
+    #invRow{ display:none; }
+    .hudBox .hudLabel:last-of-type{ display:none; }
+
+    #killFeed{ top:auto; bottom:4px; left:4px; right:auto; max-width:64%; }
+    .feedLine{ font-size:6px; padding:2px 4px; max-width:220px; animation-duration:2.6s; }
+    #killFeed .feedLine:nth-child(n+3){ display:none; }
+    #zoneWarning{ font-size:7px; letter-spacing:1px; top:3px; }
   }
 
   /* End screen stats */
