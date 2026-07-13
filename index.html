@@ -33,6 +33,9 @@
     height:100%; width:100%;
     padding: 8px;
   }
+  @media (max-width: 759px){
+    #app{ padding: 0; height: 100dvh; }
+  }
 
   /* ---------- Screens ---------- */
   .screen{
@@ -173,6 +176,12 @@
      zone warning, countdown). On desktop it simply fills the frame; on
      mobile it becomes the "screen" half of a Game Boy-style shell, with
      the aspect ratio previously carried by #gameFrame itself. */
+  #screenBezel{
+    position:relative;
+    width:100%;
+    height:100%;
+  }
+  #bezelTopRow{ display:none; }
   #screenArea{
     position:relative;
     width:100%;
@@ -187,19 +196,54 @@
       flex-direction: column;
       align-items: stretch;
       justify-content: flex-start;
-      width: 94vw;
-      max-width: 460px;
+      width: 100vw;
+      max-width: 100vw;
+      height: 100dvh;
+      max-height: 100dvh;
       aspect-ratio: unset;
+      background: linear-gradient(155deg, #d7d1c2 0%, #bdb6a4 45%, #a79f8c 100%);
+      border: none;
+      outline: none;
+      box-shadow: none;
+      padding: env(safe-area-inset-top,0) max(10px, env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(10px, env(safe-area-inset-left,0));
+    }
+    #screenBezel{
+      position: relative;
+      width: 100%;
       height: auto;
-      max-height: 96vh;
-      background: #b6b0a0;
-      border-color: #6f6a5c;
+      flex: 0 0 auto;
+      background: linear-gradient(155deg, #4a4a46, #2c2c29);
+      border-radius: 14px 14px 30px 14px;
+      padding: 14px 12px 20px;
+      box-shadow: inset 0 0 0 2px #1a1a17, 0 3px 6px rgba(0,0,0,.35);
+      margin-top: 10px;
+    }
+    #bezelTopRow{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      padding: 0 2px 10px;
+    }
+    #powerLed{
+      width:7px; height:7px; border-radius:50%;
+      background: radial-gradient(circle at 35% 30%, #ff8a8a, #c81d25 70%);
+      box-shadow: 0 0 4px rgba(232,64,74,.9);
+      display:inline-block;
+    }
+    #powerLabel{
+      font-size:7px;
+      letter-spacing:2px;
+      color:#8a8a82;
     }
     #screenArea{
       position: relative;
       width: 100%;
+      height: auto;
       aspect-ratio: 8 / 5;
       flex: 0 0 auto;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 3px #14140f;
     }
   }
 
@@ -379,21 +423,82 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      padding: 20px 18px 26px;
-      background: linear-gradient(180deg, #d7d2c5, #b6b0a0);
-      border-top: 3px solid #8c8776;
-    }
-    .dpad button{
-      width: 50px;
-      height: 50px;
+      padding: 22px 14px 10px;
+      background: transparent;
+      border-top: none;
     }
     .dpad{
-      grid-template-columns: repeat(3, 50px);
-      grid-template-rows: repeat(3, 50px);
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 2px;
     }
-    #atkBtn{
-      width: 84px;
-      height: 84px;
+    .dpad button{
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(180deg, #3a3a37, #201f1d);
+      border: 1px solid #141412;
+      color: #cfcabb;
+      box-shadow: 0 2px 0 #111;
+    }
+    .dpad button:active, .dpad button.active{ background: linear-gradient(180deg,#4a4a46,#26251f); }
+
+    #midDeck{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: 14px;
+      padding-bottom: 6px;
+    }
+    .pillRow{
+      display:flex;
+      gap: 14px;
+      transform: rotate(-22deg);
+    }
+    #swapBtn.pillBtn, #startHint.pillBtn, .pillBtn{
+      font-family: inherit;
+      width: 46px; height: 14px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #5c5a52, #3a3832);
+      border: 1px solid #232119;
+      color: #d8d4c4;
+      font-size: 6.5px;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 0 #17160f;
+      touch-action:none;
+    }
+    #swapBtn.pillBtn:active, .pillBtn:active{ transform: translateY(2px); box-shadow:none; }
+    #grille{
+      width: 64px; height: 26px;
+      background:
+        repeating-linear-gradient(-35deg, #8c8776 0 4px, transparent 4px 9px);
+      opacity: .8;
+    }
+
+    .actionStack{
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 10px;
+      transform: translateY(6px);
+    }
+    #atkBtn.actionBtn, #bBtn.actionBtn{
+      font-family: inherit;
+      border-radius: 50%;
+      color: #3a1018;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0;
+      background: radial-gradient(circle at 35% 28%, #d6547a, #96274e 72%);
+      border: 2px solid #5c1530;
+      box-shadow: 0 4px 0 #45101f;
+      touch-action:none;
+    }
+    #atkBtn.actionBtn:active, #bBtn.actionBtn:active{ box-shadow:0 1px 0 #45101f; transform:translateY(3px); }
+    #bBtn.actionBtnB{
+      width: 46px; height: 46px;
+      margin-bottom: 16px;
+    }
+    #atkBtn.actionBtnA{
+      width: 58px; height: 58px;
     }
   }
 
@@ -445,6 +550,11 @@
 
   <!-- GAME -->
   <div id="gameFrame" class="hidden">
+    <div id="screenBezel">
+    <div id="bezelTopRow">
+      <span id="powerLed"></span>
+      <span id="powerLabel">POWER</span>
+    </div>
     <div id="screenArea">
     <canvas id="game" width="1600" height="1000"></canvas>
 
@@ -478,6 +588,7 @@
       <div class="countdownLabel" id="countdownLabel">STAY ON YOUR PLATE</div>
     </div>
     </div>
+    </div>
 
     <div id="touchControls">
       <div class="dpad">
@@ -485,9 +596,18 @@
         <button data-dir="left">◀</button><div></div><button data-dir="right">▶</button>
         <div></div><button data-dir="down">▼</button><div></div>
       </div>
+
+      <div id="midDeck">
+        <div class="pillRow">
+          <button id="swapBtn" class="pillBtn">SELECT</button>
+          <button id="startHint" class="pillBtn">START</button>
+        </div>
+        <div id="grille"></div>
+      </div>
+
       <div class="actionStack">
-        <button id="swapBtn">SWAP</button>
-        <button id="atkBtn">ATTACK</button>
+        <button id="bBtn" class="actionBtn actionBtnB">B</button>
+        <button id="atkBtn" class="actionBtn actionBtnA">A</button>
       </div>
     </div>
     <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>
@@ -1170,12 +1290,20 @@
   atkBtn.addEventListener('touchstart', atkOn, {passive:false});
   atkBtn.addEventListener('mousedown', atkOn);
 
-  const swapBtn = document.getElementById('swapBtn');
+  const bBtn = document.getElementById('bBtn');
   const swapOn = (e)=>{ e.preventDefault(); cycleWeapon(1); };
-  if(swapBtn){
-    swapBtn.addEventListener('touchstart', swapOn, {passive:false});
-    swapBtn.addEventListener('mousedown', swapOn);
-    swapBtn.addEventListener('click', swapOn);
+  if(bBtn){
+    bBtn.addEventListener('touchstart', swapOn, {passive:false});
+    bBtn.addEventListener('mousedown', swapOn);
+    bBtn.addEventListener('click', swapOn);
+  }
+
+  const selectBtn = document.getElementById('swapBtn');
+  const selectOn = (e)=>{ e.preventDefault(); cycleWeapon(-1); };
+  if(selectBtn){
+    selectBtn.addEventListener('touchstart', selectOn, {passive:false});
+    selectBtn.addEventListener('mousedown', selectOn);
+    selectBtn.addEventListener('click', selectOn);
   }
 
   // ============================================================
