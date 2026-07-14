@@ -58,6 +58,7 @@
     background: repeating-conic-gradient(from 0deg, #2a2a1a 0deg 15deg, #1a1a10 15deg 30deg);
   }
   .seal svg{width:52px;height:52px;fill:var(--gold);}
+  .seal img{width:52px;height:52px;object-fit:contain;image-rendering:pixelated;}
 
   h1.title{
     font-size: clamp(28px, 7vw, 54px);
@@ -533,6 +534,7 @@
 
     .seal, .mockingjaySeal{ width:34px; height:34px; margin: 2px auto 6px; border-width:2px; }
     .seal svg{ width:18px; height:18px; }
+    .seal img{ width:18px; height:18px; }
     .logoImg{ width:18px; height:18px; }
     .titleCardImg{ width: min(70%, 220px); margin: 0 auto 6px; }
     .gameLogo{ font-size: clamp(14px, 6vw, 22px); margin-bottom:6px; line-height:1.05; }
@@ -790,11 +792,17 @@
       position: static;
       flex: 1 1 auto;
       display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding: 22px 14px 10px;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content:flex-start;
+      padding: 18px 14px 10px;
       background: transparent;
       border-top: none;
+    }
+    #controlsTopRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
     }
     .dpad{
       grid-template-columns: repeat(3, 48px);
@@ -816,7 +824,7 @@
       flex-direction:column;
       align-items:center;
       justify-content:center;
-      padding-bottom: 6px;
+      padding-top: 16px;
     }
     .pillRow{
       display:flex;
@@ -934,10 +942,13 @@
       overflow: hidden;
       box-shadow: inset 0 0 0 2px #14140f;
     }
-    /* Dissolve the wrapper so its children (dpad, actionStack) become
-       direct flex items of #gameFrame, sitting on either side of
-       #screenBezel instead of in a row below it. */
+    /* Dissolve the wrapper (and its top-row sub-wrapper) so the dpad and
+       action cluster become direct flex items of #gameFrame, sitting on
+       either side of #screenBezel instead of stacked in a column. */
     #touchControls{
+      display: contents;
+    }
+    #controlsTopRow{
       display: contents;
     }
     .dpad{
@@ -1001,6 +1012,7 @@
     .screen::-webkit-scrollbar{ display:none; width:0; height:0; }
     .seal, .mockingjaySeal{ width:28px; height:28px; margin:2px auto 4px; border-width:2px; }
     .seal svg{ width:15px; height:15px; }
+    .seal img{ width:15px; height:15px; }
     .logoImg{ width:15px; height:15px; }
     .titleCardImg{ width:min(50%,160px); margin:0 auto 4px; }
     .gameLogo{ font-size: clamp(12px,5vw,18px); margin-bottom:4px; }
@@ -1098,12 +1110,12 @@
     <!-- END SCREEN -->
     <div id="endScreen" class="screen hidden">
       <div class="seal" id="endSeal">
-        <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
+        <img src="assets/logo.png" alt="" id="endSealImg">
       </div>
       <h1 class="title" id="endTitle">—</h1>
       <div class="subtitle" id="endSubtitle">—</div>
       <div id="endStats" style="margin-bottom:22px;"></div>
-      <button class="bigBtn" id="restartBtn">Return To The Reaping</button>
+      <div class="pressStart goldText" id="restartBtn">PRESS A TO RETURN</div>
     </div>
 
     <canvas id="game" width="1600" height="1000"></canvas>
@@ -1145,10 +1157,20 @@
     </div>
 
     <div id="touchControls">
-      <div class="dpad">
-        <div></div><button data-dir="up">▲</button><div></div>
-        <button data-dir="left">◀</button><div></div><button data-dir="right">▶</button>
-        <div></div><button data-dir="down">▼</button><div></div>
+      <div id="controlsTopRow">
+        <div class="dpad">
+          <div></div><button data-dir="up">▲</button><div></div>
+          <button data-dir="left">◀</button><div></div><button data-dir="right">▶</button>
+          <div></div><button data-dir="down">▼</button><div></div>
+        </div>
+
+        <div id="rightCluster">
+          <div class="actionStack">
+            <button id="bBtn" class="actionBtn actionBtnB">B</button>
+            <button id="atkBtn" class="actionBtn actionBtnA">A</button>
+          </div>
+          <div id="grille"></div>
+        </div>
       </div>
 
       <div id="midDeck">
@@ -1156,14 +1178,6 @@
           <button id="swapBtn" class="pillBtn">SELECT</button>
           <button id="startHint" class="pillBtn">START</button>
         </div>
-      </div>
-
-      <div id="rightCluster">
-        <div class="actionStack">
-          <button id="bBtn" class="actionBtn actionBtnB">B</button>
-          <button id="atkBtn" class="actionBtn actionBtnA">A</button>
-        </div>
-        <div id="grille"></div>
       </div>
     </div>
     <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>
@@ -1408,6 +1422,22 @@
   checkImgAlreadySettled(titleLogoImg,
     ()=>{ titleLogoImg.classList.remove('hidden'); titleSealSvg.classList.add('hidden'); },
     ()=> titleLogoImg.remove());
+
+  // ============================================================
+  // END-SCREEN SEAL IMAGE — same assets/logo.png used on the title
+  // screen. If it fails to load, fall back to the gold trophy-star SVG
+  // instead of leaving the seal empty.
+  // ============================================================
+  const endSealImg = document.getElementById('endSealImg');
+  const endSealFallbackSvg = '<svg viewBox="0 0 24 24" fill="#d4af37"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>';
+  if(endSealImg){
+    endSealImg.addEventListener('error', ()=>{
+      endSealImg.outerHTML = endSealFallbackSvg;
+    });
+    checkImgAlreadySettled(endSealImg,
+      ()=>{ /* loaded fine, nothing to do */ },
+      ()=>{ endSealImg.outerHTML = endSealFallbackSvg; });
+  }
 
   // ============================================================
   // PIXEL-ART ASSETS — small square sprites swapped in for the
@@ -1658,11 +1688,18 @@
     showIntroPanel('menu'); menuIndex=0; renderMenu();
   });
 
-  restartBtn.addEventListener('click', ()=>{
+  // ============================================================
+  // END SCREEN -> BACK TO TITLE ("Press A to return")
+  // ============================================================
+  function endScreenActive(){
+    return !endScreen.classList.contains('hidden');
+  }
+  function returnToReaping(){
     endScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
     showIntroPanel('title');
-  });
+  }
+  restartBtn.addEventListener('click', returnToReaping);
 
   // ============================================================
   // GAME STATE
@@ -2020,6 +2057,11 @@
   // INPUT
   // ============================================================
   window.addEventListener('keydown', e=>{
+    if(endScreenActive()){
+      const k = e.key.toLowerCase();
+      if(k===' '||k==='enter'||k==='a'){ returnToReaping(); e.preventDefault(); }
+      return;
+    }
     if(!startScreen.classList.contains('hidden')){ introKeyDown(e); return; }
     const key = e.key.toLowerCase();
     keys[key] = true;
@@ -2055,6 +2097,7 @@
   const atkBtn = document.getElementById('atkBtn');
   const atkOn = (e)=>{
     e.preventDefault();
+    if(endScreenActive()){ returnToReaping(); return; }
     if(introActive()){ introHandleAction('A'); return; }
     attackPressed = true;
   };
@@ -2064,6 +2107,7 @@
   const bBtn = document.getElementById('bBtn');
   const swapOn = (e)=>{
     e.preventDefault();
+    if(endScreenActive()){ return; }
     if(introActive()){ introHandleAction('B'); return; }
     cycleWeapon(1);
   };
@@ -2076,7 +2120,7 @@
   const selectBtn = document.getElementById('swapBtn');
   const selectOn = (e)=>{
     e.preventDefault();
-    if(introActive()){ return; }
+    if(introActive() || endScreenActive()){ return; }
     cycleWeapon(-1);
   };
   if(selectBtn){
@@ -3554,7 +3598,6 @@
     running = false;
     if(animId) cancelAnimationFrame(animId);
     setTimeout(()=>{
-      gameFrame.classList.add('hidden');
       endScreen.classList.remove('hidden');
       if(won){
         endTitle.innerHTML = 'YOU ARE THE <span style="color:#d4af37;">VICTOR</span>';
