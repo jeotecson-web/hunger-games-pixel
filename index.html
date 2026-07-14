@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>The Hunger Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg: #0a0d0a;
@@ -23,7 +26,7 @@
     margin:0; padding:0; height:100%;
     background: radial-gradient(ellipse at center, var(--bg2) 0%, var(--bg) 70%);
     color: var(--bone);
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Pixelify Sans', 'Courier New', Courier, monospace;
     overflow:hidden;
     -webkit-tap-highlight-color: transparent;
     user-select:none;
@@ -87,6 +90,15 @@
   }
   .districtChip{
     font-size:9px; padding:4px 7px; border:1px solid var(--line); color:#8f9086; letter-spacing:1px;
+    cursor:pointer;
+    transition: border-color .12s ease, color .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .districtChip:hover{ color: var(--bone); }
+  .districtChip.selected{
+    border-color: var(--gold);
+    color: var(--bone);
+    background: rgba(212,175,55,.14);
+    box-shadow: 0 0 10px rgba(212,175,55,.4);
   }
 
   .weaponPickLabel{
@@ -143,6 +155,168 @@
 
   .footNote{margin-top:16px; font-size:10px; color:#5c5f54; letter-spacing:1px;}
 
+  /* ================= RETRO INTRO SCREENS ================= */
+  #startScreen{
+    background: radial-gradient(ellipse at 50% 20%, #171327 0%, #0b0914 80%);
+    image-rendering: pixelated;
+  }
+  .introPanel{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:100%; max-width:640px;
+  }
+  .introPanel.hidden{ display:none; }
+
+  .goldText{
+    background: linear-gradient(180deg, #fff0c2 0%, #f0c869 30%, #d99e3c 65%, #a9722a 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,.55));
+  }
+
+  .gameLogo{
+    font-weight:700;
+    font-size: clamp(32px, 8.5vw, 58px);
+    line-height:1.08;
+    letter-spacing:2px;
+    text-align:center;
+    margin-bottom: 18px;
+  }
+  .titleCardImg{
+    display:block;
+    width: min(78vw, 420px);
+    height:auto;
+    margin: 0 auto 18px;
+    image-rendering: pixelated;
+    filter: drop-shadow(3px 3px 0 rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(232,64,74,.35));
+  }
+  .mockingjaySeal{
+    width:92px; height:92px; margin: 4px auto 22px;
+    border-radius:50%;
+    border:3px solid #caa24a;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 26px rgba(202,162,74,.4), inset 0 0 12px rgba(202,162,74,.3);
+    background: repeating-conic-gradient(from 0deg, #241d10 0deg 15deg, #171208 15deg 30deg);
+  }
+  .mockingjaySeal svg{ width:52px; height:52px; }
+  .logoImg{
+    width:52px; height:52px;
+    image-rendering: pixelated;
+    object-fit: contain;
+  }
+  .pressStart{
+    font-weight:600;
+    font-size: clamp(15px,3.2vw,20px);
+    letter-spacing:2px;
+    margin-top: 6px;
+    animation: blinker 1.1s step-start infinite;
+    cursor:pointer;
+  }
+  @keyframes blinker{ 50%{ opacity:0; } }
+
+  .menuList{ display:flex; flex-direction:column; gap:24px; align-items:flex-start; }
+  .menuItem{
+    position:relative;
+    font-weight:600;
+    font-size: clamp(19px,3.8vw,28px);
+    letter-spacing:2px;
+    padding-left: 44px;
+    color:#8a6a3a;
+    cursor:pointer;
+    transition: color .1s ease;
+  }
+  .menuItem.selected{ color:#f5dfa0; }
+  .menuItem .cursorArrow{
+    position:absolute; left:0; top:50%; transform:translateY(-50%);
+    font-size: 0.75em;
+    display:none;
+  }
+  .menuItem.selected .cursorArrow{ display:inline-block; }
+
+  .introHeading{
+    font-weight:700;
+    font-size: clamp(19px,4.2vw,28px);
+    letter-spacing:2px;
+    margin-bottom: 22px;
+    text-align:center;
+  }
+  .introSubheading{
+    font-weight:600;
+    font-size: clamp(13px,2.6vw,17px);
+    letter-spacing:2px;
+    margin-bottom: 22px;
+    color:#caa24a;
+  }
+  .introBody{
+    max-width: 520px;
+    font-size: 13px;
+    line-height:2;
+    color:#cfc6ae;
+    text-align:center;
+    margin-bottom: 22px;
+    white-space:pre-line;
+  }
+  .introHint{
+    font-size: 11px;
+    letter-spacing:1.5px;
+    color:#8a835f;
+    margin-top: 20px;
+    text-align:center;
+    line-height:1.9;
+  }
+
+  .districtList{
+    display:flex; flex-direction:column; gap:15px; align-items:flex-start;
+    max-height: 48vh; overflow-y:auto; padding: 4px 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .districtList::-webkit-scrollbar{ display:none; width:0; height:0; }
+  .districtItem{
+    position:relative;
+    font-weight:600;
+    font-size: clamp(15px,2.8vw,20px);
+    letter-spacing:2px;
+    padding-left: 42px;
+    color:#8a6a3a;
+    cursor:pointer;
+    transition: color .1s ease;
+  }
+  .districtItem.selected{ color:#f5dfa0; }
+  .districtItem .cursorArrow{
+    position:absolute; left:0; top:50%; transform:translateY(-50%);
+    font-size:0.75em;
+    display:none;
+  }
+  .districtItem.selected .cursorArrow{ display:inline-block; }
+
+  .tributeCards{ display:flex; gap:36px; justify-content:center; margin-bottom: 8px; flex-wrap:wrap; }
+  .tributeCard{
+    width: 148px;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 14px 8px;
+    border: 3px solid transparent;
+    color:#8a6a3a;
+    cursor:pointer;
+    transition: color .1s ease, border-color .1s ease;
+  }
+  .tributeCard.selected{
+    border-color:#f5dfa0;
+    color:#f5dfa0;
+    box-shadow: 0 0 16px rgba(245,223,160,.3);
+  }
+  .tributeCard .tImgWrap{ height:96px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .tributeCard .tImgWrap img{ height:96px; image-rendering:pixelated; }
+  .tributeCard .tLabel{ font-weight:600; font-size: clamp(13px,2.4vw,17px); letter-spacing:1px; text-align:center; line-height:1.4; }
+
+  @media (max-width:759px){
+    .gameLogo{ margin-bottom:10px; }
+    .tributeCards{ gap:18px; }
+    .tributeCard{ width:118px; padding:10px 6px; }
+    .tributeCard .tImgWrap{ height:70px; }
+    .tributeCard .tImgWrap img{ height:70px; }
+    .menuList{ gap:20px; }
+    .districtList{ max-height:42vh; }
+  }
+
   /* ---------- Game frame ---------- */
   /* Desktop / landscape: fill nearly the whole viewport, arena stays square
      inside a wide frame so it reads as "full screen" without distorting play. */
@@ -173,15 +347,19 @@
   }
 
   /* The screen area wraps the canvas plus all its overlays (HUD, kill feed,
-     zone warning, countdown). On desktop it simply fills the frame; on
-     mobile it becomes the "screen" half of a Game Boy-style shell, with
-     the aspect ratio previously carried by #gameFrame itself. */
+     zone warning, countdown) AND the title/menu/selection/end screens. On
+     desktop it simply fills the frame; on mobile it becomes the "screen"
+     half of a Game Boy-style shell, with the aspect ratio previously
+     carried by #gameFrame itself. */
   #screenBezel{
     position:relative;
     width:100%;
     height:100%;
   }
   #bezelTopRow{ display:none; }
+  #gbTopSwitch{ display:none; }
+  #batteryIndicator{ display:none; }
+  #gbLogoRow{ display:none; }
   #screenArea{
     position:relative;
     width:100%;
@@ -207,6 +385,11 @@
       box-shadow: none;
       padding: env(safe-area-inset-top,0) max(10px, env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(10px, env(safe-area-inset-left,0));
     }
+    /* The console shell (and the screen "glass" inside it) is always on
+       screen on mobile — title, menus, district/tribute pick, and the end
+       screen all render inside the same small screen rectangle as
+       gameplay, instead of covering the whole phone. */
+    #gameFrame.hidden{ display:flex !important; }
     #screenBezel{
       position: relative;
       width: 100%;
@@ -218,22 +401,80 @@
       box-shadow: inset 0 0 0 2px #1a1a17, 0 3px 6px rgba(0,0,0,.35);
       margin-top: 10px;
     }
+    /* Top OFF·ON slide switch, embedded in the case edge above the screen */
+    #gbTopSwitch{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      flex:0 0 auto;
+      width:auto;
+      margin:6px auto 0;
+      padding:3px 10px;
+      border-radius:7px;
+      background: linear-gradient(180deg,#efece2,#cfc9b8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 1px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.35);
+      font-size:6px;
+      letter-spacing:1.5px;
+      color:#4a4844;
+    }
+    #switchArrowL, #switchArrowR{ font-size:6px; color:#8a8578; }
+    #switchKnob{
+      width:10px; height:5px;
+      border-radius:2px;
+      background: linear-gradient(180deg,#8a8578,#5c5848);
+      box-shadow: inset 0 0 0 1px #3a382f;
+    }
+
+    /* Dot-matrix banner across the top of the screen bezel, with the
+       pink/blue accent lines either side, like the real hardware badge */
     #bezelTopRow{
       display:flex;
       align-items:center;
-      gap:6px;
-      padding: 0 2px 10px;
+      gap:5px;
+      padding: 0 4px 8px;
+    }
+    .dmLine{ flex:1 1 auto; height:3px; min-width:8px; }
+    .dmLine::before, .dmLine::after{ content:""; display:block; height:1px; }
+    .dmLine::before{ background:#c0407a; margin-bottom:1px; }
+    .dmLine::after{ background:#2a4a8a; }
+    #dmText{
+      flex:0 0 auto;
+      font-size:5px;
+      letter-spacing:0.5px;
+      color:#7a7c72;
+      white-space:nowrap;
+      text-transform:uppercase;
+    }
+
+    /* Battery LED + label, tucked in the narrow bezel margin to the
+       left of the screen — purely decorative, doesn't touch #screenArea */
+    #batteryIndicator{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:5px;
+      position:absolute;
+      left:4px;
+      top:34px;
+      bottom:20px;
+      justify-content:flex-start;
+      z-index:2;
     }
     #powerLed{
-      width:7px; height:7px; border-radius:50%;
+      width:5px; height:5px; border-radius:50%;
       background: radial-gradient(circle at 35% 30%, #ff8a8a, #c81d25 70%);
       box-shadow: 0 0 4px rgba(232,64,74,.9);
       display:inline-block;
+      flex:0 0 auto;
     }
     #powerLabel{
-      font-size:7px;
-      letter-spacing:2px;
-      color:#8a8a82;
+      font-size:4.6px;
+      letter-spacing:0.5px;
+      color:#9a9a92;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space:nowrap;
     }
     #screenArea{
       position: relative;
@@ -245,6 +486,88 @@
       overflow: hidden;
       box-shadow: inset 0 0 0 3px #14140f;
     }
+
+    /* Nintendo GAME BOY™ wordmark, sitting on the cream shell below the
+       dark screen bezel — same spot as the real console's brand plate */
+    #gbLogoRow{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap:5px;
+      flex:0 0 auto;
+      padding: 8px 4px 2px;
+    }
+    #gbLogoNintendo{
+      font-family: 'Brush Script MT', cursive;
+      font-style:italic;
+      font-size:15px;
+      color:#1a2a7a;
+    }
+    #gbLogoMain{
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style:italic;
+      font-weight:900;
+      font-size:17px;
+      letter-spacing:0.5px;
+      color:#16205c;
+    }
+    #gbLogoTm{
+      font-size:7px;
+      color:#16205c;
+      align-self:flex-start;
+      margin-left:-2px;
+    }
+
+    /* Title/menu/district/tribute/end screens now live inside the
+       small screen rectangle instead of covering the whole phone. */
+    .screen{
+      position:absolute;
+      inset:0;
+      z-index:15;
+      padding: 6px 8px;
+      overflow-y:auto;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    .screen::-webkit-scrollbar{ display:none; width:0; height:0; }
+
+    .seal, .mockingjaySeal{ width:34px; height:34px; margin: 2px auto 6px; border-width:2px; }
+    .seal svg{ width:18px; height:18px; }
+    .logoImg{ width:18px; height:18px; }
+    .titleCardImg{ width: min(70%, 220px); margin: 0 auto 6px; }
+    .gameLogo{ font-size: clamp(14px, 6vw, 22px); margin-bottom:6px; line-height:1.05; }
+    .pressStart{ font-size: 7px; letter-spacing:1px; margin-top:2px; }
+    h1.title{ font-size: clamp(12px, 5vw, 18px); letter-spacing:2px; margin-bottom:2px; }
+    .subtitle{ font-size: 6px; letter-spacing:1px; margin-bottom:8px; }
+    .brief{ font-size:6px; line-height:1.5; padding:6px 2px; margin-bottom:8px; max-width:94%; }
+    .districtRow{ gap:3px; margin-bottom:8px; max-width:94%; }
+    .districtChip{ font-size:6px; padding:2px 4px; }
+    .weaponRow{ gap:4px; margin-bottom:8px; }
+    .weaponCard{ width:56px; padding:4px 3px; }
+    .weaponCard .wIcon{ height:16px; margin-bottom:2px; }
+    .weaponCard .wName{ font-size:6px; margin-bottom:1px; }
+    .weaponCard .wDesc{ font-size:5px; line-height:1.2; }
+    button.bigBtn{ padding:6px 14px; font-size:8px; letter-spacing:1.5px; border-width:1px; }
+    .footNote{ font-size:5.5px; margin-top:6px; }
+
+    .menuList{ gap:8px; }
+    .menuItem{ font-size: 9px; letter-spacing:1px; padding-left:16px; }
+    .introHeading{ font-size:9px; letter-spacing:1px; margin-bottom:6px; }
+    .introSubheading{ font-size:6.5px; letter-spacing:1px; margin-bottom:6px; }
+    .introBody{ font-size:6px; line-height:1.5; margin-bottom:6px; max-width:96%; }
+    .introHint{ font-size:5px; letter-spacing:0.5px; margin-top:6px; line-height:1.5; }
+
+    .districtList{ gap:4px; max-height:none; padding:2px 4px; }
+    .districtItem{ font-size:7px; letter-spacing:1px; padding-left:14px; }
+
+    .tributeCards{ gap:8px; margin-bottom:4px; }
+    .tributeCard{ width:52px; padding:4px 3px; border-width:1px; }
+    .tributeCard .tImgWrap{ height:26px; margin-bottom:3px; }
+    .tributeCard .tImgWrap img{ height:26px; }
+    .tributeCard .tLabel{ font-size:5.5px; line-height:1.2; }
+
+    .statLine{ font-size:6px; margin:2px 0; }
+    #endStats{ margin-bottom:8px; }
   }
 
   /* HUD */
@@ -481,18 +804,18 @@
     .dpad button{
       width: 48px;
       height: 48px;
-      background: linear-gradient(180deg, #3a3a37, #201f1d);
-      border: 1px solid #141412;
+      background: linear-gradient(180deg, #2c2c29, #131311);
+      border: 1px solid #000;
       color: #cfcabb;
-      box-shadow: 0 2px 0 #111;
+      box-shadow: 0 2px 0 #000;
     }
-    .dpad button:active, .dpad button.active{ background: linear-gradient(180deg,#4a4a46,#26251f); }
+    .dpad button:active, .dpad button.active{ background: linear-gradient(180deg,#3a3a37,#1a1a17); }
 
     #midDeck{
       display:flex;
       flex-direction:column;
       align-items:center;
-      gap: 14px;
+      justify-content:center;
       padding-bottom: 6px;
     }
     .pillRow{
@@ -513,8 +836,15 @@
       touch-action:none;
     }
     #swapBtn.pillBtn:active, .pillBtn:active{ transform: translateY(2px); box-shadow:none; }
+
+    #rightCluster{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+    }
     #grille{
-      width: 64px; height: 26px;
+      width: 56px; height: 22px;
       background:
         repeating-linear-gradient(-35deg, #8c8776 0 4px, transparent 4px 9px);
       opacity: .8;
@@ -541,10 +871,10 @@
     #atkBtn.actionBtn:active, #bBtn.actionBtn:active{ box-shadow:0 1px 0 #45101f; transform:translateY(3px); }
     #bBtn.actionBtnB{
       width: 46px; height: 46px;
-      margin-bottom: 16px;
     }
     #atkBtn.actionBtnA{
       width: 58px; height: 58px;
+      margin-bottom: 16px;
     }
   }
 
@@ -577,6 +907,7 @@
       background: #0a0d0a;
       padding: max(6px, env(safe-area-inset-top,0)) max(10px, env(safe-area-inset-right,0)) max(6px, env(safe-area-inset-bottom,0)) max(10px, env(safe-area-inset-left,0));
     }
+    #gameFrame.hidden{ display:flex !important; }
     #bezelTopRow{ display:none; }
     #screenBezel{
       order: 2;
@@ -619,10 +950,13 @@
     }
     .dpad button{ width:34px; height:34px; font-size:13px; }
     /* SELECT/START dropped in landscape — no room for a third column
-       without shrinking the screen further, and B already cycles weapons. */
+       without shrinking the screen further, and B already cycles weapons.
+       The switch/logo/battery/grille are portrait-only shell decoration,
+       so they're dropped here too rather than fighting for space. */
     #midDeck{ display:none; }
+    #gbTopSwitch, #gbLogoRow, #batteryIndicator, #grille{ display:none; }
+    #rightCluster{ order:3; align-self:center; flex:0 0 auto; }
     .actionStack{
-      order: 3;
       align-self: center;
       flex: 0 0 auto;
       flex-direction: row;
@@ -631,7 +965,7 @@
       transform: none;
     }
     #bBtn.actionBtnB{ width:34px; height:34px; margin-bottom:0; font-size:11px; }
-    #atkBtn.actionBtnA{ width:44px; height:44px; font-size:11px; }
+    #atkBtn.actionBtnA{ width:44px; height:44px; font-size:11px; margin-bottom:0; }
 
     /* Compact HUD so it fits the smaller landscape screen area — same
        shrink treatment as the portrait phone layout above. */
@@ -652,6 +986,42 @@
     .feedLine{ font-size:6px; padding:2px 4px; max-width:220px; animation-duration:2.6s; }
     #killFeed .feedLine:nth-child(n+3){ display:none; }
     #zoneWarning{ font-size:7px; letter-spacing:1px; top:3px; }
+
+    /* Title/menu/selection/end screens contained to the screen rectangle
+       in landscape too, with the same compact sizing as portrait. */
+    .screen{
+      position:absolute;
+      inset:0;
+      z-index:15;
+      padding: 4px 6px;
+      overflow-y:auto;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    .screen::-webkit-scrollbar{ display:none; width:0; height:0; }
+    .seal, .mockingjaySeal{ width:28px; height:28px; margin:2px auto 4px; border-width:2px; }
+    .seal svg{ width:15px; height:15px; }
+    .logoImg{ width:15px; height:15px; }
+    .titleCardImg{ width:min(50%,160px); margin:0 auto 4px; }
+    .gameLogo{ font-size: clamp(12px,5vw,18px); margin-bottom:4px; }
+    .pressStart{ font-size:6.5px; }
+    h1.title{ font-size:clamp(11px,4vw,16px); }
+    .subtitle{ font-size:5.5px; margin-bottom:6px; }
+    .brief{ font-size:5.5px; padding:4px 2px; margin-bottom:6px; }
+    .menuList{ gap:6px; }
+    .menuItem{ font-size:8px; padding-left:14px; }
+    .introHeading{ font-size:8px; margin-bottom:4px; }
+    .introBody{ font-size:5.5px; margin-bottom:4px; }
+    .introHint{ font-size:4.5px; margin-top:4px; }
+    .districtList{ gap:3px; max-height:none; }
+    .districtItem{ font-size:6.5px; padding-left:12px; }
+    .tributeCards{ gap:6px; }
+    .tributeCard{ width:44px; padding:3px 2px; }
+    .tributeCard .tImgWrap{ height:20px; margin-bottom:2px; }
+    .tributeCard .tImgWrap img{ height:20px; }
+    .tributeCard .tLabel{ font-size:5px; }
+    button.bigBtn{ padding:5px 12px; font-size:7px; }
+    .statLine{ font-size:5.5px; }
   }
 
   /* End screen stats */
@@ -662,57 +1032,85 @@
 <body>
 <div id="app">
 
-  <!-- START SCREEN -->
-  <div id="startScreen" class="screen">
-    <div class="seal">
-      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
-    </div>
-    <h1 class="title">THE <span>ARENA</span></h1>
-    <div class="subtitle">75th Annual Pixel Games</div>
-    <div class="brief">
-      You are <b>Tribute #12</b>. Twenty-three others from all twelve districts have been dropped into this arena with you.
-      Grab a weapon from the Cornucopia, survive the bloodbath, and be the <b>last one standing</b>.
-      Patches of tall grass across the arena will hide you from a distance — use them.
-      The safe zone will shrink — the gas outside it does not forgive.
-      Watch for the <b>Career pack</b> — tributes from Districts 1, 2 and 4 hunt together and gang up
-      on a single target, though they'll turn on each other once the field thins out.
-      By Day 3 the Gamemakers release <b>mutts</b> into the arena — they hunt everyone alike.
-      Hunger and energy drain over time — forage <b>berries</b> near bushes to stay fed, but some are poisonous
-      and will stun and sicken you.
-    </div>
-    <div class="districtRow" id="districtRow"></div>
-
-    <div class="weaponPickLabel">Choose Your Starting Weapon</div>
-    <div class="weaponRow" id="weaponRow"></div>
-
-    <button class="bigBtn" id="startBtn">Enter The Arena</button>
-    <div class="footNote">WASD / Arrows to move · Space or tap ATTACK to strike · Q/E or 1-6 to switch weapons</div>
-  </div>
-
-  <!-- END SCREEN -->
-  <div id="endScreen" class="screen hidden">
-    <div class="seal" id="endSeal">
-      <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
-    </div>
-    <h1 class="title" id="endTitle">—</h1>
-    <div class="subtitle" id="endSubtitle">—</div>
-    <div id="endStats" style="margin-bottom:22px;"></div>
-    <button class="bigBtn" id="restartBtn">Return To The Reaping</button>
-  </div>
-
   <!-- GAME -->
-  <div id="gameFrame" class="hidden">
+  <div id="gameFrame">
+    <div id="gbTopSwitch">
+      <span id="switchArrowL">◄</span><span>OFF</span><span id="switchKnob"></span><span>ON</span><span id="switchArrowR">►</span>
+    </div>
     <div id="screenBezel">
     <div id="bezelTopRow">
+      <span class="dmLine dmLineL"></span>
+      <span id="dmText">Dot Matrix With Stereo Sound</span>
+      <span class="dmLine dmLineR"></span>
+    </div>
+    <div id="batteryIndicator">
       <span id="powerLed"></span>
-      <span id="powerLabel">POWER</span>
+      <span id="powerLabel">BATTERY</span>
     </div>
     <div id="screenArea">
+
+    <!-- START / INTRO SCREEN -->
+    <div id="startScreen" class="screen">
+
+      <!-- TITLE -->
+      <div class="introPanel" id="panelTitle">
+        <div class="gameLogo goldText" id="titleTextLogo">THE<br>HUNGER<br>GAMES</div>
+        <img src="assets/title-card.png" alt="THE HUNGER GAMES" class="titleCardImg hidden" id="titleCardImg">
+        <div class="mockingjaySeal">
+          <svg viewBox="0 0 24 24" id="titleSealSvg"><path fill="#e8b94a" d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
+          <img src="assets/logo.png" alt="" class="logoImg hidden" id="titleLogoImg">
+        </div>
+        <div class="pressStart goldText" id="pressStartHint">PRESS A BUTTON</div>
+      </div>
+
+      <!-- MAIN MENU -->
+      <div class="introPanel hidden" id="panelMenu">
+        <div class="menuList" id="menuList">
+          <div class="menuItem" data-idx="0"><span class="cursorArrow goldText">▶</span>START GAME</div>
+          <div class="menuItem" data-idx="1"><span class="cursorArrow goldText">▶</span>STORY MODE</div>
+          <div class="menuItem" data-idx="2"><span class="cursorArrow goldText">▶</span>INSTRUCTIONS</div>
+        </div>
+      </div>
+
+      <!-- STORY / INSTRUCTIONS TEXT -->
+      <div class="introPanel hidden" id="panelText">
+        <div class="introHeading goldText" id="textPanelTitle">STORY MODE</div>
+        <div class="introBody" id="textPanelBody"></div>
+        <div class="introHint">PRESS B TO GO BACK</div>
+      </div>
+
+      <!-- DISTRICT SELECT -->
+      <div class="introPanel hidden" id="panelDistrict">
+        <div class="introHeading goldText">PICK A DISTRICT</div>
+        <div class="districtList" id="districtList"></div>
+      </div>
+
+      <!-- TRIBUTE SELECT -->
+      <div class="introPanel hidden" id="panelTribute">
+        <div class="introHeading goldText">PICK A TRIBUTE</div>
+        <div class="introSubheading" id="tributeDistrictLabel">DISTRICT 1</div>
+        <div class="tributeCards" id="tributeCards"></div>
+        <div class="introHint">PRESS A AGAIN TO LOCK IN YOUR PICK<br>PRESS B TO GO BACK</div>
+      </div>
+
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="endScreen" class="screen hidden">
+      <div class="seal" id="endSeal">
+        <svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
+      </div>
+      <h1 class="title" id="endTitle">—</h1>
+      <div class="subtitle" id="endSubtitle">—</div>
+      <div id="endStats" style="margin-bottom:22px;"></div>
+      <button class="bigBtn" id="restartBtn">Return To The Reaping</button>
+    </div>
+
     <canvas id="game" width="1600" height="1000"></canvas>
 
     <div id="hud">
       <div class="hudBox">
-        <div class="hudLabel">TRIBUTE #12 — YOU</div>
+        <div class="hudLabel" id="playerHudLabel">TRIBUTE #12 — YOU</div>
         <div class="hpBarOuter"><div class="hpBarInner" id="hpBar"></div></div>
         <div class="hudLabel" style="margin-top:4px;">HUNGER</div>
         <div class="hpBarOuter"><div class="hpBarInner" id="hungerBar"></div></div>
@@ -742,6 +1140,10 @@
     </div>
     </div>
 
+    <div id="gbLogoRow">
+      <span id="gbLogoNintendo">Nintendo</span><span id="gbLogoMain">GAME BOY</span><span id="gbLogoTm">™</span>
+    </div>
+
     <div id="touchControls">
       <div class="dpad">
         <div></div><button data-dir="up">▲</button><div></div>
@@ -754,12 +1156,14 @@
           <button id="swapBtn" class="pillBtn">SELECT</button>
           <button id="startHint" class="pillBtn">START</button>
         </div>
-        <div id="grille"></div>
       </div>
 
-      <div class="actionStack">
-        <button id="bBtn" class="actionBtn actionBtnB">B</button>
-        <button id="atkBtn" class="actionBtn actionBtnA">A</button>
+      <div id="rightCluster">
+        <div class="actionStack">
+          <button id="bBtn" class="actionBtn actionBtnB">B</button>
+          <button id="atkBtn" class="actionBtn actionBtnA">A</button>
+        </div>
+        <div id="grille"></div>
       </div>
     </div>
     <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>
@@ -853,7 +1257,8 @@
   const AMMO_PICKUP_MIN = 3;
   const AMMO_PICKUP_MAX = 6;
 
-  let selectedWeapon = 'sword';
+  let selectedDistrict = 12;
+  let selectedGender = 'male';
 
   const rand = (a,b)=> a + Math.random()*(b-a);
   const randi = (a,b)=> Math.floor(rand(a,b+1));
@@ -962,12 +1367,47 @@
   const startScreen = document.getElementById('startScreen');
   const endScreen = document.getElementById('endScreen');
   const gameFrame = document.getElementById('gameFrame');
-  const startBtn = document.getElementById('startBtn');
   const restartBtn = document.getElementById('restartBtn');
-  const districtRow = document.getElementById('districtRow');
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
+
+  // ============================================================
+  // TITLE-SCREEN IMAGE ASSETS — user-provided title card + circle logo.
+  // Falls back to the original text/svg treatment if the file is missing.
+  // ============================================================
+  const titleTextLogo = document.getElementById('titleTextLogo');
+  const titleCardImg = document.getElementById('titleCardImg');
+  const titleSealSvg = document.getElementById('titleSealSvg');
+  const titleLogoImg = document.getElementById('titleLogoImg');
+  titleCardImg.addEventListener('load', ()=>{
+    titleCardImg.classList.remove('hidden');
+    titleTextLogo.classList.add('hidden');
+  });
+  titleCardImg.addEventListener('error', ()=>{
+    titleCardImg.remove();
+  });
+  titleLogoImg.addEventListener('load', ()=>{
+    titleLogoImg.classList.remove('hidden');
+    titleSealSvg.classList.add('hidden');
+  });
+  titleLogoImg.addEventListener('error', ()=>{
+    titleLogoImg.remove();
+  });
+  // In case the browser already finished (or already failed) loading the
+  // image before these listeners were attached (e.g. cached asset).
+  function checkImgAlreadySettled(img, onOk, onFail){
+    if(!img.isConnected && !img.complete) return;
+    if(img.complete){
+      if(img.naturalWidth > 0) onOk(); else onFail();
+    }
+  }
+  checkImgAlreadySettled(titleCardImg,
+    ()=>{ titleCardImg.classList.remove('hidden'); titleTextLogo.classList.add('hidden'); },
+    ()=> titleCardImg.remove());
+  checkImgAlreadySettled(titleLogoImg,
+    ()=>{ titleLogoImg.classList.remove('hidden'); titleSealSvg.classList.add('hidden'); },
+    ()=> titleLogoImg.remove());
 
   // ============================================================
   // PIXEL-ART ASSETS — small square sprites swapped in for the
@@ -1076,32 +1516,152 @@
   const countdownOverlay = document.getElementById('countdownOverlay');
   const countdownNum = document.getElementById('countdownNum');
   const countdownLabel = document.getElementById('countdownLabel');
+  const playerHudLabel = document.getElementById('playerHudLabel');
 
-  DISTRICTS.forEach(d=>{
-    const chip = document.createElement('div');
-    chip.className='districtChip';
-    chip.textContent = 'DISTRICT ' + d;
-    chip.style.borderColor = COLORS[d];
-    districtRow.appendChild(chip);
+  // ============================================================
+  // INTRO STATE MACHINE (title -> menu -> district -> tribute -> game)
+  // ============================================================
+  const panelTitle = document.getElementById('panelTitle');
+  const panelMenu = document.getElementById('panelMenu');
+  const panelText = document.getElementById('panelText');
+  const panelDistrict = document.getElementById('panelDistrict');
+  const panelTribute = document.getElementById('panelTribute');
+  const menuListEl = document.getElementById('menuList');
+  const textPanelTitleEl = document.getElementById('textPanelTitle');
+  const textPanelBodyEl = document.getElementById('textPanelBody');
+  const districtListEl = document.getElementById('districtList');
+  const tributeCardsEl = document.getElementById('tributeCards');
+  const tributeDistrictLabelEl = document.getElementById('tributeDistrictLabel');
+
+  const STORY_TEXT = "The Capitol has spoken.\n\nTwenty-four tributes enter the arena. Only one leaves.\n\nYou have been reaped. Choose your district, take your place on the plate, and when the gong sounds — run, fight, survive.";
+  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.";
+
+  let introScreen = 'title';
+  let menuIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false;
+  let textPanelReturnsTo = 'menu';
+
+  function showIntroPanel(name){
+    [panelTitle, panelMenu, panelText, panelDistrict, panelTribute].forEach(p=>p.classList.add('hidden'));
+    ({title:panelTitle, menu:panelMenu, text:panelText, district:panelDistrict, tribute:panelTribute})[name].classList.remove('hidden');
+    introScreen = name;
+  }
+
+  function renderMenu(){
+    menuListEl.querySelectorAll('.menuItem').forEach((el,i)=> el.classList.toggle('selected', i===menuIndex));
+  }
+  menuListEl.querySelectorAll('.menuItem').forEach((el,i)=>{
+    el.addEventListener('click', ()=>{ menuIndex=i; renderMenu(); confirmMenu(); });
   });
 
-  const weaponRow = document.getElementById('weaponRow');
-  const WEAPON_ICONS = { dagger:'🗡', sword:'⚔', axe:'🪓', spear:'🔱', bow:'🏹', knives:'🔪' };
-  WEAPON_KEYS.forEach(key=>{
-    const w = WEAPONS[key];
-    const card = document.createElement('div');
-    card.className = 'weaponCard' + (key===selectedWeapon ? ' selected' : '');
-    card.dataset.weapon = key;
-    card.innerHTML =
-      '<div class="wIcon" style="font-size:20px;">'+WEAPON_ICONS[key]+'</div>'+
-      '<div class="wName">'+w.name+'</div>'+
-      '<div class="wDesc">'+w.desc+'</div>';
-    card.addEventListener('click', ()=>{
-      selectedWeapon = key;
-      weaponRow.querySelectorAll('.weaponCard').forEach(c=>c.classList.remove('selected'));
-      card.classList.add('selected');
+  function confirmMenu(){
+    if(menuIndex===0){
+      districtIndex = Math.max(0, DISTRICTS.indexOf(selectedDistrict));
+      renderDistrictList();
+      showIntroPanel('district');
+    } else if(menuIndex===1){
+      textPanelTitleEl.textContent='STORY MODE'; textPanelBodyEl.textContent=STORY_TEXT;
+      textPanelReturnsTo='menu'; showIntroPanel('text');
+    } else {
+      textPanelTitleEl.textContent='INSTRUCTIONS'; textPanelBodyEl.textContent=INSTRUCTIONS_TEXT;
+      textPanelReturnsTo='menu'; showIntroPanel('text');
+    }
+  }
+
+  function renderDistrictList(){
+    districtListEl.innerHTML='';
+    DISTRICTS.forEach((d,i)=>{
+      const item=document.createElement('div');
+      item.className='districtItem'+(i===districtIndex?' selected':'');
+      item.innerHTML='<span class="cursorArrow goldText">▶</span>DISTRICT '+d;
+      item.addEventListener('click', ()=>{ districtIndex=i; renderDistrictList(); confirmDistrict(); });
+      districtListEl.appendChild(item);
     });
-    weaponRow.appendChild(card);
+  }
+
+  function confirmDistrict(){
+    selectedDistrict = DISTRICTS[districtIndex];
+    tributeIndex = selectedGender==='female' ? 1 : 0;
+    tributeArmed = false;
+    renderTributeCards();
+    showIntroPanel('tribute');
+  }
+
+  function renderTributeCards(){
+    tributeCardsEl.innerHTML='';
+    tributeDistrictLabelEl.textContent='DISTRICT '+selectedDistrict;
+    ['male','female'].forEach((gender,i)=>{
+      const assetKey='district-'+selectedDistrict+'-'+gender;
+      const card=document.createElement('div');
+      card.className='tributeCard'+(i===tributeIndex?' selected':'');
+      const iconHtml = assetReady(assetKey)
+        ? '<img src="'+ASSET_PATHS[assetKey]+'" alt="" />'
+        : '<span style="font-size:40px;">'+(gender==='male'?'♂':'♀')+'</span>';
+      card.innerHTML='<div class="tImgWrap">'+iconHtml+'</div><div class="tLabel">'+(gender==='male'?'MALE TRIBUTE':'FEMALE TRIBUTE')+'</div>';
+      card.addEventListener('click', ()=>{
+        if(tributeIndex===i && tributeArmed){ confirmTribute(); return; }
+        tributeIndex=i; tributeArmed=true; renderTributeCards();
+      });
+      tributeCardsEl.appendChild(card);
+    });
+  }
+
+  function confirmTribute(){
+    selectedGender = tributeIndex===1 ? 'female' : 'male';
+    startGame();
+  }
+
+  // Shared intro-navigation logic, driven by an abstract action so both
+  // the keyboard handler and the touch D-pad / A / B buttons can trigger
+  // the exact same behavior.
+  function introHandleAction(action){
+    const up=action==='up', down=action==='down';
+    const left=action==='left', right=action==='right';
+    const A=action==='A', B=action==='B';
+
+    if(introScreen==='title'){ showIntroPanel('menu'); menuIndex=0; renderMenu(); return; }
+    if(introScreen==='menu'){
+      if(up||left){ menuIndex=(menuIndex+2)%3; renderMenu(); }
+      else if(down||right){ menuIndex=(menuIndex+1)%3; renderMenu(); }
+      else if(A){ confirmMenu(); }
+      return;
+    }
+    if(introScreen==='text'){ if(B||A){ showIntroPanel(textPanelReturnsTo); renderMenu(); } return; }
+    if(introScreen==='district'){
+      if(up){ districtIndex=(districtIndex-1+DISTRICTS.length)%DISTRICTS.length; renderDistrictList(); }
+      else if(down){ districtIndex=(districtIndex+1)%DISTRICTS.length; renderDistrictList(); }
+      else if(A){ confirmDistrict(); }
+      else if(B){ showIntroPanel('menu'); renderMenu(); }
+      return;
+    }
+    if(introScreen==='tribute'){
+      if(left||up){ tributeIndex=0; tributeArmed=false; renderTributeCards(); }
+      else if(right||down){ tributeIndex=1; tributeArmed=false; renderTributeCards(); }
+      else if(A){ if(tributeArmed) confirmTribute(); else { tributeArmed=true; renderTributeCards(); } }
+      else if(B){ renderDistrictList(); showIntroPanel('district'); }
+      return;
+    }
+  }
+
+  function introKeyDown(e){
+    const key=e.key.toLowerCase();
+    let action=null;
+    if(key==='w'||key==='arrowup') action='up';
+    else if(key==='s'||key==='arrowdown') action='down';
+    else if(key==='arrowleft') action='left';
+    else if(key==='arrowright') action='right';
+    else if(key===' '||key==='enter'||key==='a') action='A';
+    else if(key==='b'||key==='escape'||key==='backspace') action='B';
+    if(action){ introHandleAction(action); e.preventDefault(); }
+  }
+
+  document.getElementById('pressStartHint').addEventListener('click', ()=>{
+    showIntroPanel('menu'); menuIndex=0; renderMenu();
+  });
+
+  restartBtn.addEventListener('click', ()=>{
+    endScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    showIntroPanel('title');
   });
 
   // ============================================================
@@ -1132,6 +1692,12 @@
   const keys = {};
   const touchDir = {up:false,down:false,left:false,right:false};
   let attackPressed = false;
+
+  // Is the intro/title/menu/district/tribute UI currently the active
+  // screen (as opposed to live gameplay or the end screen)?
+  function introActive(){
+    return !startScreen.classList.contains('hidden');
+  }
 
   // ============================================================
   // SETUP
@@ -1330,7 +1896,7 @@
     }
   }
 
-  function newTribute(district, isPlayer){
+  function newTribute(district, isPlayer, forcedGender){
     // Position is assigned afterward by positionTributesOnPlates() so every
     // tribute starts evenly spaced around the cornucopia, like the reaping circle.
     return {
@@ -1338,6 +1904,7 @@
       district,
       isPlayer: !!isPlayer,
       isCareer: !isPlayer && CAREER_DISTRICTS.includes(district),
+      genderOverride: forcedGender || null,
       x: CENTER_X, y: CENTER_Y,
       vx:0, vy:0,
       facing: {x:0,y:1},
@@ -1395,21 +1962,18 @@
   function resetGame(){
     tributes = [];
     // Build every district's two reaping slots, then pull the player out
-    // as one of District 12's tributes and shuffle the rest for spawn order.
+    // as their chosen district's tribute and shuffle the rest for spawn order.
     let pool = [];
     DISTRICTS.forEach(d=>{ pool.push(d, d); });
-    pool.splice(pool.indexOf(12), 1);
+    pool.splice(pool.indexOf(selectedDistrict), 1);
     for(let i=pool.length-1;i>0;i--){
       const j = Math.floor(Math.random()*(i+1));
       const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
     }
-    player = newTribute(12, true);
-    player.weapon = selectedWeapon;
-    player.inventory = [selectedWeapon];
-    player.invIndex = 0;
-    if(WEAPONS[selectedWeapon].type === 'ranged'){
-      player.ammo[selectedWeapon] = Math.ceil(WEAPONS[selectedWeapon].ammoMax * 0.6);
-    }
+    player = newTribute(selectedDistrict, true, selectedGender);
+    // Player starts unarmed on the plate, same as every other tribute —
+    // the only way to get a weapon is to grab one from the Cornucopia
+    // (or off a body) once the gong sounds.
     tributes.push(player);
     for(let i=0;i<pool.length;i++){
       tributes.push(newTribute(pool[i], false));
@@ -1447,6 +2011,8 @@
     countdownNum.textContent = Math.ceil(countdownRemaining);
     countdownLabel.textContent = 'STAY ON YOUR PLATE';
 
+    playerHudLabel.textContent = 'DISTRICT ' + selectedDistrict + ' — YOU';
+
     updateHud();
   }
 
@@ -1454,6 +2020,7 @@
   // INPUT
   // ============================================================
   window.addEventListener('keydown', e=>{
+    if(!startScreen.classList.contains('hidden')){ introKeyDown(e); return; }
     const key = e.key.toLowerCase();
     keys[key] = true;
     if(key === ' '){ attackPressed = true; e.preventDefault(); }
@@ -1467,7 +2034,16 @@
 
   document.querySelectorAll('.dpad button').forEach(btn=>{
     const dir = btn.dataset.dir;
-    const on = (e)=>{ e.preventDefault(); touchDir[dir]=true; btn.classList.add('active'); };
+    const on = (e)=>{
+      e.preventDefault();
+      btn.classList.add('active');
+      if(introActive()){
+        introHandleAction(dir);
+        setTimeout(()=> btn.classList.remove('active'), 150);
+        return;
+      }
+      touchDir[dir]=true;
+    };
     const off = (e)=>{ e.preventDefault(); touchDir[dir]=false; btn.classList.remove('active'); };
     btn.addEventListener('touchstart', on, {passive:false});
     btn.addEventListener('touchend', off, {passive:false});
@@ -1477,12 +2053,20 @@
     btn.addEventListener('mouseleave', off);
   });
   const atkBtn = document.getElementById('atkBtn');
-  const atkOn = (e)=>{ e.preventDefault(); attackPressed = true; };
+  const atkOn = (e)=>{
+    e.preventDefault();
+    if(introActive()){ introHandleAction('A'); return; }
+    attackPressed = true;
+  };
   atkBtn.addEventListener('touchstart', atkOn, {passive:false});
   atkBtn.addEventListener('mousedown', atkOn);
 
   const bBtn = document.getElementById('bBtn');
-  const swapOn = (e)=>{ e.preventDefault(); cycleWeapon(1); };
+  const swapOn = (e)=>{
+    e.preventDefault();
+    if(introActive()){ introHandleAction('B'); return; }
+    cycleWeapon(1);
+  };
   if(bBtn){
     bBtn.addEventListener('touchstart', swapOn, {passive:false});
     bBtn.addEventListener('mousedown', swapOn);
@@ -1490,7 +2074,11 @@
   }
 
   const selectBtn = document.getElementById('swapBtn');
-  const selectOn = (e)=>{ e.preventDefault(); cycleWeapon(-1); };
+  const selectOn = (e)=>{
+    e.preventDefault();
+    if(introActive()){ return; }
+    cycleWeapon(-1);
+  };
   if(selectBtn){
     selectBtn.addEventListener('touchstart', selectOn, {passive:false});
     selectBtn.addEventListener('mousedown', selectOn);
@@ -2306,7 +2894,9 @@
     ctx.scale(1.3, 1.3); // chunkier overworld-trainer sized sprite (visual only)
     const flash = t.hitFlash > 0;
     const bodyColor = flash ? '#ffffff' : t.color;
-    const tributeImgKey = t.district % 2 === 0 ? 'district-' + t.district + '-female' : 'district-' + t.district + '-male';
+    const tributeImgKey = t.genderOverride
+      ? ('district-' + t.district + '-' + t.genderOverride)
+      : (t.district % 2 === 0 ? 'district-' + t.district + '-female' : 'district-' + t.district + '-male');
 
     if(assetReady(tributeImgKey)){
       ctx.save();
@@ -2968,7 +3558,7 @@
       endScreen.classList.remove('hidden');
       if(won){
         endTitle.innerHTML = 'YOU ARE THE <span style="color:#d4af37;">VICTOR</span>';
-        endSubtitle.textContent = 'District 12 has won the 75th Games';
+        endSubtitle.textContent = 'District ' + selectedDistrict + ' has won the 75th Games';
         endSeal.style.borderColor = '#d4af37';
       } else {
         endTitle.innerHTML = 'YOU HAVE <span style="color:#e8404a;">FALLEN</span>';
@@ -2981,8 +3571,7 @@
     }, 900);
   }
 
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', startGame);
+  showIntroPanel('title');
 
 })();
 </script>
