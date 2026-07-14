@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>The Hunger Games</title>
+<link rel="icon" type="image/png" href="assets/mockingjay.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
@@ -37,7 +38,7 @@
     padding: 8px;
   }
   @media (max-width: 759px){
-    #app{ padding: 0; height: 100dvh; }
+    #app{ padding: 0; height: 100vh; height: 100dvh; }
   }
 
   /* ---------- Screens ---------- */
@@ -50,15 +51,12 @@
   .hidden{display:none !important;}
 
   .seal{
-    width:90px; height:90px; border-radius:50%;
-    border:3px solid var(--gold);
+    width:170px; height:170px;
     display:flex; align-items:center; justify-content:center;
     margin-bottom:18px;
-    box-shadow: 0 0 24px rgba(212,175,55,.35), inset 0 0 12px rgba(212,175,55,.25);
-    background: repeating-conic-gradient(from 0deg, #2a2a1a 0deg 15deg, #1a1a10 15deg 30deg);
   }
-  .seal svg{width:52px;height:52px;fill:var(--gold);}
-  .seal img{width:52px;height:52px;object-fit:contain;image-rendering:pixelated;}
+  .seal svg{width:130px;height:130px;fill:var(--gold);}
+  .seal img{width:150px;height:150px;object-fit:contain;image-rendering:pixelated;}
 
   h1.title{
     font-size: clamp(28px, 7vw, 54px);
@@ -190,16 +188,12 @@
     filter: drop-shadow(3px 3px 0 rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(232,64,74,.35));
   }
   .mockingjaySeal{
-    width:92px; height:92px; margin: 4px auto 22px;
-    border-radius:50%;
-    border:3px solid #caa24a;
+    width:170px; height:170px; margin: 4px auto 22px;
     display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 0 26px rgba(202,162,74,.4), inset 0 0 12px rgba(202,162,74,.3);
-    background: repeating-conic-gradient(from 0deg, #241d10 0deg 15deg, #171208 15deg 30deg);
   }
-  .mockingjaySeal svg{ width:52px; height:52px; }
+  .mockingjaySeal svg{ width:130px; height:130px; }
   .logoImg{
-    width:52px; height:52px;
+    width:150px; height:150px;
     image-rendering: pixelated;
     object-fit: contain;
   }
@@ -377,7 +371,9 @@
       justify-content: flex-start;
       width: 100vw;
       max-width: 100vw;
+      height: 100vh;
       height: 100dvh;
+      max-height: 100vh;
       max-height: 100dvh;
       aspect-ratio: unset;
       background: linear-gradient(155deg, #d7d1c2 0%, #bdb6a4 45%, #a79f8c 100%);
@@ -385,6 +381,7 @@
       outline: none;
       box-shadow: none;
       padding: env(safe-area-inset-top,0) max(10px, env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(10px, env(safe-area-inset-left,0));
+      overflow: hidden;
     }
     /* The console shell (and the screen "glass" inside it) is always on
        screen on mobile — title, menus, district/tribute pick, and the end
@@ -532,10 +529,10 @@
     }
     .screen::-webkit-scrollbar{ display:none; width:0; height:0; }
 
-    .seal, .mockingjaySeal{ width:34px; height:34px; margin: 2px auto 6px; border-width:2px; }
-    .seal svg{ width:18px; height:18px; }
-    .seal img{ width:18px; height:18px; }
-    .logoImg{ width:18px; height:18px; }
+    .seal, .mockingjaySeal{ width:64px; height:64px; margin: 2px auto 6px; }
+    .seal svg{ width:48px; height:48px; }
+    .seal img{ width:56px; height:56px; }
+    .logoImg{ width:56px; height:56px; }
     .titleCardImg{ width: min(70%, 220px); margin: 0 auto 6px; }
     .gameLogo{ font-size: clamp(14px, 6vw, 22px); margin-bottom:6px; line-height:1.05; }
     .pressStart{ font-size: 7px; letter-spacing:1px; margin-top:2px; }
@@ -554,10 +551,10 @@
 
     .menuList{ gap:8px; }
     .menuItem{ font-size: 9px; letter-spacing:1px; padding-left:16px; }
-    .introHeading{ font-size:9px; letter-spacing:1px; margin-bottom:6px; }
-    .introSubheading{ font-size:6.5px; letter-spacing:1px; margin-bottom:6px; }
-    .introBody{ font-size:6px; line-height:1.5; margin-bottom:6px; max-width:96%; }
-    .introHint{ font-size:5px; letter-spacing:0.5px; margin-top:6px; line-height:1.5; }
+    .introHeading{ font-size:10px; letter-spacing:1px; margin-bottom:7px; }
+    .introSubheading{ font-size:7.5px; letter-spacing:1px; margin-bottom:7px; }
+    .introBody{ font-size:9.5px; line-height:1.6; margin-bottom:8px; max-width:96%; }
+    .introHint{ font-size:7px; letter-spacing:0.5px; margin-top:8px; line-height:1.6; }
 
     .districtList{ gap:4px; max-height:none; padding:2px 4px; }
     .districtItem{ font-size:7px; letter-spacing:1px; padding-left:14px; }
@@ -572,8 +569,28 @@
     #endStats{ margin-bottom:8px; }
   }
 
+  /* Created-by credit */
+  #createdBy{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:6px;
+    z-index:30;
+    font-size:10px;
+    letter-spacing:1px;
+    color:#8a6a3a;
+    text-shadow:0 0 8px rgba(0,0,0,.35);
+    pointer-events:none;
+    opacity:.95;
+  }
+
+  @media (max-width:759px){
+    #createdBy{ font-size:7px; bottom:4px; }
+  }
+
   /* HUD */
   #hud{
+
     position:absolute; top:0; left:0; right:0;
     display:flex; justify-content:space-between; align-items:flex-start;
     padding:8px 10px;
@@ -798,6 +815,8 @@
       padding: 18px 14px 10px;
       background: transparent;
       border-top: none;
+      min-height: 0;
+      overflow: hidden;
     }
     #controlsTopRow{
       display:flex;
@@ -898,22 +917,25 @@
      shows up as gaps down the sides. */
   @media (max-width: 932px) and (orientation: landscape){
     .hint{ display:none; }
-    #app{ padding:0; height:100dvh; }
+    #app{ padding:0; height:100vh; height:100dvh; }
     #gameFrame{
       flex-direction: row;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      justify-content: center;
+      gap: 8px;
       width: 100vw;
+      height: 100vh;
       height: 100dvh;
       max-width: 100vw;
+      max-height: 100vh;
       max-height: 100dvh;
       aspect-ratio: auto;
       border: none;
       outline: none;
       box-shadow: none;
       background: #0a0d0a;
-      padding: max(6px, env(safe-area-inset-top,0)) max(10px, env(safe-area-inset-right,0)) max(6px, env(safe-area-inset-bottom,0)) max(10px, env(safe-area-inset-left,0));
+      padding: max(4px, env(safe-area-inset-top,0)) max(6px, env(safe-area-inset-right,0)) max(4px, env(safe-area-inset-bottom,0)) max(6px, env(safe-area-inset-left,0));
+      overflow: hidden;
     }
     #gameFrame.hidden{ display:flex !important; }
     #bezelTopRow{ display:none; }
@@ -922,14 +944,18 @@
       position: relative;
       flex: 0 0 auto;
       width: auto;
-      /* 232px ≈ d-pad width + both button widths + the two inter-element
+      /* 190px ≈ d-pad width + both button widths + the two inter-element
          gaps + side padding, so the screen's own width (height * 1.6)
-         never eats into that reserved space. */
-      height: min(84dvh, calc((100vw - 232px) / 1.6));
+         never eats into that reserved space. Kept conservative (smaller
+         than the actual control cluster) so rounding/browser-chrome
+         differences never push the buttons past the viewport edge. */
+      height: min(80vh, calc((100vw - 190px) / 1.6));
+      height: min(80dvh, calc((100vw - 190px) / 1.6));
+      max-height: 100%;
       margin: 0;
       background: linear-gradient(155deg, #4a4a46, #2c2c29);
       border-radius: 10px;
-      padding: 6px;
+      padding: 5px;
       box-shadow: inset 0 0 0 2px #1a1a17, 0 3px 6px rgba(0,0,0,.35);
     }
     #screenArea{
@@ -955,11 +981,11 @@
       order: 1;
       align-self: center;
       flex: 0 0 auto;
-      grid-template-columns: repeat(3, 34px);
-      grid-template-rows: repeat(3, 34px);
+      grid-template-columns: repeat(3, 30px);
+      grid-template-rows: repeat(3, 30px);
       gap: 2px;
     }
-    .dpad button{ width:34px; height:34px; font-size:13px; }
+    .dpad button{ width:30px; height:30px; font-size:12px; }
     /* SELECT/START dropped in landscape — no room for a third column
        without shrinking the screen further, and B already cycles weapons.
        The switch/logo/battery/grille are portrait-only shell decoration,
@@ -972,11 +998,11 @@
       flex: 0 0 auto;
       flex-direction: row;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       transform: none;
     }
-    #bBtn.actionBtnB{ width:34px; height:34px; margin-bottom:0; font-size:11px; }
-    #atkBtn.actionBtnA{ width:44px; height:44px; font-size:11px; margin-bottom:0; }
+    #bBtn.actionBtnB{ width:30px; height:30px; margin-bottom:0; font-size:10px; }
+    #atkBtn.actionBtnA{ width:40px; height:40px; font-size:10px; margin-bottom:0; }
 
     /* Compact HUD so it fits the smaller landscape screen area — same
        shrink treatment as the portrait phone layout above. */
@@ -1010,10 +1036,10 @@
       -ms-overflow-style:none;
     }
     .screen::-webkit-scrollbar{ display:none; width:0; height:0; }
-    .seal, .mockingjaySeal{ width:28px; height:28px; margin:2px auto 4px; border-width:2px; }
-    .seal svg{ width:15px; height:15px; }
-    .seal img{ width:15px; height:15px; }
-    .logoImg{ width:15px; height:15px; }
+    .seal, .mockingjaySeal{ width:52px; height:52px; margin:2px auto 4px; }
+    .seal svg{ width:40px; height:40px; }
+    .seal img{ width:44px; height:44px; }
+    .logoImg{ width:44px; height:44px; }
     .titleCardImg{ width:min(50%,160px); margin:0 auto 4px; }
     .gameLogo{ font-size: clamp(12px,5vw,18px); margin-bottom:4px; }
     .pressStart{ font-size:6.5px; }
@@ -1022,9 +1048,9 @@
     .brief{ font-size:5.5px; padding:4px 2px; margin-bottom:6px; }
     .menuList{ gap:6px; }
     .menuItem{ font-size:8px; padding-left:14px; }
-    .introHeading{ font-size:8px; margin-bottom:4px; }
-    .introBody{ font-size:5.5px; margin-bottom:4px; }
-    .introHint{ font-size:4.5px; margin-top:4px; }
+    .introHeading{ font-size:9px; margin-bottom:5px; }
+    .introBody{ font-size:8px; line-height:1.55; margin-bottom:5px; }
+    .introHint{ font-size:6px; margin-top:5px; line-height:1.5; }
     .districtList{ gap:3px; max-height:none; }
     .districtItem{ font-size:6.5px; padding-left:12px; }
     .tributeCards{ gap:6px; }
@@ -1034,6 +1060,24 @@
     .tributeCard .tLabel{ font-size:5px; }
     button.bigBtn{ padding:5px 12px; font-size:7px; }
     .statLine{ font-size:5.5px; }
+  }
+
+  /* Very short landscape viewports (e.g. older/taller-aspect phones like
+     the Galaxy S8+ with on-screen nav bars eating into the height) —
+     shrink the control cluster further so the screen-height formula above
+     never has to fight for space against oversized fixed-px buttons. */
+  @media (max-width: 932px) and (orientation: landscape) and (max-height: 380px){
+    .dpad{
+      grid-template-columns: repeat(3, 24px);
+      grid-template-rows: repeat(3, 24px);
+    }
+    .dpad button{ width:24px; height:24px; font-size:10px; }
+    #bBtn.actionBtnB{ width:24px; height:24px; font-size:9px; }
+    #atkBtn.actionBtnA{ width:32px; height:32px; font-size:9px; }
+    #screenBezel{
+      height: min(80vh, calc((100vw - 150px) / 1.6));
+      height: min(80dvh, calc((100vw - 150px) / 1.6));
+    }
   }
 
   /* End screen stats */
@@ -1067,10 +1111,10 @@
       <!-- TITLE -->
       <div class="introPanel" id="panelTitle">
         <div class="gameLogo goldText" id="titleTextLogo">THE<br>HUNGER<br>GAMES</div>
-        <img src="assets/title-card.png" alt="THE HUNGER GAMES" class="titleCardImg hidden" id="titleCardImg">
+        <img src="assets/title-logo.png" alt="THE HUNGER GAMES" class="titleCardImg hidden" id="titleCardImg">
         <div class="mockingjaySeal">
           <svg viewBox="0 0 24 24" id="titleSealSvg"><path fill="#e8b94a" d="M12 2l2.4 6.5L21 9l-5.2 4.3L17.4 21 12 17l-5.4 4 1.6-7.7L3 9l6.6-.5L12 2z"/></svg>
-          <img src="assets/logo.png" alt="" class="logoImg hidden" id="titleLogoImg">
+          <img src="assets/mockingjay.png" alt="" class="logoImg hidden" id="titleLogoImg">
         </div>
         <div class="pressStart goldText" id="pressStartHint">PRESS A BUTTON</div>
       </div>
@@ -1110,7 +1154,7 @@
     <!-- END SCREEN -->
     <div id="endScreen" class="screen hidden">
       <div class="seal" id="endSeal">
-        <img src="assets/logo.png" alt="" id="endSealImg">
+        <img src="assets/mockingjay.png" alt="" id="endSealImg">
       </div>
       <h1 class="title" id="endTitle">—</h1>
       <div class="subtitle" id="endSubtitle">—</div>
@@ -1182,6 +1226,11 @@
     </div>
     <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>
   </div>
+
+  <div id="createdBy">Created by Jeo Mayku</div>
+
+  <audio id="musicIntro" src="assets/hunger-games-theme.mp3" loop preload="auto"></audio>
+  <audio id="musicArena" src="assets/arena-theme.mp3" loop preload="auto"></audio>
 
 </div>
 
@@ -1376,6 +1425,70 @@
   }
 
   // ============================================================
+  // BACKGROUND MUSIC — intro theme on title/menu/district/tribute
+  // screens, arena theme once the player is on the plate / playing.
+  // ============================================================
+  const musicIntroEl = document.getElementById('musicIntro');
+  const musicArenaEl = document.getElementById('musicArena');
+  if(musicIntroEl) musicIntroEl.volume = 0.45;
+  if(musicArenaEl) musicArenaEl.volume = 0.45;
+
+  function fadeAudio(el, targetVol, ms, onDone){
+    if(!el) return;
+    const startVol = el.volume;
+    const steps = 12;
+    const stepTime = ms/steps;
+    let i = 0;
+    const timer = setInterval(()=>{
+      i++;
+      el.volume = clamp(startVol + (targetVol-startVol)*(i/steps), 0, 1);
+      if(i>=steps){
+        clearInterval(timer);
+        if(targetVol<=0.001) el.pause();
+        if(onDone) onDone();
+      }
+    }, stepTime);
+  }
+
+  function playMusic(el, targetVol){
+    if(!el) return;
+    const vol = targetVol != null ? targetVol : 0.45;
+    if(el.paused){
+      el.volume = 0;
+      el.play().catch(()=>{ /* needs a user gesture first; retried on next interaction */ });
+    }
+    fadeAudio(el, vol, 500);
+  }
+
+  function stopMusic(el){
+    if(!el || el.paused) return;
+    fadeAudio(el, 0, 400);
+  }
+
+  function playIntroMusic(){
+    stopMusic(musicArenaEl);
+    playMusic(musicIntroEl, 0.45);
+  }
+
+  function playArenaMusic(){
+    stopMusic(musicIntroEl);
+    playMusic(musicArenaEl, 0.45);
+  }
+
+  // Autoplay policies require a real user gesture before audio can start.
+  // Kick off intro music on the first keypress/tap anywhere, as long as
+  // we're still on one of the title/menu/selection screens.
+  let musicUnlocked = false;
+  function unlockMusicOnce(){
+    if(musicUnlocked) return;
+    musicUnlocked = true;
+    if(introActive()) playIntroMusic();
+  }
+  document.addEventListener('keydown', unlockMusicOnce, {once:true});
+  document.addEventListener('pointerdown', unlockMusicOnce, {once:true});
+  document.addEventListener('touchstart', unlockMusicOnce, {once:true, passive:true});
+
+  // ============================================================
   // DOM refs
   // ============================================================
   const startScreen = document.getElementById('startScreen');
@@ -1424,7 +1537,7 @@
     ()=> titleLogoImg.remove());
 
   // ============================================================
-  // END-SCREEN SEAL IMAGE — same assets/logo.png used on the title
+  // END-SCREEN SEAL IMAGE — same assets/mockingjay.png used on the title
   // screen. If it fails to load, fall back to the gold trophy-star SVG
   // instead of leaving the seal empty.
   // ============================================================
@@ -1574,6 +1687,7 @@
     [panelTitle, panelMenu, panelText, panelDistrict, panelTribute].forEach(p=>p.classList.add('hidden'));
     ({title:panelTitle, menu:panelMenu, text:panelText, district:panelDistrict, tribute:panelTribute})[name].classList.remove('hidden');
     introScreen = name;
+    if(musicUnlocked) playIntroMusic();
   }
 
   function renderMenu(){
@@ -3591,6 +3705,7 @@
     running = true;
     lastTime = performance.now();
     feed('Welcome to the arena. Hold your position — the gong will sound soon.');
+    playArenaMusic();
     animId = requestAnimationFrame(loop);
   }
 
