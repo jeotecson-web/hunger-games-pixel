@@ -1381,6 +1381,18 @@
       hp: 30, dmg: 16, speed: 55,
       attackRange: 30, attackCooldown: 1.1, detectRange: 200,
       stunOnHit: 0, bodyColor:'#4a4438', headColor:'#5c5648', eyeColor:'#1a1210', quillColor:'#e8e3d3'
+    },
+    monkey: {
+      key:'monkey', name:'Monkey Mutt',
+      hp: 34, dmg: 15, speed: 95,
+      attackRange: 28, attackCooldown: 0.7, detectRange: 240,
+      stunOnHit: 0, bodyColor:'#5c4028', headColor:'#6a4a30', eyeColor:'#e8404a'
+    },
+    beast: {
+      key:'beast', name:'The Beast',
+      hp: 150, dmg: 27, speed: 82,
+      attackRange: 36, attackCooldown: 1.0, detectRange: 340,
+      stunOnHit: 0, bodyColor:'#241010', headColor:'#301414', eyeColor:'#ff3030'
     }
   };
   const DEFAULT_MUTT_ROSTER = ['default'];
@@ -1431,6 +1443,32 @@
   let volcanoStateTimer = 0;
 
   // ============================================================
+  // CLOCK ARENA — a rotating-trap arena (à la a "Quarter Quell" clock).
+  // Only active when the current arena's config sets `clockArena`. The
+  // arena is divided into twelve 30° wedges around the center; every
+  // in-game "hour" the next wedge in sequence springs its trap, and the
+  // whole 12-hour cycle loops indefinitely once it completes — matching
+  // the way the traps reset at noon and midnight.
+  // ============================================================
+  const CLOCK_HOUR_MS = 22000; // real ms per in-arena "hour"
+  const CLOCK_TRAPS = [
+    { key:'lightning',  name:'Lightning Tree', icon:'\u26A1', color:'#f0c869', desc:'Lightning blasts the tallest tree in this sector.' },
+    { key:'bloodrain',  name:'Blood Rain',     icon:'\u2600',  color:'#8a1a1a', desc:'A downpour of caustic, metallic blood scorches anyone caught in it.' },
+    { key:'fog',        name:'Paralyzing Fog', icon:'\u2601',  color:'#9fdca0', desc:'A creeping fog paralyzes on contact.' },
+    { key:'monkeys',    name:'Monkey Mutts',   icon:'\u2668',  color:'#8a5c3a', desc:'Razor-clawed monkey muttations drop from the canopy.' },
+    { key:'jabberjays', name:'Jabberjays',     icon:'\u2666',  color:'#5c8ac9', desc:'Jabberjays scream with the voices of loved ones.' },
+    { key:'unknown1',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'beast',      name:'The Beast',      icon:'\u2620',  color:'#3a2020', desc:'A massive, unseen predator prowls this sector.' },
+    { key:'unknown2',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'unknown3',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'unknown4',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'tidalwave',  name:'Tidal Wave',     icon:'\u2248',  color:'#3a7a9a', desc:'A wall of water surges out from the lake.' },
+    { key:'insects',    name:'Insect Swarm',   icon:'\u2735',  color:'#8a8a3a', desc:'Clicking insects swarm out, stripping flesh.' }
+  ];
+  let clockActiveHour = -1;
+  let clockTickTimer = 0;
+
+  // ============================================================
   // ARENAS — the Gamemakers offer a choice of battlegrounds. Each one
   // re-tints the terrain, repositions/resizes the water source, and
   // tweaks a handful of survival/danger knobs (obstacle density, zone
@@ -1471,18 +1509,19 @@
     },
     scorched: {
       id:'scorched',
-      name:'The Scorched Sands',
-      desc:'Desert arena — sparse trees, rocky cover, and a shrinking oasis worth fighting for.',
-      swatch: 'linear-gradient(135deg,#d9a94a,#b8823a 45%,#8a5c2a)',
-      tint: 'rgba(220,150,60,0.16)',
-      biomeColors: { forest:'#7a6a34', meadow:'#c9a13b', cave:'#8a6a3a', water:'#3a7a8a' },
-      pond: { fx:0.5, fy:0.5, rx:130, ry:90 },
-      obstacleMult: 0.75, grassMult: 0.55,
-      zoneScale: 1.08, shrinkMult: 0.9, supplyMult: 1.15,
-      muttDayOffset: 1, muttIntervalMult: 1,
-      poisonMult: 1.35,
-      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
-      showPath: true, flowerMult: 1, volcano: null
+      name:'The Clockwork Shore',
+      desc:'A circular salt-water arena built like a clock — twelve jungle wedges ring a central lake and Cornucopia island, and every hour a new sector springs a lethal trap.',
+      swatch: 'linear-gradient(135deg,#4f9a8a,#2e6a5c 45%,#c9a13b)',
+      tint: 'rgba(60,140,120,0.10)',
+      biomeColors: { forest:'#2e5c4a', meadow:'#3f7a5c', cave:'#4a6a56', water:'#2a7a94' },
+      pond: { fx:0.5, fy:0.5, rx:170, ry:170 },
+      obstacleMult: 0.85, grassMult: 0.8,
+      zoneScale: 1.0, shrinkMult: 0.9, supplyMult: 1.1,
+      muttDayOffset: 1, muttIntervalMult: 1.4,
+      poisonMult: 1.1,
+      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: 3,
+      showPath: false, flowerMult: 1.1, volcano: null,
+      clockArena: true
     },
     jungle: {
       id:'jungle',
@@ -1529,6 +1568,8 @@
     volcanoState = 'dormant';
     volcanoNextAt = VOLCANO ? 6000 : Infinity;
     volcanoStateTimer = 0;
+    clockActiveHour = -1;
+    clockTickTimer = 0;
     grassPattern = null; sandPattern = null; // force pattern/tint re-derivation next render
   }
 
@@ -2849,6 +2890,176 @@
     }
   }
 
+  // ============================================================
+  // CLOCK ARENA — rotating hourly traps around 12 wedges
+  // ============================================================
+  // Returns which 30° wedge (0-11, 0 = the "12:00" wedge at the top,
+  // increasing clockwise) a world point falls into.
+  function wedgeIndexForPoint(x,y){
+    const dx = x - CENTER_X, dy = y - CENTER_Y;
+    let ang = Math.atan2(dx, -dy);
+    if(ang < 0) ang += Math.PI*2;
+    return Math.floor(ang / (Math.PI/6)) % 12;
+  }
+
+  // A random world point inside wedge `hour`, at a radius between minR/maxR
+  // from the center.
+  function wedgeRandomPoint(hour, minR, maxR){
+    const angDeg = rand(hour*30, (hour+1)*30);
+    const angRad = angDeg * Math.PI/180;
+    const r = rand(minR, maxR);
+    return { x: clamp(CENTER_X + Math.sin(angRad)*r, 20, WORLD_W-20), y: clamp(CENTER_Y - Math.cos(angRad)*r, 20, WORLD_H-20) };
+  }
+
+  function currentClockHourIndex(){
+    return Math.floor((elapsed % (CLOCK_HOUR_MS*12)) / CLOCK_HOUR_MS);
+  }
+
+  function spawnWedgeMutt(speciesKey, count){
+    const outerR = Math.min(zoneRadiusX, zoneRadiusY) * 0.8;
+    for(let i=0;i<count;i++){
+      const p = wedgeRandomPoint(clockActiveHour, 110, Math.max(140, outerR));
+      const species = MUTT_SPECIES[speciesKey] || MUTT_SPECIES.default;
+      mutts.push({
+        id: Math.random().toString(36).slice(2),
+        isMutt:true, species: speciesKey,
+        x:p.x, y:p.y, vx:0, vy:0,
+        facing:{x:0,y:1},
+        hp: species.hp, maxHp: species.hp,
+        alive:true, attackCooldown:0, hitFlash:0,
+        wanderTarget:null, wanderTimer:0
+      });
+    }
+  }
+
+  function triggerLightning(){
+    const outerR = Math.min(zoneRadiusX, zoneRadiusY) * 0.85;
+    const p = wedgeRandomPoint(clockActiveHour, 130, Math.max(160, outerR));
+    playRumbleSound();
+    particles.push({x:p.x, y:p.y-20, text:'\u26A1 STRIKE!', color:'#f0c869', life:1.3, vy:-14});
+    for(const t of tributes){
+      if(!t.alive) continue;
+      if(dist(t,p) < 95){
+        const perk = t.perk || {};
+        damageTribute(t, 32 * (perk.zoneDmgMult != null ? perk.zoneDmgMult : 1), null);
+        if(t.isPlayer) feed('\u26A1 Lightning splits a tree right beside you!');
+      }
+    }
+  }
+
+  function triggerTidalWave(){
+    for(const t of tributes){
+      if(!t.alive) continue;
+      if(wedgeIndexForPoint(t.x,t.y) === clockActiveHour){
+        const perk = t.perk || {};
+        damageTribute(t, 24 * (perk.zoneDmgMult != null ? perk.zoneDmgMult : 1), null);
+        const dx = t.x-CENTER_X, dy = t.y-CENTER_Y, len = Math.hypot(dx,dy)||1;
+        t.x = clamp(t.x + (dx/len)*70, 20, WORLD_W-20);
+        t.y = clamp(t.y + (dy/len)*70, 20, WORLD_H-20);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'SWEPT AWAY!', '#3a7a9a');
+      }
+    }
+  }
+
+  function onClockHourChange(){
+    const trap = CLOCK_TRAPS[clockActiveHour];
+    const sectorNum = clockActiveHour + 1;
+    feed('\uD83D\uDD52 The clock strikes '+(clockActiveHour===0?'12':clockActiveHour)+':00 — '+trap.name+' hits sector '+sectorNum+'!');
+    if(trap.key === 'lightning') triggerLightning();
+    else if(trap.key === 'tidalwave') triggerTidalWave();
+    else if(trap.key === 'monkeys') spawnWedgeMutt('monkey', 2);
+    else if(trap.key === 'beast') spawnWedgeMutt('beast', 1);
+  }
+
+  function updateClockArena(dt){
+    const newHour = currentClockHourIndex();
+    if(newHour !== clockActiveHour){
+      clockActiveHour = newHour;
+      onClockHourChange();
+    }
+    const trap = CLOCK_TRAPS[clockActiveHour];
+    if(!trap) return;
+    clockTickTimer -= dt;
+    const doTick = clockTickTimer <= 0;
+    if(doTick) clockTickTimer = 1;
+
+    for(const t of tributes){
+      if(!t.alive) continue;
+      if(dist(t,{x:CENTER_X,y:CENTER_Y}) < 90) continue; // the cornucopia island itself is never in a trap wedge
+      if(wedgeIndexForPoint(t.x,t.y) !== clockActiveHour) continue;
+      const perk = t.perk || {};
+
+      if(trap.key === 'bloodrain' && doTick){
+        damageTribute(t, 5 * (perk.poisonResistMult != null ? perk.poisonResistMult : 1), null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'BLOOD RAIN', '#8a1a1a');
+      } else if(trap.key === 'insects' && doTick){
+        damageTribute(t, 4 * (perk.poisonResistMult != null ? perk.poisonResistMult : 1), null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'INSECTS!', '#8a8a3a');
+      } else if(trap.key === 'fog' && doTick){
+        const stunMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+        t.stunTimer = Math.max(t.stunTimer, 1.1*stunMult);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'PARALYZED', '#9fdca0');
+      } else if(trap.key === 'jabberjays' && doTick){
+        if(t.isPlayer){ spawnFloatText(t.x, t.y-20, 'SCREAMS...', '#5c8ac9'); feed('\uD83D\uDC26 Jabberjays shriek with familiar voices.'); }
+      } else if(trap.key.startsWith('unknown') && doTick){
+        if(Math.random() < 0.35) damageTribute(t, 3, null);
+      }
+    }
+  }
+
+  function drawClockArena(){
+    const outerR = Math.max(zoneRadiusX, zoneRadiusY, 420);
+    const trap = CLOCK_TRAPS[clockActiveHour] || CLOCK_TRAPS[0];
+
+    ctx.save();
+    ctx.translate(CENTER_X, CENTER_Y);
+
+    // 12 spokes radiating out from the lake toward the arena edge
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = 2;
+    for(let h=0; h<12; h++){
+      const ang = (h*30)*Math.PI/180;
+      const dx = Math.sin(ang), dy = -Math.cos(ang);
+      ctx.beginPath();
+      ctx.moveTo(dx*POND_RADIUS_X*1.06, dy*POND_RADIUS_Y*1.06);
+      ctx.lineTo(dx*outerR, dy*outerR);
+      ctx.stroke();
+    }
+
+    // active-sector wedge highlight, gently pulsing
+    const a0 = (clockActiveHour*30 - 90)*Math.PI/180;
+    const a1 = ((clockActiveHour+1)*30 - 90)*Math.PI/180;
+    ctx.save();
+    ctx.globalAlpha = 0.22 + Math.sin(performance.now()/220)*0.06;
+    ctx.fillStyle = trap.color;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0, outerR, a0, a1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // clock numerals around the rim for orientation
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.textAlign = 'center';
+    for(let h=0; h<12; h++){
+      const ang = (h*30)*Math.PI/180;
+      const dx = Math.sin(ang), dy = -Math.cos(ang);
+      const label = h===0 ? '12' : String(h);
+      ctx.fillText(label, dx*(outerR+18), dy*(outerR+18)+4);
+    }
+    ctx.restore();
+
+    // banner naming the currently active sector hazard
+    ctx.save();
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = trap.color;
+    ctx.textAlign = 'center';
+    ctx.fillText('SECTOR '+(clockActiveHour+1)+': '+trap.name.toUpperCase(), CENTER_X, 40);
+    ctx.restore();
+  }
+
   function tryAttack(attacker){
     if(attacker.attackCooldown > 0) return;
     let wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
@@ -3563,6 +3774,7 @@
     }
     updateMutts(dt);
     updateVolcano(dt);
+    if(currentArenaCfg.clockArena) updateClockArena(dt);
     for(const t of tributes){
       if(!t.alive) continue;
       t.x += t.vx*dt;
@@ -3867,7 +4079,8 @@
       ctx.fillStyle = c(species.eyeColor);
       ctx.beginPath(); ctx.arc(11,-2,1,0,Math.PI*2); ctx.fill();
     } else {
-      // default generic mutt
+      // default generic mutt (also used for monkey / beast species, which
+      // reuse this generic blob with their own bodyColor/headColor/eyeColor)
       ctx.fillStyle = c(species.bodyColor);
       ctx.beginPath();
       ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
@@ -3910,7 +4123,7 @@
       ctx.restore();
     } else {
       ctx.save();
-      ctx.scale(1.15,1.15);
+      ctx.scale(species.key === 'beast' ? 1.5 : 1.15, species.key === 'beast' ? 1.5 : 1.15);
       drawMuttBody(m, species);
       ctx.restore();
     }
@@ -4348,8 +4561,9 @@
     ctx.restore();
 
     // dirt path crossroads radiating from the cornucopia, like a route hub
-    // — some arenas (e.g. Green Hollow) skip this entirely and leave the
-    // cornucopia clearing as open ground instead.
+    // — some arenas (e.g. Green Hollow, Clockwork Shore) skip this entirely
+    // and leave the cornucopia clearing as open ground instead (the Clock
+    // Arena draws its own 12 spokes via drawClockArena() below).
     if(currentArenaCfg.showPath){
       ctx.save();
       const sPattern = getSandPattern();
@@ -4376,6 +4590,7 @@
     decorations.forEach(drawDecoration);
 
     if(VOLCANO) drawVolcano();
+    if(currentArenaCfg.clockArena) drawClockArena();
 
     // cornucopia clearing marker (camp-style ring, same footprint as before)
     ctx.save();
@@ -4486,6 +4701,10 @@
     if(muttsUnlocked) alerts.push('Mutts loose');
     if(VOLCANO && volcanoState === 'warning') alerts.push('Volcano rumbling');
     if(VOLCANO && volcanoState === 'erupting') alerts.push('Volcano erupting!');
+    if(currentArenaCfg.clockArena && clockActiveHour >= 0){
+      const trap = CLOCK_TRAPS[clockActiveHour];
+      if(wedgeIndexForPoint(player.x,player.y) === clockActiveHour) alerts.push(trap.name+' active here!');
+    }
     if(player.hunger <= 0) alerts.push('Starving');
     if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
     if(player.stunTimer > 0) alerts.push('Stunned');
