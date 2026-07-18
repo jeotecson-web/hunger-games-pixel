@@ -326,12 +326,40 @@
   .tributeCard .tImgWrap img{ height:96px; image-rendering:pixelated; }
   .tributeCard .tLabel{ font-weight:600; font-size: clamp(13px,2.4vw,17px); letter-spacing:1px; text-align:center; line-height:1.4; }
 
+  .arenaCards{ display:flex; gap:20px; justify-content:center; margin-bottom: 8px; flex-wrap:wrap; max-width:620px; }
+  .arenaCard{
+    width: 168px;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 12px 10px;
+    border: 3px solid transparent;
+    color:#8a6a3a;
+    cursor:pointer;
+    transition: color .1s ease, border-color .1s ease, transform .1s ease;
+  }
+  .arenaCard:hover{ transform: translateY(-2px); }
+  .arenaCard.selected{
+    border-color:#f5dfa0;
+    color:#f5dfa0;
+    box-shadow: 0 0 16px rgba(245,223,160,.3);
+  }
+  .arenaCard .aSwatch{
+    width:100%; height:56px; border-radius:3px; margin-bottom:10px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+  }
+  .arenaCard .aName{ font-weight:600; font-size: clamp(12px,2.1vw,15px); letter-spacing:1px; text-align:center; line-height:1.3; margin-bottom:4px; }
+  .arenaCard .aDesc{ font-size:9.5px; line-height:1.5; color:#8f8567; text-align:center; }
+
   @media (max-width:759px){
     .gameLogo{ margin-bottom:10px; }
     .tributeCards{ gap:18px; }
     .tributeCard{ width:118px; padding:10px 6px; }
     .tributeCard .tImgWrap{ height:70px; }
     .tributeCard .tImgWrap img{ height:70px; }
+    .arenaCards{ gap:10px; }
+    .arenaCard{ width:96px; padding:7px 6px; }
+    .arenaCard .aSwatch{ height:36px; margin-bottom:6px; }
+    .arenaCard .aName{ font-size:8px; }
+    .arenaCard .aDesc{ font-size:6px; }
     .menuList{ gap:20px; }
     .districtList{ max-height:none; }
   }
@@ -1124,6 +1152,11 @@
     .tributeCard .tImgWrap{ height:20px; margin-bottom:2px; }
     .tributeCard .tImgWrap img{ height:20px; }
     .tributeCard .tLabel{ font-size:5px; }
+    .arenaCards{ gap:6px; }
+    .arenaCard{ width:76px; padding:5px 4px; }
+    .arenaCard .aSwatch{ height:28px; margin-bottom:4px; }
+    .arenaCard .aName{ font-size:6.5px; }
+    .arenaCard .aDesc{ font-size:5px; }
     button.bigBtn{ padding:5px 12px; font-size:7px; }
     .statLine{ font-size:5.5px; }
   }
@@ -1202,6 +1235,14 @@
         <div class="introHeading goldText" id="textPanelTitle">STORY MODE</div>
         <div class="introBody" id="textPanelBody"></div>
         <div class="introHint">PRESS B TO GO BACK</div>
+      </div>
+
+      <!-- ARENA SELECT -->
+      <div class="introPanel hidden" id="panelArena">
+        <div class="introHeading goldText">PICK AN ARENA</div>
+        <div class="arenaCards" id="arenaCards"></div>
+        <div class="districtPerkLabel" id="arenaPerkLabel"></div>
+        <div class="introHint">PRESS A AGAIN TO LOCK IN YOUR PICK<br>PRESS B TO GO BACK</div>
       </div>
 
       <!-- DISTRICT SELECT -->
@@ -1320,18 +1361,23 @@
   const AREA_SCALE = (WORLD_W*WORLD_H) / (1000*1000); // vs the original 1000x1000 square, used to scale content density
   const TOTAL_TRIBUTES = 24;       // 12 districts x 2 tributes, including player
   const DISTRICTS = [1,2,3,4,5,6,7,8,9,10,11,12];
-  const OBSTACLE_COUNT = Math.round(60 * AREA_SCALE);   // trees / rocks / bushes scattered through the arena
+  const BASE_OBSTACLE_COUNT = Math.round(60 * AREA_SCALE);   // trees / rocks / bushes scattered through the arena
+  let OBSTACLE_COUNT = BASE_OBSTACLE_COUNT;
   const TREE_R = 22;                // uniform radius for every tree (was randomized before)
   const ROCK_R = 18;                // uniform radius for every rock
   const BUSH_R = 13;                // uniform radius for every bush
-  const GRASS_ZONE_COUNT = Math.round(15 * AREA_SCALE); // patches of tall grass tributes can hide in
-  const ZONE_SHRINK_INTERVAL = 45000; // ms — longer days before the zone contracts
-  const ZONE_SHRINK_AMOUNT_Y = 90;
-  const ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
+  const BASE_GRASS_ZONE_COUNT = Math.round(15 * AREA_SCALE); // patches of tall grass tributes can hide in
+  let GRASS_ZONE_COUNT = BASE_GRASS_ZONE_COUNT;
+  const BASE_ZONE_SHRINK_INTERVAL = 45000; // ms — longer days before the zone contracts
+  let ZONE_SHRINK_INTERVAL = BASE_ZONE_SHRINK_INTERVAL;
+  const BASE_ZONE_SHRINK_AMOUNT_Y = 90;
+  let ZONE_SHRINK_AMOUNT_Y = BASE_ZONE_SHRINK_AMOUNT_Y;
+  let ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
   const ZONE_MIN_RADIUS_Y = 110;
   const ZONE_MIN_RADIUS_X = ZONE_MIN_RADIUS_Y * (WORLD_W/WORLD_H);
   const ZONE_TICK_DAMAGE = 3;
-  const SUPPLY_DROP_INTERVAL = 34000;
+  const BASE_SUPPLY_DROP_INTERVAL = 34000;
+  let SUPPLY_DROP_INTERVAL = BASE_SUPPLY_DROP_INTERVAL;
   const IS_MOBILE_LAYOUT = window.matchMedia('(max-width: 759px)').matches;
   const DISTRICT_COLS = IS_MOBILE_LAYOUT ? 3 : 4; // must match .districtList grid-template-columns
   const CAMERA_ZOOM = IS_MOBILE_LAYOUT ? 2.6 : 1.7; // classic-Pokemon-style follow camera; zoomed in further on the small phone-sized Game Boy screen
@@ -1349,9 +1395,11 @@
   const ALLIANCE_TARGET_RANGE = 520;        // how far the pack will commit to chasing a shared target
 
   // Mutts — Gamemaker-released creatures that hunt everyone, tributes included
-  const MUTT_SPAWN_DAY = 3;         // mutts start appearing once this day count is reached
+  const BASE_MUTT_SPAWN_DAY = 3;         // mutts start appearing once this day count is reached
+  let MUTT_SPAWN_DAY = BASE_MUTT_SPAWN_DAY;
   const MUTT_COUNT_MAX = 5;
-  const MUTT_SPAWN_INTERVAL = 20000; // ms between spawns once active
+  const BASE_MUTT_SPAWN_INTERVAL = 20000; // ms between spawns once active
+  let MUTT_SPAWN_INTERVAL = BASE_MUTT_SPAWN_INTERVAL;
   const MUTT_HP = 60;
   const MUTT_DMG = 14;
   const MUTT_SPEED = 70;
@@ -1369,7 +1417,8 @@
   const STARVE_TICK_INTERVAL = 1;       // seconds between starvation damage ticks
   const LOW_ENERGY_THRESHOLD = 20;
   const LOW_ENERGY_SPEED_MULT = 0.65;
-  const BERRY_POISON_CHANCE = 0.35;
+  const BASE_BERRY_POISON_CHANCE = 0.35;
+  let BERRY_POISON_CHANCE = BASE_BERRY_POISON_CHANCE;
   const POISON_STUN_DURATION = 3.5;     // seconds a poisoned tribute is stunned
   const POISON_DOT_DAMAGE = 4;
   const POISON_DOT_TICKS = 3;
@@ -1378,9 +1427,9 @@
   // Pond — a body of water tributes can wade into. The shallow ring lets
   // you drink to restore hunger/energy; venture into the deep center and
   // you start drowning instead.
-  const POND_CENTER = { x: WORLD_W*0.74, y: WORLD_H*0.78 };
-  const POND_RADIUS_X = 220;
-  const POND_RADIUS_Y = 140;
+  let POND_CENTER = { x: WORLD_W*0.74, y: WORLD_H*0.78 };
+  let POND_RADIUS_X = 220;
+  let POND_RADIUS_Y = 140;
   const POND_DEEP_FRAC = 0.55;          // fraction of the pond radius counted as "deep water"
   const POND_DRINK_INTERVAL = 1.4;      // seconds between sips while in the shallows
   const POND_DRINK_HUNGER = 6;
@@ -1388,6 +1437,92 @@
   const POND_DROWN_SPEED_MULT = 0.45;
   const POND_DROWN_TICK_INTERVAL = 1;   // seconds between drowning damage ticks
   const POND_DROWN_DAMAGE = 5;
+
+  // ============================================================
+  // ARENAS — the Gamemakers offer a choice of battlegrounds. Each one
+  // re-tints the terrain, repositions/resizes the water source, and
+  // tweaks a handful of survival/danger knobs (obstacle density, zone
+  // shrink pace, mutt timing, berry toxicity) without touching the core
+  // rules — so every arena still plays by the same systems, just tuned
+  // differently.
+  // ============================================================
+  const ARENAS = {
+    meadowlands: {
+      id:'meadowlands',
+      name:'The Meadowlands',
+      desc:'Balanced forest, meadow, cave and lake quadrants — the classic Games.',
+      swatch: 'linear-gradient(135deg,#3f7a42,#2e5c33 45%,#356a4a)',
+      tint: null,
+      biomeColors: { forest:'#2e5c33', meadow:'#3f7a42', cave:'#4a5245', water:'#356a4a' },
+      pond: { fx:0.74, fy:0.78, rx:220, ry:140 },
+      obstacleMult: 1, grassMult: 1,
+      zoneScale: 1, shrinkMult: 1, supplyMult: 1,
+      muttDayOffset: 0, muttIntervalMult: 1,
+      poisonMult: 1
+    },
+    frozen: {
+      id:'frozen',
+      name:'The Frozen Waste',
+      desc:'Snowbound tundra, a frozen lake, and thin cover — the cold kills as fast as the Careers.',
+      swatch: 'linear-gradient(135deg,#c9d8e0,#7a94a0 45%,#4a7a94)',
+      tint: 'rgba(170,210,230,0.16)',
+      biomeColors: { forest:'#3a5a5c', meadow:'#7a8f92', cave:'#5c6870', water:'#4a7a94' },
+      pond: { fx:0.72, fy:0.30, rx:250, ry:130 },
+      obstacleMult: 0.65, grassMult: 0.4,
+      zoneScale: 0.88, shrinkMult: 1.25, supplyMult: 0.85,
+      muttDayOffset: -1, muttIntervalMult: 0.85,
+      poisonMult: 0.7
+    },
+    scorched: {
+      id:'scorched',
+      name:'The Scorched Sands',
+      desc:'Desert arena — sparse trees, rocky cover, and a shrinking oasis worth fighting for.',
+      swatch: 'linear-gradient(135deg,#d9a94a,#b8823a 45%,#8a5c2a)',
+      tint: 'rgba(220,150,60,0.16)',
+      biomeColors: { forest:'#7a6a34', meadow:'#c9a13b', cave:'#8a6a3a', water:'#3a7a8a' },
+      pond: { fx:0.5, fy:0.5, rx:130, ry:90 },
+      obstacleMult: 0.75, grassMult: 0.55,
+      zoneScale: 1.08, shrinkMult: 0.9, supplyMult: 1.15,
+      muttDayOffset: 1, muttIntervalMult: 1,
+      poisonMult: 1.35
+    },
+    jungle: {
+      id:'jungle',
+      name:'The Green Hollow',
+      desc:'Dense overgrown jungle — thick cover everywhere makes it easy to hide, and easy to get ambushed.',
+      swatch: 'linear-gradient(135deg,#1f4a24,#255c2e 45%,#173a2a)',
+      tint: 'rgba(20,60,30,0.18)',
+      biomeColors: { forest:'#1f4a24', meadow:'#2e5c33', cave:'#233828', water:'#1f5c52' },
+      pond: { fx:0.28, fy:0.70, rx:190, ry:130 },
+      obstacleMult: 1.45, grassMult: 1.8,
+      zoneScale: 0.95, shrinkMult: 1.05, supplyMult: 0.9,
+      muttDayOffset: 0, muttIntervalMult: 1.1,
+      poisonMult: 1.15
+    }
+  };
+  const ARENA_KEYS = Object.keys(ARENAS);
+  let selectedArena = 'meadowlands';
+  let currentArenaTint = null;
+  let BIOME_BASE_ACTIVE = null; // set by applyArenaConfig()
+
+  function applyArenaConfig(){
+    const a = ARENAS[selectedArena] || ARENAS.meadowlands;
+    currentArenaTint = a.tint;
+    BIOME_BASE_ACTIVE = a.biomeColors;
+    POND_CENTER = { x: WORLD_W*a.pond.fx, y: WORLD_H*a.pond.fy };
+    POND_RADIUS_X = a.pond.rx;
+    POND_RADIUS_Y = a.pond.ry;
+    OBSTACLE_COUNT = Math.round(BASE_OBSTACLE_COUNT * a.obstacleMult);
+    GRASS_ZONE_COUNT = Math.round(BASE_GRASS_ZONE_COUNT * a.grassMult);
+    ZONE_SHRINK_INTERVAL = Math.round(BASE_ZONE_SHRINK_INTERVAL / a.shrinkMult);
+    ZONE_SHRINK_AMOUNT_Y = BASE_ZONE_SHRINK_AMOUNT_Y * a.shrinkMult;
+    ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
+    SUPPLY_DROP_INTERVAL = Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult);
+    MUTT_SPAWN_DAY = Math.max(1, BASE_MUTT_SPAWN_DAY + a.muttDayOffset);
+    MUTT_SPAWN_INTERVAL = Math.round(BASE_MUTT_SPAWN_INTERVAL * a.muttIntervalMult);
+    BERRY_POISON_CHANCE = clamp(BASE_BERRY_POISON_CHANCE * a.poisonMult, 0, 0.85);
+    grassPattern = null; sandPattern = null; // force pattern/tint re-derivation next render
+  }
 
   // ============================================================
   // DISTRICT PERKS — each home district trains its tributes differently.
@@ -1775,32 +1910,35 @@
   const playerHudLabel = document.getElementById('playerHudLabel');
 
   // ============================================================
-  // INTRO STATE MACHINE (title -> menu -> district -> tribute -> game)
+  // INTRO STATE MACHINE (title -> menu -> arena -> district -> tribute -> game)
   // ============================================================
   const panelTitle = document.getElementById('panelTitle');
   const panelMenu = document.getElementById('panelMenu');
   const panelText = document.getElementById('panelText');
+  const panelArena = document.getElementById('panelArena');
   const panelDistrict = document.getElementById('panelDistrict');
   const panelTribute = document.getElementById('panelTribute');
   const menuListEl = document.getElementById('menuList');
   const textPanelTitleEl = document.getElementById('textPanelTitle');
   const textPanelBodyEl = document.getElementById('textPanelBody');
+  const arenaCardsEl = document.getElementById('arenaCards');
+  const arenaPerkLabelEl = document.getElementById('arenaPerkLabel');
   const districtListEl = document.getElementById('districtList');
   const districtPerkLabelEl = document.getElementById('districtPerkLabel');
   const tributePerkLabelEl = document.getElementById('tributePerkLabel');
   const tributeCardsEl = document.getElementById('tributeCards');
   const tributeDistrictLabelEl = document.getElementById('tributeDistrictLabel');
 
-  const STORY_TEXT = "The Capitol has spoken.\n\nTwenty-four tributes enter the arena. Only one leaves.\n\nYou have been reaped. Choose your district, take your place on the plate, and when the gong sounds — run, fight, survive.";
-  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.\n\nEach district trains its tributes differently — check your district's perk before you pick.";
+  const STORY_TEXT = "The Capitol has spoken.\n\nTwenty-four tributes enter the arena. Only one leaves.\n\nYou have been reaped. Choose your arena, your district, take your place on the plate, and when the gong sounds — run, fight, survive.";
+  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.\n\nEach arena plays differently — check its briefing before you commit. Each district trains its tributes differently too — check your district's perk before you pick.";
 
   let introScreen = 'title';
-  let menuIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false;
+  let menuIndex = 0, arenaIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false, arenaArmed = false;
   let textPanelReturnsTo = 'menu';
 
   function showIntroPanel(name){
-    [panelTitle, panelMenu, panelText, panelDistrict, panelTribute].forEach(p=>p.classList.add('hidden'));
-    ({title:panelTitle, menu:panelMenu, text:panelText, district:panelDistrict, tribute:panelTribute})[name].classList.remove('hidden');
+    [panelTitle, panelMenu, panelText, panelArena, panelDistrict, panelTribute].forEach(p=>p.classList.add('hidden'));
+    ({title:panelTitle, menu:panelMenu, text:panelText, arena:panelArena, district:panelDistrict, tribute:panelTribute})[name].classList.remove('hidden');
     introScreen = name;
     if(musicUnlocked) playIntroMusic();
   }
@@ -1814,9 +1952,10 @@
 
   function confirmMenu(){
     if(menuIndex===0){
-      districtIndex = Math.max(0, DISTRICTS.indexOf(selectedDistrict));
-      renderDistrictList();
-      showIntroPanel('district');
+      arenaIndex = Math.max(0, ARENA_KEYS.indexOf(selectedArena));
+      arenaArmed = false;
+      renderArenaCards();
+      showIntroPanel('arena');
     } else if(menuIndex===1){
       textPanelTitleEl.textContent='STORY MODE'; textPanelBodyEl.textContent=STORY_TEXT;
       textPanelReturnsTo='menu'; showIntroPanel('text');
@@ -1824,6 +1963,32 @@
       textPanelTitleEl.textContent='INSTRUCTIONS'; textPanelBodyEl.textContent=INSTRUCTIONS_TEXT;
       textPanelReturnsTo='menu'; showIntroPanel('text');
     }
+  }
+
+  function renderArenaCards(){
+    arenaCardsEl.innerHTML='';
+    ARENA_KEYS.forEach((key,i)=>{
+      const a = ARENAS[key];
+      const card=document.createElement('div');
+      card.className='arenaCard'+(i===arenaIndex?' selected':'');
+      card.innerHTML='<div class="aSwatch" style="background:'+a.swatch+';"></div><div class="aName">'+a.name.toUpperCase()+'</div>';
+      card.addEventListener('click', ()=>{
+        if(arenaIndex===i && arenaArmed){ confirmArena(); return; }
+        arenaIndex=i; arenaArmed=true; renderArenaCards();
+      });
+      arenaCardsEl.appendChild(card);
+    });
+    const a = ARENAS[ARENA_KEYS[arenaIndex]];
+    if(arenaPerkLabelEl){
+      arenaPerkLabelEl.innerHTML = '<b>'+a.name.toUpperCase()+':</b> '+a.desc;
+    }
+  }
+
+  function confirmArena(){
+    selectedArena = ARENA_KEYS[arenaIndex];
+    districtIndex = Math.max(0, DISTRICTS.indexOf(selectedDistrict));
+    renderDistrictList();
+    showIntroPanel('district');
   }
 
   function renderDistrictList(){
@@ -1902,6 +2067,14 @@
       return;
     }
     if(introScreen==='text'){ if(B||A){ showIntroPanel(textPanelReturnsTo); renderMenu(); } return; }
+    if(introScreen==='arena'){
+      const n = ARENA_KEYS.length;
+      if(left||up){ arenaIndex=(arenaIndex-1+n)%n; arenaArmed=false; renderArenaCards(); }
+      else if(right||down){ arenaIndex=(arenaIndex+1)%n; arenaArmed=false; renderArenaCards(); }
+      else if(A){ if(arenaArmed) confirmArena(); else { arenaArmed=true; renderArenaCards(); } }
+      else if(B){ showIntroPanel('menu'); renderMenu(); }
+      return;
+    }
     if(introScreen==='district'){
       const n = DISTRICTS.length;
       const cols = DISTRICT_COLS;
@@ -1910,7 +2083,7 @@
       else if(left){ districtIndex=(districtIndex-1+n)%n; renderDistrictList(); }
       else if(right){ districtIndex=(districtIndex+1)%n; renderDistrictList(); }
       else if(A){ confirmDistrict(); }
-      else if(B){ showIntroPanel('menu'); renderMenu(); }
+      else if(B){ arenaIndex = Math.max(0, ARENA_KEYS.indexOf(selectedArena)); arenaArmed=true; renderArenaCards(); showIntroPanel('arena'); }
       return;
     }
     if(introScreen==='tribute'){
@@ -2285,6 +2458,7 @@
   }
 
   function resetGame(){
+    applyArenaConfig();
     tributes = [];
     // Build every district's two reaping slots as explicit {district,gender}
     // pairs so each district always fields one male AND one female tribute
@@ -2321,7 +2495,8 @@
     makeDecorations();
     makeCornucopiaItems();
     makeBerryBushes();
-    zoneRadiusY = WORLD_H*0.72;
+    const arenaCfg = ARENAS[selectedArena];
+    zoneRadiusY = WORLD_H*0.72*arenaCfg.zoneScale;
     zoneRadiusX = zoneRadiusY * (WORLD_W/WORLD_H);
     zoneCenter = {x:CENTER_X,y:CENTER_Y};
     nextShrinkAt = ZONE_SHRINK_INTERVAL;
@@ -3771,16 +3946,11 @@
     ctx.restore();
   }
 
-  const BIOME_BASE = {
-    forest: '#2e5c33',
-    meadow: '#3f7a42',
-    cave:   '#4a5245',
-    water:  '#356a4a'
-  };
   const TILE = 40;
 
   function render(){
     ctx.clearRect(0,0,WORLD_W,WORLD_H);
+    const BIOME_BASE = BIOME_BASE_ACTIVE || ARENAS.meadowlands.biomeColors;
 
     // classic-Pokemon-style follow camera: zoom in and pan so the world
     // feels larger and only the area around the player is ever on screen.
@@ -3808,6 +3978,15 @@
       }
     }
 
+    // arena-specific tint overlay — reskins the ground/pattern palette to
+    // match the selected arena without needing separate tile assets
+    if(currentArenaTint){
+      ctx.save();
+      ctx.fillStyle = currentArenaTint;
+      ctx.fillRect(0,0,WORLD_W,WORLD_H);
+      ctx.restore();
+    }
+
     // pond in the water quadrant — a place to drink (shallows) or drown
     // (deep center). Draws the user-provided pond.png at the same
     // footprint the old vector lake used; falls back to that vector art
@@ -3820,7 +3999,7 @@
     } else {
       ctx.save();
       ctx.rotate(0.15);
-      ctx.fillStyle = '#2c5f78';
+      ctx.fillStyle = BIOME_BASE.water === '#4a7a94' ? '#3f7d94' : '#2c5f78';
       ctx.beginPath();
       ctx.ellipse(0, 0, POND_RADIUS_X, POND_RADIUS_Y, 0, 0, Math.PI*2);
       ctx.fill();
@@ -3999,7 +4178,8 @@
     running = true;
     lastTime = performance.now();
     const perk = perkFor(selectedDistrict);
-    feed('Welcome to the arena. Hold your position — the gong will sound soon.');
+    const arenaCfg = ARENAS[selectedArena];
+    feed('Welcome to ' + arenaCfg.name + '. Hold your position — the gong will sound soon.');
     if(perk.name) feed('District '+selectedDistrict+' perk — '+perk.name+': '+perk.desc);
     playArenaMusic();
     animId = requestAnimationFrame(loop);
@@ -4012,7 +4192,7 @@
       endScreen.classList.remove('hidden');
       if(won){
         endTitle.innerHTML = 'YOU ARE THE <span style="color:#d4af37;">VICTOR</span>';
-        endSubtitle.textContent = 'District ' + selectedDistrict + ' has won the 75th Games';
+        endSubtitle.textContent = 'District ' + selectedDistrict + ' has won the Games in ' + ARENAS[selectedArena].name;
         endSeal.style.borderColor = '#d4af37';
       } else {
         endTitle.innerHTML = 'YOU HAVE <span style="color:#e8404a;">FALLEN</span>';
@@ -4020,6 +4200,7 @@
         endSeal.style.borderColor = '#b8232b';
       }
       endStats.innerHTML =
+        '<div class="statLine">Arena: <b>'+ARENAS[selectedArena].name+'</b></div>' +
         '<div class="statLine">Tributes eliminated by you: <b>'+player.kills+'</b></div>' +
         '<div class="statLine">Days survived: <b>'+dayCount+'</b></div>';
     }, 900);
