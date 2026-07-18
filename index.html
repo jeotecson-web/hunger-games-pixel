@@ -259,29 +259,53 @@
   }
 
   .districtList{
-    display:flex; flex-direction:column; gap:15px; align-items:flex-start;
-    max-height: 48vh; overflow-y:auto; padding: 4px 8px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    display:grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 12px 22px;
+    max-width: 620px;
+    padding: 4px 8px;
+    justify-items: stretch;
   }
-  .districtList::-webkit-scrollbar{ display:none; width:0; height:0; }
   .districtItem{
     position:relative;
     font-weight:600;
-    font-size: clamp(15px,2.8vw,20px);
-    letter-spacing:2px;
-    padding-left: 42px;
+    font-size: clamp(14px,2vw,18px);
+    letter-spacing:1.5px;
+    padding: 7px 10px 7px 32px;
     color:#8a6a3a;
     cursor:pointer;
-    transition: color .1s ease;
+    border-radius: 3px;
+    transition: color .1s ease, background .1s ease;
   }
-  .districtItem.selected{ color:#f5dfa0; }
+  .districtItem:hover{ background: rgba(245,223,160,0.06); color:#c9ac6e; }
+  .districtItem.selected{
+    color:#f5dfa0;
+    background: rgba(245,223,160,0.12);
+    box-shadow: inset 0 0 0 1px rgba(245,223,160,0.35);
+  }
   .districtItem .cursorArrow{
-    position:absolute; left:0; top:50%; transform:translateY(-50%);
+    position:absolute; left:8px; top:50%; transform:translateY(-50%);
     font-size:0.75em;
     display:none;
   }
   .districtItem.selected .cursorArrow{ display:inline-block; }
+
+  .districtPerkLabel{
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: #cfe8bd;
+    margin-top: 18px;
+    margin-bottom: 10px;
+    max-width: 540px;
+    line-height: 1.7;
+    text-align:center;
+    min-height: 46px;
+    background: rgba(74,122,74,0.16);
+    border: 1px solid rgba(139,193,110,0.4);
+    border-radius: 5px;
+    padding: 12px 18px;
+  }
+  .districtPerkLabel b{ color: #d7f0c2; font-size:13.5px; letter-spacing:1px; }
 
   .tributeCards{ display:flex; gap:36px; justify-content:center; margin-bottom: 8px; flex-wrap:wrap; }
   .tributeCard{
@@ -309,7 +333,7 @@
     .tributeCard .tImgWrap{ height:70px; }
     .tributeCard .tImgWrap img{ height:70px; }
     .menuList{ gap:20px; }
-    .districtList{ max-height:42vh; }
+    .districtList{ max-height:none; }
   }
 
   /* ---------- Game frame ---------- */
@@ -556,8 +580,16 @@
     .introBody{ font-size:9.5px; line-height:1.6; margin-bottom:8px; max-width:96%; }
     .introHint{ font-size:7px; letter-spacing:0.5px; margin-top:8px; line-height:1.6; }
 
-    .districtList{ gap:4px; max-height:none; padding:2px 4px; }
-    .districtItem{ font-size:7px; letter-spacing:1px; padding-left:14px; }
+    .districtList{
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 6px 10px;
+      max-height:none; padding:2px 4px;
+    }
+    .districtItem{ font-size:7px; letter-spacing:1px; padding:4px 4px 4px 14px; }
+    .districtPerkLabel{
+      font-size:7.5px; margin-top:8px; margin-bottom:6px; min-height:26px;
+      padding:6px 8px; line-height:1.5;
+    }
 
     .tributeCards{ gap:8px; margin-bottom:4px; }
     .tributeCard{ width:52px; padding:4px 3px; border-width:1px; }
@@ -1080,8 +1112,13 @@
     .introHeading{ font-size:9px; margin-bottom:5px; }
     .introBody{ font-size:8px; line-height:1.55; margin-bottom:5px; }
     .introHint{ font-size:6px; margin-top:5px; line-height:1.5; }
-    .districtList{ gap:3px; max-height:none; }
-    .districtItem{ font-size:6.5px; padding-left:12px; }
+    .districtList{
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 4px 8px;
+      max-height:none;
+    }
+    .districtItem{ font-size:6.5px; padding:3px 3px 3px 12px; }
+    .districtPerkLabel{ font-size:6px; min-height:20px; padding:5px 6px; }
     .tributeCards{ gap:6px; }
     .tributeCard{ width:44px; padding:3px 2px; }
     .tributeCard .tImgWrap{ height:20px; margin-bottom:2px; }
@@ -1171,6 +1208,7 @@
       <div class="introPanel hidden" id="panelDistrict">
         <div class="introHeading goldText">PICK A DISTRICT</div>
         <div class="districtList" id="districtList"></div>
+        <div class="districtPerkLabel" id="districtPerkLabel"></div>
       </div>
 
       <!-- TRIBUTE SELECT -->
@@ -1178,6 +1216,7 @@
         <div class="introHeading goldText">PICK A TRIBUTE</div>
         <div class="introSubheading" id="tributeDistrictLabel">DISTRICT 1</div>
         <div class="tributeCards" id="tributeCards"></div>
+        <div class="districtPerkLabel" id="tributePerkLabel"></div>
         <div class="introHint">PRESS A AGAIN TO LOCK IN YOUR PICK<br>PRESS B TO GO BACK</div>
       </div>
 
@@ -1207,6 +1246,7 @@
         <div class="hudLabel hudRowWeapon" style="margin-top:4px;">WEAPON: <span id="weaponName" style="color:var(--bone);">—</span></div>
         <div class="hudLabel hudRowStatus" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
         <div class="hudLabel hudRowAlert" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
+        <div class="hudLabel hudRowPerk" style="margin-top:4px;">PERK: <span id="perkText" style="color:var(--bone);">—</span></div>
         <div class="hudLabel hudRowBackpack" style="margin-top:4px;">BACKPACK <span style="color:#6b6e60;">(Q/E or 1-6)</span></div>
         <div id="invRow"></div>
       </div>
@@ -1293,6 +1333,7 @@
   const ZONE_TICK_DAMAGE = 3;
   const SUPPLY_DROP_INTERVAL = 34000;
   const IS_MOBILE_LAYOUT = window.matchMedia('(max-width: 759px)').matches;
+  const DISTRICT_COLS = IS_MOBILE_LAYOUT ? 3 : 4; // must match .districtList grid-template-columns
   const CAMERA_ZOOM = IS_MOBILE_LAYOUT ? 2.6 : 1.7; // classic-Pokemon-style follow camera; zoomed in further on the small phone-sized Game Boy screen
   const VIEW_W = WORLD_W / CAMERA_ZOOM; // world units visible at once, horizontally
   const VIEW_H = WORLD_H / CAMERA_ZOOM; // world units visible at once, vertically
@@ -1347,6 +1388,30 @@
   const POND_DROWN_SPEED_MULT = 0.45;
   const POND_DROWN_TICK_INTERVAL = 1;   // seconds between drowning damage ticks
   const POND_DROWN_DAMAGE = 5;
+
+  // ============================================================
+  // DISTRICT PERKS — each home district trains its tributes differently.
+  // Purely additive bonuses/resistances layered on top of the base rules
+  // above; nothing here changes base weapon stats or arena mechanics for
+  // districts that don't have a related perk.
+  // ============================================================
+  const DISTRICT_PERKS = {
+    1:  { name:'Luxury',       desc:'Trained in combat from birth — deals 15% more damage.', dmgMult:1.15 },
+    2:  { name:'Masonry',      desc:'Stonecutters\' toughness — +25 max HP.', hpBonus:25 },
+    3:  { name:'Technology',   desc:'Engineers\' know-how — ranged weapons reload 20% faster.', rangedCooldownMult:0.8 },
+    4:  { name:'Fishing',      desc:'Raised on the water — cannot drown, swims at full speed, and gets more from drinking.', noDrown:true, waterSpeedMult:1.0, drinkMult:1.6 },
+    5:  { name:'Power',        desc:'Power-plant stamina — energy drains 25% slower.', energyDrainMult:0.75 },
+    6:  { name:'Transportation', desc:'Built for speed — moves 12% faster.', speedMult:1.12 },
+    7:  { name:'Lumber',       desc:'Lumberjack strength — deals 20% more damage near trees.', treeDmgMult:1.2 },
+    8:  { name:'Textiles',     desc:'Handles dyes and toxins daily — poison stuns and damage cut by 40%.', poisonResistMult:0.6 },
+    9:  { name:'Grain',        desc:'Grew up rationing the harvest — hunger drains 25% slower.', hungerDrainMult:0.75 },
+    10: { name:'Livestock',    desc:'Herders\' vitality — slowly regenerates lost HP over time.', hpRegen:0.6 },
+    11: { name:'Agriculture',  desc:'Knows which plants are safe — half the poison chance and more food from berries.', poisonChanceMult:0.5, foodMult:1.3 },
+    12: { name:'Mining',       desc:'Endures harsh conditions underground — takes 30% less damage from the shrinking zone.', zoneDmgMult:0.7 }
+  };
+  function perkFor(district){
+    return DISTRICT_PERKS[district] || {};
+  }
 
   const COLORS = {
     12: "#5b7fb0", 1:"#c9a13b", 2:"#8a3a3a", 3:"#5c8a6a", 4:"#3a7a8a",
@@ -1694,6 +1759,7 @@
   const weaponNameEl = document.getElementById('weaponName');
   const statusTextEl = document.getElementById('statusText');
   const alertTextEl = document.getElementById('alertText');
+  const perkTextEl = document.getElementById('perkText');
   const invRowEl = document.getElementById('invRow');
   const tributesLeftEl = document.getElementById('tributesLeft');
   const dayText = document.getElementById('dayText');
@@ -1720,11 +1786,13 @@
   const textPanelTitleEl = document.getElementById('textPanelTitle');
   const textPanelBodyEl = document.getElementById('textPanelBody');
   const districtListEl = document.getElementById('districtList');
+  const districtPerkLabelEl = document.getElementById('districtPerkLabel');
+  const tributePerkLabelEl = document.getElementById('tributePerkLabel');
   const tributeCardsEl = document.getElementById('tributeCards');
   const tributeDistrictLabelEl = document.getElementById('tributeDistrictLabel');
 
   const STORY_TEXT = "The Capitol has spoken.\n\nTwenty-four tributes enter the arena. Only one leaves.\n\nYou have been reaped. Choose your district, take your place on the plate, and when the gong sounds — run, fight, survive.";
-  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.";
+  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.\n\nEach district trains its tributes differently — check your district's perk before you pick.";
 
   let introScreen = 'title';
   let menuIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false;
@@ -1767,6 +1835,17 @@
       item.addEventListener('click', ()=>{ districtIndex=i; renderDistrictList(); confirmDistrict(); });
       districtListEl.appendChild(item);
     });
+    updateDistrictPerkLabel();
+  }
+
+  function updateDistrictPerkLabel(){
+    const d = DISTRICTS[districtIndex];
+    const perk = perkFor(d);
+    if(districtPerkLabelEl){
+      districtPerkLabelEl.innerHTML = perk.name
+        ? '<b>'+perk.name.toUpperCase()+':</b> '+perk.desc
+        : '';
+    }
   }
 
   function confirmDistrict(){
@@ -1794,6 +1873,12 @@
       });
       tributeCardsEl.appendChild(card);
     });
+    const perk = perkFor(selectedDistrict);
+    if(tributePerkLabelEl){
+      tributePerkLabelEl.innerHTML = perk.name
+        ? '<b>DISTRICT '+selectedDistrict+' — '+perk.name.toUpperCase()+':</b> '+perk.desc
+        : '';
+    }
   }
 
   function confirmTribute(){
@@ -1818,8 +1903,12 @@
     }
     if(introScreen==='text'){ if(B||A){ showIntroPanel(textPanelReturnsTo); renderMenu(); } return; }
     if(introScreen==='district'){
-      if(up){ districtIndex=(districtIndex-1+DISTRICTS.length)%DISTRICTS.length; renderDistrictList(); }
-      else if(down){ districtIndex=(districtIndex+1)%DISTRICTS.length; renderDistrictList(); }
+      const n = DISTRICTS.length;
+      const cols = DISTRICT_COLS;
+      if(up){ districtIndex=(districtIndex-cols+n)%n; renderDistrictList(); }
+      else if(down){ districtIndex=(districtIndex+cols)%n; renderDistrictList(); }
+      else if(left){ districtIndex=(districtIndex-1+n)%n; renderDistrictList(); }
+      else if(right){ districtIndex=(districtIndex+1)%n; renderDistrictList(); }
       else if(A){ confirmDistrict(); }
       else if(B){ showIntroPanel('menu'); renderMenu(); }
       return;
@@ -2004,6 +2093,16 @@
     return nx*nx + ny*ny;
   }
 
+  // Whether a tribute is currently standing near enough to a tree obstacle
+  // to get their lumberjack damage bonus (District 7 perk).
+  function nearTrees(t, radius){
+    for(const o of obstacles){
+      if(o.type !== 'tree') continue;
+      if(dist(t,o) < o.r + radius) return true;
+    }
+    return false;
+  }
+
   // Non-collidable decoration: tall grass tufts, flowers and lily-pads,
   // generated once per game so the arena reads as a lived-in overworld
   // without touching any obstacle/collision/AI logic.
@@ -2118,23 +2217,27 @@
   function newTribute(district, isPlayer, forcedGender){
     // Position is assigned afterward by positionTributesOnPlates() so every
     // tribute starts evenly spaced around the cornucopia, like the reaping circle.
+    const perk = perkFor(district);
+    const baseHp = 150 + (perk.hpBonus || 0);
+    const baseSpeed = (isPlayer ? 58 : rand(40,52)) * (perk.speedMult || 1);
     return {
       id: Math.random().toString(36).slice(2),
       district,
+      perk,
       isPlayer: !!isPlayer,
       isCareer: !isPlayer && CAREER_DISTRICTS.includes(district),
       genderOverride: forcedGender || null,
       x: CENTER_X, y: CENTER_Y,
       vx:0, vy:0,
       facing: {x:0,y:1},
-      hp: 150, maxHp:150,
+      hp: baseHp, maxHp:baseHp,
       baseDamage: 4,
       weapon: null,
       inventory: [],
       invIndex: -1,
       ammo: {},
       shield: 0,
-      speed: isPlayer ? 58 : rand(40,52),
+      speed: baseSpeed,
       alive: true,
       attackCooldown: 0,
       hitFlash: 0,
@@ -2152,7 +2255,8 @@
       poisonTicksRemaining: 0,
       poisonTickTimer: 0,
       pondTickTimer: 0,
-      inDeepWater: false
+      inDeepWater: false,
+      regenCooldown: 0
     };
   }
 
@@ -2397,20 +2501,29 @@
   }
 
   // Effective movement speed after low-energy fatigue and deep-water drag
-  // are applied.
+  // are applied. District 4's water-speed perk cancels the deep-water
+  // drag entirely (they swim like it's nothing).
   function speedMult(t){
     let mult = t.energy < LOW_ENERGY_THRESHOLD ? LOW_ENERGY_SPEED_MULT : 1;
-    if(t.inDeepWater) mult *= POND_DROWN_SPEED_MULT;
+    if(t.inDeepWater){
+      mult *= (t.perk && t.perk.waterSpeedMult != null) ? t.perk.waterSpeedMult : POND_DROWN_SPEED_MULT;
+    }
     return mult;
   }
 
   // Hunger/energy drain, starvation damage, poison damage-over-time, and
   // stun countdown — runs for every living tribute, player included.
+  // District perks: District 9 (Grain) drains hunger slower, District 5
+  // (Power) drains energy slower, District 8 (Textiles) shrugs off poison
+  // faster, District 10 (Livestock) slowly heals over time.
   function updateSurvival(t, dt){
     if(!t.alive) return;
+    const perk = t.perk || {};
 
-    t.hunger = clamp(t.hunger - (dt*1000/HUNGER_DEPLETE_TIME)*HUNGER_MAX, 0, HUNGER_MAX);
-    t.energy = clamp(t.energy - (dt*1000/ENERGY_DEPLETE_TIME)*ENERGY_MAX, 0, ENERGY_MAX);
+    const hungerMult = perk.hungerDrainMult != null ? perk.hungerDrainMult : 1;
+    const energyMult = perk.energyDrainMult != null ? perk.energyDrainMult : 1;
+    t.hunger = clamp(t.hunger - (dt*1000/HUNGER_DEPLETE_TIME)*HUNGER_MAX*hungerMult, 0, HUNGER_MAX);
+    t.energy = clamp(t.energy - (dt*1000/ENERGY_DEPLETE_TIME)*ENERGY_MAX*energyMult, 0, ENERGY_MAX);
 
     if(t.hunger <= 0){
       t.starveCooldown -= dt;
@@ -2426,25 +2539,36 @@
       if(t.poisonTickTimer <= 0){
         t.poisonTickTimer = POISON_DOT_INTERVAL;
         t.poisonTicksRemaining--;
-        damageTribute(t, POISON_DOT_DAMAGE, null);
+        const poisonDmgMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+        damageTribute(t, POISON_DOT_DAMAGE*poisonDmgMult, null);
       }
     }
 
     if(t.stunTimer > 0){
       t.stunTimer = Math.max(0, t.stunTimer - dt);
     }
+
+    if(perk.hpRegen && t.alive && t.hp < t.maxHp){
+      t.regenCooldown -= dt;
+      if(t.regenCooldown <= 0){
+        t.regenCooldown = 1;
+        t.hp = Math.min(t.maxHp, t.hp + perk.hpRegen);
+      }
+    }
   }
 
   // The pond: drink from the shallows to top up hunger/energy, or push into
   // the deep center and start drowning (damage over time, heavy speed drag).
+  // District 4 (Fishing) never drowns and drinks more efficiently.
   function updatePondEffects(t, dt){
     if(!t.alive) return;
+    const perk = t.perk || {};
     const depthFrac = pondDepthFrac(t);
     const inDeep = depthFrac <= POND_DEEP_FRAC*POND_DEEP_FRAC;
     const inPond = depthFrac <= 1;
-    t.inDeepWater = inDeep;
+    t.inDeepWater = inDeep && !perk.noDrown;
 
-    if(inDeep){
+    if(inDeep && !perk.noDrown){
       t.pondTickTimer -= dt;
       if(t.pondTickTimer <= 0){
         t.pondTickTimer = POND_DROWN_TICK_INTERVAL;
@@ -2456,25 +2580,27 @@
       t.pondTickTimer -= dt;
       if(t.pondTickTimer <= 0){
         t.pondTickTimer = POND_DRINK_INTERVAL;
-        t.hunger = Math.min(HUNGER_MAX, t.hunger + POND_DRINK_HUNGER);
-        t.energy = Math.min(ENERGY_MAX, t.energy + POND_DRINK_ENERGY);
+        const drinkMult = perk.drinkMult || 1;
+        t.hunger = Math.min(HUNGER_MAX, t.hunger + POND_DRINK_HUNGER*drinkMult);
+        t.energy = Math.min(ENERGY_MAX, t.energy + POND_DRINK_ENERGY*drinkMult);
         if(t.isPlayer) spawnFloatText(t.x, t.y-20, '+DRINK', '#7fb0e0');
       }
       if(t.isPlayer){
         if(t._inDeepWater) feed('You wade back into the shallows, catching your breath.');
-        else if(!t._inPondShallow) feed('💧 You wade into the pond and drink from it.');
+        else if(!t._inPondShallow) feed(inDeep ? '💧 You dive into the deep water without a worry — you know these waters.' : '💧 You wade into the pond and drink from it.');
       }
     } else {
       t.pondTickTimer = 0;
     }
 
-    if(t.isPlayer){ t._inDeepWater = inDeep; t._inPondShallow = inPond && !inDeep; }
+    if(t.isPlayer){ t._inDeepWater = inDeep && !perk.noDrown; t._inPondShallow = inPond && !(inDeep && !perk.noDrown); }
   }
 
   function tryAttack(attacker){
     if(attacker.attackCooldown > 0) return;
     let wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
     const alliedCareer = attacker.isCareer && !allianceBroken;
+    const perk = attacker.perk || {};
 
     if(wpn && wpn.type === 'ranged'){
       const ammoLeft = attacker.ammo[attacker.weapon] || 0;
@@ -2486,7 +2612,7 @@
         wpn = null; // fall through to unarmed melee below instead of firing
       } else {
         attacker.ammo[attacker.weapon] = ammoLeft - 1;
-        attacker.attackCooldown = wpn.cooldown;
+        attacker.attackCooldown = wpn.cooldown * (perk.rangedCooldownMult || 1);
         fireProjectile(attacker, wpn);
         return;
       }
@@ -2509,7 +2635,9 @@
     }
     attacker.attackCooldown = wpn ? wpn.cooldown : 0.45;
     if(target){
-      const dmg = (wpn ? wpn.dmg : attacker.baseDamage) + rand(-2,4);
+      let dmg = (wpn ? wpn.dmg : attacker.baseDamage) + rand(-2,4);
+      if(perk.dmgMult) dmg *= perk.dmgMult;
+      if(perk.treeDmgMult && nearTrees(attacker, 70)) dmg *= perk.treeDmgMult;
       if(target.isMutt){ damageMutt(target, Math.max(3,dmg), attacker); }
       else { damageTribute(target, Math.max(3,dmg), attacker); }
       // knockback
@@ -2525,10 +2653,13 @@
     let dx = attacker.facing.x, dy = attacker.facing.y;
     const len = Math.hypot(dx,dy) || 1;
     dx/=len; dy/=len;
+    const perk = attacker.perk || {};
+    let dmg = wpn.dmg;
+    if(perk.dmgMult) dmg *= perk.dmgMult;
     projectiles.push({
       x: attacker.x + dx*16, y: attacker.y + dy*16,
       vx: dx*wpn.projectileSpeed, vy: dy*wpn.projectileSpeed,
-      dmg: wpn.dmg, range: wpn.range, traveled: 0,
+      dmg: dmg, range: wpn.range, traveled: 0,
       owner: attacker, tint: wpn.tint,
       assetKey: wpn.name === 'Throwing Knives' ? 'knife' : 'arrow'
     });
@@ -2606,6 +2737,7 @@
   // ITEM PICKUP
   // ============================================================
   function checkItemPickup(t){
+    const perk = t.perk || {};
     for(let i=items.length-1;i>=0;i--){
       const it = items[i];
       if(dist(t,it) < 22){
@@ -2653,16 +2785,19 @@
           if(t.isPlayer) feed('You picked up a shield.');
         } else if(it.type === 'berries'){
           if(t.isPlayer) feed('🍓 You found berries.');
-          const poisonous = Math.random() < BERRY_POISON_CHANCE;
+          const poisonChance = BERRY_POISON_CHANCE * (perk.poisonChanceMult != null ? perk.poisonChanceMult : 1);
+          const poisonous = Math.random() < poisonChance;
           if(poisonous){
-            t.stunTimer = Math.max(t.stunTimer, POISON_STUN_DURATION);
+            const poisonDurMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+            t.stunTimer = Math.max(t.stunTimer, POISON_STUN_DURATION*poisonDurMult);
             t.poisonTicksRemaining = POISON_DOT_TICKS;
             t.poisonTickTimer = POISON_DOT_INTERVAL;
             spawnFloatText(t.x,t.y-20,'POISONED!','#e8404a');
             if(t.isPlayer) feed('☠ Those berries were poisonous — you feel your legs give out.');
           } else {
-            t.hunger = Math.min(HUNGER_MAX, t.hunger + 40);
-            t.energy = Math.min(ENERGY_MAX, t.energy + 15);
+            const foodMult = perk.foodMult || 1;
+            t.hunger = Math.min(HUNGER_MAX, t.hunger + 40*foodMult);
+            t.energy = Math.min(ENERGY_MAX, t.energy + 15*foodMult);
             spawnFloatText(t.x,t.y-20,'+HUNGER','#e8c56a');
             if(t.isPlayer) feed('They\'re safe to eat. Hunger restored.');
           }
@@ -3094,7 +3229,8 @@
         t.hurtCooldown -= dt;
         if(t.hurtCooldown <= 0){
           t.hurtCooldown = 0.5;
-          damageTribute(t, ZONE_TICK_DAMAGE, null);
+          const perk = t.perk || {};
+          damageTribute(t, ZONE_TICK_DAMAGE * (perk.zoneDmgMult != null ? perk.zoneDmgMult : 1), null);
         }
       }
     }
@@ -3822,6 +3958,11 @@
     statusTextEl.textContent = statusLabel;
     statusTextEl.style.color = statusColor;
 
+    if(perkTextEl){
+      const perk = player.perk || {};
+      perkTextEl.textContent = perk.name ? ('D'+player.district+' '+perk.name) : 'None';
+    }
+
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
     if(muttsUnlocked) alerts.push('Mutts loose');
@@ -3857,7 +3998,9 @@
     gameFrame.classList.remove('hidden');
     running = true;
     lastTime = performance.now();
+    const perk = perkFor(selectedDistrict);
     feed('Welcome to the arena. Hold your position — the gong will sound soon.');
+    if(perk.name) feed('District '+selectedDistrict+' perk — '+perk.name+': '+perk.desc);
     playArenaMusic();
     animId = requestAnimationFrame(loop);
   }
