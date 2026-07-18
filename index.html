@@ -748,34 +748,50 @@
     pointer-events:none;
   }
   .dpad{
+    position: relative;
     display:grid;
     grid-template-columns: repeat(3, 46px);
     grid-template-rows: repeat(3, 46px);
     gap:3px;
     pointer-events:auto;
   }
+  .dpad::before{
+    content:"";
+    position:absolute;
+    inset:-14px;
+    border-radius:50%;
+    background-color:#c9c7bf;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.15),
+                inset -2px -2px 5px rgba(255,255,255,0.6);
+    z-index:-1;
+  }
   .dpad button{
-    background: rgba(26,31,24,.85);
-    border:1px solid var(--line);
+    background-color: #2b2b2b;
+    border: none;
+    border-radius: 4px;
     color: var(--bone);
     font-size:16px;
     display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 4px 4px rgba(0,0,0,0.4),
+                inset 1px 1px 1px rgba(255,255,255,0.2);
     touch-action: none;
   }
-  .dpad button:active, .dpad button.active{ background: rgba(184,35,43,.55); }
+  .dpad button:active, .dpad button.active{ background-color: #3a3a37; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5); }
   #atkBtn{
     pointer-events:auto;
     width:76px; height:76px;
     border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, var(--blood-bright), var(--blood) 70%);
-    border:2px solid #7a1418;
+    background-color: #bc1e5c;
+    border: none;
     color:#fff5ea;
     font-size:11px;
     letter-spacing:1px;
-    box-shadow: 0 4px 0 #5c0f13;
+    box-shadow: -1px 3px 0px #700f34,
+                0px 5px 6px rgba(0,0,0,0.4),
+                inset 1px 1px 2px rgba(255,255,255,0.4);
     touch-action:none;
   }
-  #atkBtn:active{ box-shadow:0 1px 0 #5c0f13; transform:translateY(3px);}
+  #atkBtn:active{ box-shadow: inset 1px 1px 3px rgba(0,0,0,0.4); transform:translateY(3px);}
 
   .actionStack{
     display:flex; flex-direction:column; align-items:center; gap:8px;
@@ -784,15 +800,16 @@
   #swapBtn{
     width:54px; height:54px;
     border-radius:50%;
-    background: radial-gradient(circle at 35% 30%, #7fa0d0, #3a5f8a 70%);
-    border:2px solid #1a3a5a;
-    color:#fff5ea;
+    background-color: #9a9b9d;
+    border: none;
+    color:#1e2d7d;
     font-size:9px;
     letter-spacing:1px;
-    box-shadow: 0 3px 0 #16304a;
+    box-shadow: -1px 2px 2px rgba(0,0,0,0.4),
+                inset 1px 1px 1px rgba(255,255,255,0.3);
     touch-action:none;
   }
-  #swapBtn:active{ box-shadow:0 1px 0 #16304a; transform:translateY(2px); }
+  #swapBtn:active{ box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4); transform:translateY(2px); }
 
   .hint{
     position:absolute; bottom:8px; left:50%; transform:translateX(-50%);
@@ -828,15 +845,20 @@
       grid-template-rows: repeat(3, 48px);
       gap: 2px;
     }
+    .dpad::before{
+      inset: -12px;
+    }
     .dpad button{
       width: 48px;
       height: 48px;
-      background: linear-gradient(180deg, #2c2c29, #131311);
-      border: 1px solid #000;
+      background-color: #2b2b2b;
+      border: none;
+      border-radius: 4px;
       color: #cfcabb;
-      box-shadow: 0 2px 0 #000;
+      box-shadow: 0 4px 4px rgba(0,0,0,0.4),
+                  inset 1px 1px 1px rgba(255,255,255,0.2);
     }
-    .dpad button:active, .dpad button.active{ background: linear-gradient(180deg,#3a3a37,#1a1a17); }
+    .dpad button:active, .dpad button.active{ background-color: #3a3a37; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5); }
 
     #midDeck{
       display:flex;
@@ -848,21 +870,23 @@
     .pillRow{
       display:flex;
       gap: 14px;
-      transform: rotate(-22deg);
+      transform: rotate(-28deg);
     }
     #swapBtn.pillBtn, #startHint.pillBtn, .pillBtn{
       font-family: inherit;
-      width: 46px; height: 14px;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #5c5a52, #3a3832);
-      border: 1px solid #232119;
-      color: #d8d4c4;
-      font-size: 6.5px;
+      width: 52px; height: 12px;
+      border-radius: 6px;
+      background-color: #9a9b9d;
+      border: none;
+      color: #1e2d7d;
+      font-size: 6px;
       letter-spacing: 1px;
-      box-shadow: 0 2px 0 #17160f;
+      text-transform: uppercase;
+      box-shadow: -1px 2px 2px rgba(0,0,0,0.4),
+                  inset 1px 1px 1px rgba(255,255,255,0.3);
       touch-action:none;
     }
-    #swapBtn.pillBtn:active, .pillBtn:active{ transform: translateY(2px); box-shadow:none; }
+    #swapBtn.pillBtn:active, .pillBtn:active{ transform: translateY(1px); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.4); }
 
     #rightCluster{
       display:flex;
@@ -881,21 +905,23 @@
       flex-direction: row;
       align-items: flex-end;
       gap: 10px;
-      transform: translateY(6px);
+      transform: rotate(28deg) translateY(6px);
     }
     #atkBtn.actionBtn, #bBtn.actionBtn{
       font-family: inherit;
       border-radius: 50%;
-      color: #3a1018;
+      color: #fff0f4;
       font-size: 13px;
       font-weight: bold;
       letter-spacing: 0;
-      background: radial-gradient(circle at 35% 28%, #d6547a, #96274e 72%);
-      border: 2px solid #5c1530;
-      box-shadow: 0 4px 0 #45101f;
+      background-color: #bc1e5c;
+      border: none;
+      box-shadow: -1px 3px 0px #700f34,
+                  0px 5px 6px rgba(0,0,0,0.4),
+                  inset 1px 1px 2px rgba(255,255,255,0.4);
       touch-action:none;
     }
-    #atkBtn.actionBtn:active, #bBtn.actionBtn:active{ box-shadow:0 1px 0 #45101f; transform:translateY(3px); }
+    #atkBtn.actionBtn:active, #bBtn.actionBtn:active{ box-shadow: inset 1px 1px 3px rgba(0,0,0,0.4); transform:translateY(2px); }
     #bBtn.actionBtnB{
       width: 46px; height: 46px;
     }
@@ -985,6 +1011,9 @@
       grid-template-rows: repeat(3, 30px);
       gap: 2px;
     }
+    .dpad::before{
+      inset: -8px;
+    }
     .dpad button{ width:30px; height:30px; font-size:12px; }
     /* SELECT/START dropped in landscape — no room for a third column
        without shrinking the screen further, and B already cycles weapons.
@@ -1070,6 +1099,9 @@
     .dpad{
       grid-template-columns: repeat(3, 24px);
       grid-template-rows: repeat(3, 24px);
+    }
+    .dpad::before{
+      inset: -6px;
     }
     .dpad button{ width:24px; height:24px; font-size:10px; }
     #bBtn.actionBtnB{ width:24px; height:24px; font-size:9px; }
@@ -1301,6 +1333,20 @@
   const POISON_DOT_DAMAGE = 4;
   const POISON_DOT_TICKS = 3;
   const POISON_DOT_INTERVAL = 1;        // seconds between poison damage ticks
+
+  // Pond — a body of water tributes can wade into. The shallow ring lets
+  // you drink to restore hunger/energy; venture into the deep center and
+  // you start drowning instead.
+  const POND_CENTER = { x: WORLD_W*0.74, y: WORLD_H*0.78 };
+  const POND_RADIUS_X = 220;
+  const POND_RADIUS_Y = 140;
+  const POND_DEEP_FRAC = 0.55;          // fraction of the pond radius counted as "deep water"
+  const POND_DRINK_INTERVAL = 1.4;      // seconds between sips while in the shallows
+  const POND_DRINK_HUNGER = 6;
+  const POND_DRINK_ENERGY = 3;
+  const POND_DROWN_SPEED_MULT = 0.45;
+  const POND_DROWN_TICK_INTERVAL = 1;   // seconds between drowning damage ticks
+  const POND_DROWN_DAMAGE = 5;
 
   const COLORS = {
     12: "#5b7fb0", 1:"#c9a13b", 2:"#8a3a3a", 3:"#5c8a6a", 4:"#3a7a8a",
@@ -1578,6 +1624,7 @@
     rock: 'assets/rock.png',
     sandPath: 'assets/sand-path.png',
     bush: 'assets/bush.png',
+    pond: 'assets/pond.png',
     'district-1-male': 'assets/tributes/district-1-male.png',
     'district-1-female': 'assets/tributes/district-1-female.png',
     'district-2-male': 'assets/tributes/district-2-male.png',
@@ -1937,6 +1984,14 @@
     return grassZones.some(z => dist(t,z) < z.r);
   }
 
+  // Distance of a point from the pond center, normalized so <=1 is inside
+  // the pond's outer edge (matches the ellipse used to draw/detect it).
+  function pondDepthFrac(t){
+    const nx = (t.x - POND_CENTER.x)/POND_RADIUS_X;
+    const ny = (t.y - POND_CENTER.y)/POND_RADIUS_Y;
+    return nx*nx + ny*ny;
+  }
+
   // Non-collidable decoration: tall grass tufts, flowers and lily-pads,
   // generated once per game so the arena reads as a lived-in overworld
   // without touching any obstacle/collision/AI logic.
@@ -2082,7 +2137,9 @@
       starveCooldown: 0,
       stunTimer: 0,
       poisonTicksRemaining: 0,
-      poisonTickTimer: 0
+      poisonTickTimer: 0,
+      pondTickTimer: 0,
+      inDeepWater: false
     };
   }
 
@@ -2303,9 +2360,12 @@
     particles.push({x,y,text,color,life:1.0,vy:-30});
   }
 
-  // Effective movement speed after low-energy fatigue is applied.
+  // Effective movement speed after low-energy fatigue and deep-water drag
+  // are applied.
   function speedMult(t){
-    return t.energy < LOW_ENERGY_THRESHOLD ? LOW_ENERGY_SPEED_MULT : 1;
+    let mult = t.energy < LOW_ENERGY_THRESHOLD ? LOW_ENERGY_SPEED_MULT : 1;
+    if(t.inDeepWater) mult *= POND_DROWN_SPEED_MULT;
+    return mult;
   }
 
   // Hunger/energy drain, starvation damage, poison damage-over-time, and
@@ -2337,6 +2397,42 @@
     if(t.stunTimer > 0){
       t.stunTimer = Math.max(0, t.stunTimer - dt);
     }
+  }
+
+  // The pond: drink from the shallows to top up hunger/energy, or push into
+  // the deep center and start drowning (damage over time, heavy speed drag).
+  function updatePondEffects(t, dt){
+    if(!t.alive) return;
+    const depthFrac = pondDepthFrac(t);
+    const inDeep = depthFrac <= POND_DEEP_FRAC*POND_DEEP_FRAC;
+    const inPond = depthFrac <= 1;
+    t.inDeepWater = inDeep;
+
+    if(inDeep){
+      t.pondTickTimer -= dt;
+      if(t.pondTickTimer <= 0){
+        t.pondTickTimer = POND_DROWN_TICK_INTERVAL;
+        damageTribute(t, POND_DROWN_DAMAGE, null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'DROWNING', '#7fb0e0');
+      }
+      if(t.isPlayer && !t._inDeepWater) feed('🌊 The current pulls you under — swim for shore!');
+    } else if(inPond){
+      t.pondTickTimer -= dt;
+      if(t.pondTickTimer <= 0){
+        t.pondTickTimer = POND_DRINK_INTERVAL;
+        t.hunger = Math.min(HUNGER_MAX, t.hunger + POND_DRINK_HUNGER);
+        t.energy = Math.min(ENERGY_MAX, t.energy + POND_DRINK_ENERGY);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, '+DRINK', '#7fb0e0');
+      }
+      if(t.isPlayer){
+        if(t._inDeepWater) feed('You wade back into the shallows, catching your breath.');
+        else if(!t._inPondShallow) feed('💧 You wade into the pond and drink from it.');
+      }
+    } else {
+      t.pondTickTimer = 0;
+    }
+
+    if(t.isPlayer){ t._inDeepWater = inDeep; t._inPondShallow = inPond && !inDeep; }
   }
 
   function tryAttack(attacker){
@@ -3012,6 +3108,7 @@
       t.hitFlash = Math.max(0, t.hitFlash - dt);
       checkItemPickup(t);
       updateSurvival(t, dt);
+      updatePondEffects(t, dt);
     }
     const nowHidden = tributeInGrass(player);
     if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
@@ -3539,20 +3636,32 @@
       }
     }
 
-    // lake in the water quadrant
+    // pond in the water quadrant — a place to drink (shallows) or drown
+    // (deep center). Draws the user-provided pond.png at the same
+    // footprint the old vector lake used; falls back to that vector art
+    // if the asset hasn't loaded.
     ctx.save();
-    ctx.fillStyle = '#2c5f78';
-    ctx.beginPath();
-    ctx.ellipse(WORLD_W*0.74, WORLD_H*0.78, 220, 140, 0.15, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = '#1f4658';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    for(let i=0;i<6;i++){
+    ctx.translate(POND_CENTER.x, POND_CENTER.y);
+    if(assetReady('pond')){
+      const pw = POND_RADIUS_X*2.05, ph = POND_RADIUS_Y*2.05;
+      ctx.drawImage(assetImages.pond, -pw/2, -ph/2, pw, ph);
+    } else {
+      ctx.save();
+      ctx.rotate(0.15);
+      ctx.fillStyle = '#2c5f78';
       ctx.beginPath();
-      ctx.ellipse(WORLD_W*0.74 + Math.sin(i*1.3)*70, WORLD_H*0.78 + Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+      ctx.ellipse(0, 0, POND_RADIUS_X, POND_RADIUS_Y, 0, 0, Math.PI*2);
       ctx.fill();
+      ctx.strokeStyle = '#1f4658';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for(let i=0;i<6;i++){
+        ctx.beginPath();
+        ctx.ellipse(Math.sin(i*1.3)*70, Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
     }
     ctx.restore();
 
@@ -3667,8 +3776,15 @@
       weaponNameEl.textContent = 'Unarmed';
     }
     const hidden = tributeInGrass(player);
-    statusTextEl.textContent = player.stunTimer > 0 ? 'Poisoned — reeling' : (hidden ? 'Hidden in grass' : 'In the open');
-    statusTextEl.style.color = player.stunTimer > 0 ? '#e8404a' : (hidden ? '#7ac97a' : 'var(--bone)');
+    const inWater = pondDepthFrac(player) <= 1;
+    let statusLabel = 'In the open';
+    let statusColor = 'var(--bone)';
+    if(player.stunTimer > 0){ statusLabel = 'Poisoned — reeling'; statusColor = '#e8404a'; }
+    else if(player.inDeepWater){ statusLabel = 'Drowning in the pond'; statusColor = '#e8404a'; }
+    else if(inWater){ statusLabel = 'Wading in the pond'; statusColor = '#7fb0e0'; }
+    else if(hidden){ statusLabel = 'Hidden in grass'; statusColor = '#7ac97a'; }
+    statusTextEl.textContent = statusLabel;
+    statusTextEl.style.color = statusColor;
 
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
@@ -3676,6 +3792,7 @@
     if(player.hunger <= 0) alerts.push('Starving');
     if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
     if(player.stunTimer > 0) alerts.push('Stunned by poison');
+    if(player.inDeepWater) alerts.push('Drowning!');
     if(player.weapon && WEAPONS[player.weapon].type === 'ranged' && (player.ammo[player.weapon]||0) <= 0) alerts.push('Out of ammo');
     alertTextEl.textContent = alerts.length ? alerts.join(' · ') : 'All quiet';
     alertTextEl.style.color = alerts.length ? '#e8404a' : 'var(--bone)';
