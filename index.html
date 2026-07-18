@@ -393,11 +393,6 @@
     margin: 0 auto;
   }
 
-  /* The screen area wraps the canvas plus all its overlays (HUD, kill feed,
-     zone warning, countdown) AND the title/menu/selection/end screens. On
-     desktop it simply fills the frame; on mobile it becomes the "screen"
-     half of a Game Boy-style shell, with the aspect ratio previously
-     carried by #gameFrame itself. */
   #screenBezel{
     position:relative;
     width:100%;
@@ -413,9 +408,6 @@
     height:100%;
   }
 
-  /* Mobile: always render like a handheld — the screen up top, a D-pad and
-     action buttons in a control deck below it, regardless of orientation.
-     No landscape prompt; this is the intended phone layout. */
   @media (max-width: 759px){
     #gameFrame{
       flex-direction: column;
@@ -435,10 +427,6 @@
       padding: env(safe-area-inset-top,0) max(10px, env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(10px, env(safe-area-inset-left,0));
       overflow: hidden;
     }
-    /* The console shell (and the screen "glass" inside it) is always on
-       screen on mobile — title, menus, district/tribute pick, and the end
-       screen all render inside the same small screen rectangle as
-       gameplay, instead of covering the whole phone. */
     #gameFrame.hidden{ display:flex !important; }
     #screenBezel{
       position: relative;
@@ -451,7 +439,6 @@
       box-shadow: inset 0 0 0 2px #1a1a17, 0 3px 6px rgba(0,0,0,.35);
       margin-top: 10px;
     }
-    /* Top OFF·ON slide switch, embedded in the case edge above the screen */
     #gbTopSwitch{
       display:flex;
       align-items:center;
@@ -476,8 +463,6 @@
       box-shadow: inset 0 0 0 1px #3a382f;
     }
 
-    /* Dot-matrix banner across the top of the screen bezel, with the
-       pink/blue accent lines either side, like the real hardware badge */
     #bezelTopRow{
       display:flex;
       align-items:center;
@@ -497,8 +482,6 @@
       text-transform:uppercase;
     }
 
-    /* Battery LED + label, tucked in the narrow bezel margin to the
-       left of the screen — purely decorative, doesn't touch #screenArea */
     #batteryIndicator{
       display:flex;
       flex-direction:column;
@@ -537,8 +520,6 @@
       box-shadow: inset 0 0 0 3px #14140f;
     }
 
-    /* Nintendo GAME BOY™ wordmark, sitting on the cream shell below the
-       dark screen bezel — same spot as the real console's brand plate */
     #gbLogoRow{
       display:flex;
       align-items:baseline;
@@ -568,8 +549,6 @@
       margin-left:-2px;
     }
 
-    /* Title/menu/district/tribute/end screens now live inside the
-       small screen rectangle instead of covering the whole phone. */
     .screen{
       position:absolute;
       inset:0;
@@ -723,10 +702,6 @@
   }
   @keyframes pulse{ 50%{opacity:.25;} }
 
-  /* Mobile: the screen area itself is small, so the HUD/feed can't eat
-     most of it the way it does on a big desktop frame. Shrink everything,
-     drop the secondary rows, and keep the kill feed to a couple of tiny
-     lines tucked in a corner instead of a wide banner across the screen. */
   @media (max-width: 759px){
     #hud{
       padding: 3px 4px;
@@ -742,15 +717,12 @@
     .hpBarOuter{ width: 46px; height: 4px; }
     #tributesLeft{ font-size: 9px; }
     #dayText{ font-size: 6px; }
-    /* Weapon/status/alert/backpack rows and the plate-select row take up
-       lines the tiny mobile screen doesn't have room for; the essentials
-       (HP/hunger/energy bars, tributes left, day) stay visible instead. */
     #weaponName, #statusText, #alertText{ display: none; }
     .hudBox .hudLabel:has(#weaponName),
     .hudBox .hudLabel:has(#statusText),
     .hudBox .hudLabel:has(#alertText){ display: none; }
     #invRow{ display: none; }
-    .hudBox .hudLabel:last-of-type{ display: none; } /* "BACKPACK (Q/E or 1-6)" line */
+    .hudBox .hudLabel:last-of-type{ display: none; }
 
     #killFeed{
       top: auto;
@@ -765,11 +737,10 @@
       max-width: 220px;
       animation-duration: 2.6s;
     }
-    #killFeed .feedLine:nth-child(n+3){ display:none; } /* only show the newest couple */
+    #killFeed .feedLine:nth-child(n+3){ display:none; }
     #zoneWarning{ font-size: 7px; letter-spacing: 1px; top: 3px; }
   }
 
-  /* Bloodbath countdown overlay — the "on your plate" moment before the gong */
   #countdownOverlay{
     position:absolute; inset:0;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -799,7 +770,6 @@
     padding: 4px 10px;
   }
 
-  /* Touch controls */
   #touchControls{
     position:absolute; bottom:10px; left:0; right:0;
     display:flex; justify-content:space-between; align-items:flex-end;
@@ -991,16 +961,6 @@
     }
   }
 
-  /* Mobile landscape: rebuild the shell so it reads like the real handheld
-     turned on its side — D-pad on the left of the screen, A/B on the
-     right — instead of the portrait stack-everything-below-the-screen
-     layout above. Fully self-contained (doesn't lean on the max-width:759
-     portrait rules above, which don't apply on wider landscape phones
-     like an iPhone in landscape) so it can't end up half-styled. The
-     screen's size is capped by BOTH viewport height and viewport width
-     (accounting for the fixed-size d-pad/buttons on either side) so it
-     can never push the buttons off-screen or leave leftover space that
-     shows up as gaps down the sides. */
   @media (max-width: 932px) and (orientation: landscape){
     .hint{ display:none; }
     #app{ padding:0; height:100vh; height:100dvh; }
@@ -1030,11 +990,6 @@
       position: relative;
       flex: 0 0 auto;
       width: auto;
-      /* 190px ≈ d-pad width + both button widths + the two inter-element
-         gaps + side padding, so the screen's own width (height * 1.6)
-         never eats into that reserved space. Kept conservative (smaller
-         than the actual control cluster) so rounding/browser-chrome
-         differences never push the buttons past the viewport edge. */
       height: min(80vh, calc((100vw - 190px) / 1.6));
       height: min(80dvh, calc((100vw - 190px) / 1.6));
       max-height: 100%;
@@ -1054,9 +1009,6 @@
       overflow: hidden;
       box-shadow: inset 0 0 0 2px #14140f;
     }
-    /* Dissolve the wrapper (and its top-row sub-wrapper) so the dpad and
-       action cluster become direct flex items of #gameFrame, sitting on
-       either side of #screenBezel instead of stacked in a column. */
     #touchControls{
       display: contents;
     }
@@ -1075,10 +1027,6 @@
       inset: -8px;
     }
     .dpad button{ width:30px; height:30px; font-size:12px; }
-    /* SELECT/START dropped in landscape — no room for a third column
-       without shrinking the screen further, and B already cycles weapons.
-       The switch/logo/battery/grille are portrait-only shell decoration,
-       so they're dropped here too rather than fighting for space. */
     #midDeck{ display:none; }
     #gbTopSwitch, #gbLogoRow, #batteryIndicator, #grille{ display:none; }
     #rightCluster{ order:3; align-self:center; flex:0 0 auto; }
@@ -1093,8 +1041,6 @@
     #bBtn.actionBtnB{ width:30px; height:30px; margin-bottom:0; font-size:10px; }
     #atkBtn.actionBtnA{ width:40px; height:40px; font-size:10px; margin-bottom:0; }
 
-    /* Compact HUD so it fits the smaller landscape screen area — same
-       shrink treatment as the portrait phone layout above. */
     #hud{ padding:3px 4px; font-size:6px; letter-spacing:0.5px; }
     .hudBox{ padding:2px 4px; min-width:0; border-width:1px; }
     .hudLabel{ font-size:5.5px; letter-spacing:0.5px; margin-bottom:1px; }
@@ -1113,8 +1059,6 @@
     #killFeed .feedLine:nth-child(n+3){ display:none; }
     #zoneWarning{ font-size:7px; letter-spacing:1px; top:3px; }
 
-    /* Title/menu/selection/end screens contained to the screen rectangle
-       in landscape too, with the same compact sizing as portrait. */
     .screen{
       position:absolute;
       inset:0;
@@ -1161,10 +1105,6 @@
     .statLine{ font-size:5.5px; }
   }
 
-  /* Very short landscape viewports (e.g. older/taller-aspect phones like
-     the Galaxy S8+ with on-screen nav bars eating into the height) —
-     shrink the control cluster further so the screen-height formula above
-     never has to fight for space against oversized fixed-px buttons. */
   @media (max-width: 932px) and (orientation: landscape) and (max-height: 380px){
     .dpad{
       grid-template-columns: repeat(3, 24px);
@@ -1182,7 +1122,6 @@
     }
   }
 
-  /* End screen stats */
   .statLine{font-size:13px; margin:4px 0; color:#c9c5b4;}
   .statLine b{color:var(--gold);}
 </style>
@@ -1190,7 +1129,6 @@
 <body>
 <div id="app">
 
-  <!-- GAME -->
   <div id="gameFrame">
     <div id="gbTopSwitch">
       <span id="switchArrowL">◄</span><span>OFF</span><span id="switchKnob"></span><span>ON</span><span id="switchArrowR">►</span>
@@ -1207,10 +1145,8 @@
     </div>
     <div id="screenArea">
 
-    <!-- START / INTRO SCREEN -->
     <div id="startScreen" class="screen">
 
-      <!-- TITLE -->
       <div class="introPanel" id="panelTitle">
         <div class="gameLogo goldText" id="titleTextLogo">THE<br>HUNGER<br>GAMES</div>
         <img src="assets/title-logo.png" alt="THE HUNGER GAMES" class="titleCardImg hidden" id="titleCardImg">
@@ -1221,7 +1157,6 @@
         <div class="pressStart goldText" id="pressStartHint">PRESS A BUTTON</div>
       </div>
 
-      <!-- MAIN MENU -->
       <div class="introPanel hidden" id="panelMenu">
         <div class="menuList" id="menuList">
           <div class="menuItem" data-idx="0"><span class="cursorArrow goldText">▶</span>START GAME</div>
@@ -1230,14 +1165,12 @@
         </div>
       </div>
 
-      <!-- STORY / INSTRUCTIONS TEXT -->
       <div class="introPanel hidden" id="panelText">
         <div class="introHeading goldText" id="textPanelTitle">STORY MODE</div>
         <div class="introBody" id="textPanelBody"></div>
         <div class="introHint">PRESS B TO GO BACK</div>
       </div>
 
-      <!-- ARENA SELECT -->
       <div class="introPanel hidden" id="panelArena">
         <div class="introHeading goldText">PICK AN ARENA</div>
         <div class="arenaCards" id="arenaCards"></div>
@@ -1245,14 +1178,12 @@
         <div class="introHint">PRESS A AGAIN TO LOCK IN YOUR PICK<br>PRESS B TO GO BACK</div>
       </div>
 
-      <!-- DISTRICT SELECT -->
       <div class="introPanel hidden" id="panelDistrict">
         <div class="introHeading goldText">PICK A DISTRICT</div>
         <div class="districtList" id="districtList"></div>
         <div class="districtPerkLabel" id="districtPerkLabel"></div>
       </div>
 
-      <!-- TRIBUTE SELECT -->
       <div class="introPanel hidden" id="panelTribute">
         <div class="introHeading goldText">PICK A TRIBUTE</div>
         <div class="introSubheading" id="tributeDistrictLabel">DISTRICT 1</div>
@@ -1263,7 +1194,6 @@
 
     </div>
 
-    <!-- END SCREEN -->
     <div id="endScreen" class="screen hidden">
       <div class="seal" id="endSeal">
         <img src="assets/mockingjay.png" alt="" id="endSealImg">
@@ -1398,6 +1328,7 @@
   const BASE_MUTT_SPAWN_DAY = 3;         // mutts start appearing once this day count is reached
   let MUTT_SPAWN_DAY = BASE_MUTT_SPAWN_DAY;
   const MUTT_COUNT_MAX = 5;
+  let MUTT_COUNT_MAX_ACTIVE = MUTT_COUNT_MAX;
   const BASE_MUTT_SPAWN_INTERVAL = 20000; // ms between spawns once active
   let MUTT_SPAWN_INTERVAL = BASE_MUTT_SPAWN_INTERVAL;
   const MUTT_HP = 60;
@@ -1406,6 +1337,53 @@
   const MUTT_ATTACK_RANGE = 30;
   const MUTT_ATTACK_COOLDOWN = 0.9;
   const MUTT_DETECT_RANGE = 260;
+
+  // ------------------------------------------------------------
+  // MUTT SPECIES — arenas can roster a set of named creature types
+  // instead of the plain default mutt. Each species tunes hp/damage/speed
+  // and can optionally stun instead of (or alongside) dealing damage, so
+  // a big roster of weaker, more varied creatures replaces one tanky
+  // generic mutt without making the arena any deadlier overall.
+  // ============================================================
+  const MUTT_SPECIES = {
+    default: {
+      key:'default', name:'Mutt',
+      hp: MUTT_HP, dmg: MUTT_DMG, speed: MUTT_SPEED,
+      attackRange: MUTT_ATTACK_RANGE, attackCooldown: MUTT_ATTACK_COOLDOWN, detectRange: MUTT_DETECT_RANGE,
+      stunOnHit: 0, bodyColor:'#241a1a', headColor:'#2e2222', eyeColor:'#e8404a'
+    },
+    squirrel: {
+      key:'squirrel', name:'Squirrel',
+      hp: 22, dmg: 6, speed: 100,
+      attackRange: 26, attackCooldown: 0.6, detectRange: 220,
+      stunOnHit: 0, bodyColor:'#8a5c3a', headColor:'#a06f45', eyeColor:'#1a1210', tailColor:'#6a4428'
+    },
+    deer: {
+      key:'deer', name:'Deer',
+      hp: 40, dmg: 13, speed: 85,
+      attackRange: 30, attackCooldown: 1.0, detectRange: 260,
+      stunOnHit: 0, bodyColor:'#a9764a', headColor:'#c0895a', eyeColor:'#1a1210', antlerColor:'#e8e3d3'
+    },
+    flamingo: {
+      key:'flamingo', name:'Flamingo',
+      hp: 26, dmg: 4, speed: 78,
+      attackRange: 32, attackCooldown: 0.9, detectRange: 230,
+      stunOnHit: 1.6, bodyColor:'#e8637a', headColor:'#f08aa0', eyeColor:'#1a1210', beakColor:'#3a3028'
+    },
+    butterfly: {
+      key:'butterfly', name:'Butterfly',
+      hp: 12, dmg: 2, speed: 90,
+      attackRange: 28, attackCooldown: 1.1, detectRange: 200,
+      stunOnHit: 2.0, bodyColor:'#3a3028', headColor:'#3a3028', eyeColor:'#e8e3d3', wingColor:'#c96fd6', wingColor2:'#f0c869'
+    },
+    porcupine: {
+      key:'porcupine', name:'Porcupine',
+      hp: 30, dmg: 16, speed: 55,
+      attackRange: 30, attackCooldown: 1.1, detectRange: 200,
+      stunOnHit: 0, bodyColor:'#4a4438', headColor:'#5c5648', eyeColor:'#1a1210', quillColor:'#e8e3d3'
+    }
+  };
+  const DEFAULT_MUTT_ROSTER = ['default'];
 
   // Survival — hunger and energy drain over time; food found in the arena
   // refills them, but not every berry bush is safe to eat.
@@ -1438,6 +1416,20 @@
   const POND_DROWN_TICK_INTERVAL = 1;   // seconds between drowning damage ticks
   const POND_DROWN_DAMAGE = 5;
 
+  // Volcano — a Green Hollow hazard that periodically belches a cloud of
+  // deadly gas outward from its crater. Purely arena-local: only arenas
+  // whose config sets `volcano` get one, and only that ellipse is checked.
+  let VOLCANO = null; // {x,y,craterR} set per-arena by applyArenaConfig()
+  const VOLCANO_ERUPTION_INTERVAL = 16000; // ms between eruptions
+  const VOLCANO_ERUPTION_WARN = 2200;      // ms of rumbling before gas actually hurts
+  const VOLCANO_GAS_DURATION = 5200;       // ms the gas cloud stays dangerous
+  const VOLCANO_GAS_RADIUS = 260;          // how far the gas reaches from the crater
+  const VOLCANO_GAS_TICK_DAMAGE = 6;
+  const VOLCANO_GAS_TICK_INTERVAL = 0.6;   // seconds between damage ticks while inside the gas
+  let volcanoState = 'dormant';  // 'dormant' | 'warning' | 'erupting'
+  let volcanoNextAt = 0;
+  let volcanoStateTimer = 0;
+
   // ============================================================
   // ARENAS — the Gamemakers offer a choice of battlegrounds. Each one
   // re-tints the terrain, repositions/resizes the water source, and
@@ -1458,7 +1450,9 @@
       obstacleMult: 1, grassMult: 1,
       zoneScale: 1, shrinkMult: 1, supplyMult: 1,
       muttDayOffset: 0, muttIntervalMult: 1,
-      poisonMult: 1
+      poisonMult: 1,
+      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
+      showPath: true, flowerMult: 1, volcano: null
     },
     frozen: {
       id:'frozen',
@@ -1471,7 +1465,9 @@
       obstacleMult: 0.65, grassMult: 0.4,
       zoneScale: 0.88, shrinkMult: 1.25, supplyMult: 0.85,
       muttDayOffset: -1, muttIntervalMult: 0.85,
-      poisonMult: 0.7
+      poisonMult: 0.7,
+      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
+      showPath: true, flowerMult: 1, volcano: null
     },
     scorched: {
       id:'scorched',
@@ -1484,29 +1480,36 @@
       obstacleMult: 0.75, grassMult: 0.55,
       zoneScale: 1.08, shrinkMult: 0.9, supplyMult: 1.15,
       muttDayOffset: 1, muttIntervalMult: 1,
-      poisonMult: 1.35
+      poisonMult: 1.35,
+      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
+      showPath: true, flowerMult: 1, volcano: null
     },
     jungle: {
       id:'jungle',
       name:'The Green Hollow',
-      desc:'Dense overgrown jungle — thick cover everywhere makes it easy to hide, and easy to get ambushed.',
-      swatch: 'linear-gradient(135deg,#1f4a24,#255c2e 45%,#173a2a)',
-      tint: 'rgba(20,60,30,0.18)',
+      desc:'A blooming, riotously colorful jungle around a live volcano — thick cover, thicker danger, and a menagerie of small mutts instead of one big threat.',
+      swatch: 'linear-gradient(135deg,#e8637a,#4f9a52 45%,#f0c869)',
+      tint: 'rgba(20,60,30,0.10)',
       biomeColors: { forest:'#1f4a24', meadow:'#2e5c33', cave:'#233828', water:'#1f5c52' },
-      pond: { fx:0.28, fy:0.70, rx:190, ry:130 },
-      obstacleMult: 1.45, grassMult: 1.8,
+      pond: { fx:0.24, fy:0.74, rx:190, ry:130 },
+      obstacleMult: 1.35, grassMult: 1.6,
       zoneScale: 0.95, shrinkMult: 1.05, supplyMult: 0.9,
-      muttDayOffset: 0, muttIntervalMult: 1.1,
-      poisonMult: 1.15
+      muttDayOffset: 0, muttIntervalMult: 0.75,
+      poisonMult: 1.15,
+      muttRoster: ['squirrel','deer','flamingo','butterfly','porcupine'], muttCountMax: 2,
+      showPath: false, flowerMult: 3.4,
+      volcano: { fx:0.76, fy:0.26, craterR: 60 }
     }
   };
   const ARENA_KEYS = Object.keys(ARENAS);
   let selectedArena = 'meadowlands';
   let currentArenaTint = null;
   let BIOME_BASE_ACTIVE = null; // set by applyArenaConfig()
+  let currentArenaCfg = ARENAS.meadowlands;
 
   function applyArenaConfig(){
     const a = ARENAS[selectedArena] || ARENAS.meadowlands;
+    currentArenaCfg = a;
     currentArenaTint = a.tint;
     BIOME_BASE_ACTIVE = a.biomeColors;
     POND_CENTER = { x: WORLD_W*a.pond.fx, y: WORLD_H*a.pond.fy };
@@ -1520,7 +1523,12 @@
     SUPPLY_DROP_INTERVAL = Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult);
     MUTT_SPAWN_DAY = Math.max(1, BASE_MUTT_SPAWN_DAY + a.muttDayOffset);
     MUTT_SPAWN_INTERVAL = Math.round(BASE_MUTT_SPAWN_INTERVAL * a.muttIntervalMult);
+    MUTT_COUNT_MAX_ACTIVE = a.muttCountMax || MUTT_COUNT_MAX;
     BERRY_POISON_CHANCE = clamp(BASE_BERRY_POISON_CHANCE * a.poisonMult, 0, 0.85);
+    VOLCANO = a.volcano ? { x: WORLD_W*a.volcano.fx, y: WORLD_H*a.volcano.fy, craterR: a.volcano.craterR } : null;
+    volcanoState = 'dormant';
+    volcanoNextAt = VOLCANO ? 6000 : Infinity;
+    volcanoStateTimer = 0;
     grassPattern = null; sandPattern = null; // force pattern/tint re-derivation next render
   }
 
@@ -1668,6 +1676,28 @@
     gain.connect(ctxA.destination);
     osc.start(now);
     osc.stop(now + 0.1);
+  }
+
+  function playRumbleSound(){
+    const ctxA = getAudioCtx();
+    if(!ctxA) return;
+    const now = ctxA.currentTime;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(45, now);
+    osc.frequency.linearRampToValueAtTime(38, now + 2.0);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.4);
+    gain.gain.linearRampToValueAtTime(0.0001, now + 2.1);
+    const filt = ctxA.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 180;
+    osc.connect(filt);
+    filt.connect(gain);
+    gain.connect(ctxA.destination);
+    osc.start(now);
+    osc.stop(now + 2.2);
   }
 
   // ============================================================
@@ -2187,6 +2217,14 @@
     return (nx*nx + ny*ny) <= 1;
   }
 
+  // Distance-based check for the volcano crater — keeps obstacles/decor
+  // and item spawns from landing inside the mountain itself.
+  function nearVolcano(x,y,pad){
+    if(!VOLCANO) return false;
+    pad = pad || 0;
+    return dist({x,y}, VOLCANO) < (VOLCANO.craterR + pad);
+  }
+
   function makeObstacles(){
     obstacles = [];
     let tries=0;
@@ -2195,8 +2233,9 @@
       const x = rand(50, WORLD_W-50);
       const y = rand(50, WORLD_H-50);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 160) continue; // keep cornucopia clear
+      if(nearVolcano(x,y,40)) continue; // keep the volcano's slopes clear of clutter
       const biome = biomeAt(x,y);
-      const isPath = Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
+      const isPath = currentArenaCfg.showPath && Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
       const isWater = biome === 'water';
       if(isPath || isWater) continue;
       const roll = Math.random();
@@ -2246,6 +2285,7 @@
       const x = rand(70, WORLD_W-70);
       const y = rand(70, WORLD_H-70);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 190) continue; // keep cornucopia open
+      if(nearVolcano(x,y,50)) continue;
       const r = rand(45,85);
       if(nearPond(x,y,r)) continue; // keep grass patches (and their tufts) out of the pond
       const overlap = grassZones.some(z=> dist(z,{x,y}) < z.r + r*0.3);
@@ -2282,22 +2322,25 @@
   let decorations = [];
   function makeDecorations(){
     decorations = [];
-    const decorationCount = Math.round(260 * AREA_SCALE);
+    const flowerMult = currentArenaCfg.flowerMult || 1;
+    const decorationCount = Math.round(260 * AREA_SCALE * Math.max(1, flowerMult*0.55));
     for(let i=0;i<decorationCount;i++){
       const x = rand(20, WORLD_W-20);
       const y = rand(20, WORLD_H-20);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 130) continue;
+      if(nearVolcano(x,y,30)) continue;
       const biome = biomeAt(x,y);
-      const isPath = Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
+      const isPath = currentArenaCfg.showPath && Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
       const isWater = biome === 'water';
       if(isPath || isWater) continue;
       if(obstacles.some(o=> dist({x,y},o) < o.r+10)) continue;
       let kind;
-      if(biome === 'forest') kind = Math.random()<0.6 ? 'tallgrass' : 'flower';
-      else if(biome === 'meadow') kind = Math.random()<0.5 ? 'flower' : 'tallgrass';
-      else if(biome === 'cave') kind = Math.random()<0.7 ? 'pebble' : 'flower';
-      else kind = Math.random()<0.6 ? 'lilypad' : 'tallgrass';
-      decorations.push({x,y,kind,phase:Math.random()*Math.PI*2});
+      const flowerChanceBoost = clamp((flowerMult-1)*0.22, 0, 0.6);
+      if(biome === 'forest') kind = Math.random()<0.6+flowerChanceBoost ? (Math.random()<0.5?'tallgrass':'flower') : 'flower';
+      else if(biome === 'meadow') kind = Math.random()<0.5+flowerChanceBoost ? 'flower' : 'tallgrass';
+      else if(biome === 'cave') kind = Math.random()<0.7-flowerChanceBoost*0.5 ? 'pebble' : 'flower';
+      else kind = Math.random()<0.6-flowerChanceBoost*0.5 ? 'lilypad' : 'flower';
+      decorations.push({x,y,kind,phase:Math.random()*Math.PI*2, flowerColorRoll: Math.random()});
     }
 
     // pack each grass zone with dense tufts so it visibly reads as cover
@@ -2313,6 +2356,24 @@
         decorations.push({x,y,kind:'tallgrass',phase:Math.random()*Math.PI*2});
       }
     });
+
+    // extra scattered flower clusters for especially colorful arenas
+    if(flowerMult > 1.4){
+      const clusterCount = Math.round(26 * (flowerMult-1));
+      for(let c=0;c<clusterCount;c++){
+        const cx = rand(40, WORLD_W-40), cy = rand(40, WORLD_H-40);
+        if(dist({x:cx,y:cy},{x:CENTER_X,y:CENTER_Y}) < 140) continue;
+        if(nearVolcano(cx,cy,40)) continue;
+        if(nearPond(cx,cy,20)) continue;
+        const petalCount = randi(4,9);
+        for(let p=0;p<petalCount;p++){
+          const x = clamp(cx + rand(-30,30), 20, WORLD_W-20);
+          const y = clamp(cy + rand(-30,30), 20, WORLD_H-20);
+          if(obstacles.some(o=> dist({x,y},o) < o.r+8)) continue;
+          decorations.push({x,y,kind:'flower',phase:Math.random()*Math.PI*2, flowerColorRoll: Math.random()});
+        }
+      }
+    }
   }
 
   function spawnItem(x,y,forcedType,forcedWeaponType){
@@ -2429,7 +2490,8 @@
       poisonTickTimer: 0,
       pondTickTimer: 0,
       inDeepWater: false,
-      regenCooldown: 0
+      regenCooldown: 0,
+      gasTickTimer: 0
     };
   }
 
@@ -2647,7 +2709,7 @@
       if(source && source.alive && !source.isMutt){ source.kills++; if(source.isPlayer) kills++; }
       const name = t.isPlayer ? 'YOU' : 'District '+t.district;
       let killerName = 'the arena';
-      if(source && source.isMutt) killerName = 'a mutt';
+      if(source && source.isMutt) killerName = (MUTT_SPECIES[source.species||'default'].name.toLowerCase());
       else if(source) killerName = source.isPlayer ? 'you' : 'District '+source.district;
       feed('🔔 A cannon sounds. ' + name + ' has fallen' + (source ? (' — slain by ' + killerName) : '') + '.');
       spawnFloatText(t.x, t.y-30, 'ELIMINATED', '#ffcf5c');
@@ -2667,7 +2729,7 @@
     if(m.hp <= 0 && m.alive){
       m.alive = false;
       spawnFloatText(m.x, m.y-26, 'MUTT DOWN', '#7ac97a');
-      if(source && source.isPlayer) feed('You put down a mutt.');
+      if(source && source.isPlayer) feed('You put down a ' + MUTT_SPECIES[m.species||'default'].name.toLowerCase() + '.');
     }
   }
 
@@ -2769,6 +2831,22 @@
     }
 
     if(t.isPlayer){ t._inDeepWater = inDeep && !perk.noDrown; t._inPondShallow = inPond && !(inDeep && !perk.noDrown); }
+  }
+
+  // The volcano's gas cloud: while erupting, anyone standing within its
+  // blast radius takes periodic damage, regardless of district perk —
+  // this is Gamemaker-grade danger, not the shrinking zone.
+  function updateVolcanoEffects(t, dt){
+    if(!t.alive || !VOLCANO || volcanoState !== 'erupting') return;
+    const d = dist(t, VOLCANO);
+    if(d > VOLCANO_GAS_RADIUS) return;
+    t.gasTickTimer -= dt;
+    if(t.gasTickTimer <= 0){
+      t.gasTickTimer = VOLCANO_GAS_TICK_INTERVAL;
+      const perk = t.perk || {};
+      damageTribute(t, VOLCANO_GAS_TICK_DAMAGE * (perk.zoneDmgMult != null ? perk.zoneDmgMult : 1), null);
+      if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'GAS!', '#7ac040');
+    }
   }
 
   function tryAttack(attacker){
@@ -3225,6 +3303,9 @@
   // MUTTS — Gamemaker creatures that hunt every tribute, player included
   // ============================================================
   function spawnMutt(){
+    const roster = currentArenaCfg.muttRoster || DEFAULT_MUTT_ROSTER;
+    const speciesKey = roster[randi(0, roster.length-1)];
+    const species = MUTT_SPECIES[speciesKey] || MUTT_SPECIES.default;
     const ang = Math.random()*Math.PI*2;
     const rx = Math.min(zoneRadiusX*0.9, WORLD_W*0.45);
     const ry = Math.min(zoneRadiusY*0.9, WORLD_H*0.45);
@@ -3233,19 +3314,21 @@
     mutts.push({
       id: Math.random().toString(36).slice(2),
       isMutt: true,
+      species: species.key,
       x, y, vx:0, vy:0,
       facing: {x:0,y:1},
-      hp: MUTT_HP, maxHp: MUTT_HP,
+      hp: species.hp, maxHp: species.hp,
       alive: true,
       attackCooldown: 0,
       hitFlash: 0,
       wanderTarget: null,
       wanderTimer: 0
     });
-    feed('👁 A shriek echoes — a mutt has entered the arena.');
+    feed('👁 A ' + species.name.toLowerCase() + ' mutt has entered the arena.');
   }
 
   function updateMuttAI(m, dt){
+    const species = MUTT_SPECIES[m.species||'default'];
     m.attackCooldown = Math.max(0, m.attackCooldown-dt);
     m.hitFlash = Math.max(0, m.hitFlash-dt);
 
@@ -3257,7 +3340,7 @@
     }
 
     let tx = m.x, ty = m.y;
-    if(nearest && nd < MUTT_DETECT_RANGE){
+    if(nearest && nd < species.detectRange){
       tx = nearest.x; ty = nearest.y;
     } else {
       m.wanderTimer -= dt;
@@ -3271,8 +3354,8 @@
     const dx = tx-m.x, dy = ty-m.y;
     const len = Math.hypot(dx,dy) || 1;
     if(len > 4){
-      m.vx = (dx/len)*MUTT_SPEED;
-      m.vy = (dy/len)*MUTT_SPEED;
+      m.vx = (dx/len)*species.speed;
+      m.vy = (dy/len)*species.speed;
       const smoothing = 10;
       const blend = Math.min(1, smoothing*dt);
       let fx = m.facing.x + (dx/len - m.facing.x)*blend;
@@ -3283,11 +3366,16 @@
       m.vx = 0; m.vy = 0;
     }
 
-    if(nearest && nd < MUTT_ATTACK_RANGE && m.attackCooldown <= 0){
-      m.attackCooldown = MUTT_ATTACK_COOLDOWN;
-      const dmg = MUTT_DMG + rand(-3,4);
-      damageTribute(nearest, Math.max(6,dmg), m);
-      spawnFloatText(m.x, m.y-20, 'BITE!', '#e8404a');
+    if(nearest && nd < species.attackRange && m.attackCooldown <= 0){
+      m.attackCooldown = species.attackCooldown;
+      const dmg = species.dmg + rand(-2,3);
+      damageTribute(nearest, Math.max(1,dmg), m);
+      if(species.stunOnHit > 0){
+        nearest.stunTimer = Math.max(nearest.stunTimer, species.stunOnHit);
+        spawnFloatText(m.x, m.y-20, 'STUNNED!', '#f0c869');
+      } else {
+        spawnFloatText(m.x, m.y-20, 'HIT!', '#e8404a');
+      }
     }
   }
 
@@ -3303,7 +3391,7 @@
     }
     nextMuttSpawnAt -= dt*1000;
     const aliveMuttCount = mutts.filter(m=>m.alive).length;
-    if(nextMuttSpawnAt <= 0 && aliveMuttCount < MUTT_COUNT_MAX){
+    if(nextMuttSpawnAt <= 0 && aliveMuttCount < MUTT_COUNT_MAX_ACTIVE){
       nextMuttSpawnAt = MUTT_SPAWN_INTERVAL;
       spawnMutt();
     }
@@ -3317,6 +3405,36 @@
       resolveObstacles(m);
     }
     mutts = mutts.filter(m=>m.alive);
+  }
+
+  // ============================================================
+  // VOLCANO — periodic eruption cycle: dormant -> warning (rumble) ->
+  // erupting (gas cloud actively damages anyone inside it) -> dormant.
+  // ============================================================
+  function updateVolcano(dt){
+    if(!VOLCANO) return;
+    if(volcanoState === 'dormant'){
+      volcanoNextAt -= dt*1000;
+      if(volcanoNextAt <= 0){
+        volcanoState = 'warning';
+        volcanoStateTimer = VOLCANO_ERUPTION_WARN;
+        feed('🌋 The volcano rumbles — gas is building in the crater.');
+        playRumbleSound();
+      }
+    } else if(volcanoState === 'warning'){
+      volcanoStateTimer -= dt*1000;
+      if(volcanoStateTimer <= 0){
+        volcanoState = 'erupting';
+        volcanoStateTimer = VOLCANO_GAS_DURATION;
+        feed('🌋 The volcano erupts! Deadly gas is spreading.');
+      }
+    } else if(volcanoState === 'erupting'){
+      volcanoStateTimer -= dt*1000;
+      if(volcanoStateTimer <= 0){
+        volcanoState = 'dormant';
+        volcanoNextAt = VOLCANO_ERUPTION_INTERVAL;
+      }
+    }
   }
 
   // ============================================================
@@ -3444,6 +3562,7 @@
       updateAI(t, dt);
     }
     updateMutts(dt);
+    updateVolcano(dt);
     for(const t of tributes){
       if(!t.alive) continue;
       t.x += t.vx*dt;
@@ -3456,6 +3575,7 @@
       checkItemPickup(t);
       updateSurvival(t, dt);
       updatePondEffects(t, dt);
+      updateVolcanoEffects(t, dt);
     }
     const nowHidden = tributeInGrass(player);
     if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
@@ -3643,13 +3763,134 @@
     ctx.restore();
   }
 
-  function drawMutt(m){
-    ctx.save();
-    ctx.translate(m.x, m.y);
-    const flash = m.hitFlash > 0;
+  // Per-species mutt sprites — small, simple vector critters (no external
+  // assets exist for these yet) so each animal reads distinctly at a
+  // glance: squirrel (bushy tail), deer (antlers), flamingo (long neck +
+  // stilt legs), butterfly (wings, doesn't really "walk"), porcupine
+  // (quill spikes). Falls back cleanly to the generic mutt blob for any
+  // species without dedicated art, and for the default mutt itself.
+  function drawMuttBody(m, species){
     const bob = Math.sin(performance.now()/220 + m.id.length)*2;
     const walk = Math.sin(performance.now()/180 + m.id.length)*1.2;
     const facingSign = m.vx > 0 ? -1 : 1;
+    const flash = m.hitFlash > 0;
+    const c = (hex)=> flash ? '#ffffff' : hex;
+
+    ctx.save();
+    ctx.translate(0, bob);
+    ctx.scale(facingSign, 1);
+
+    if(species.key === 'squirrel'){
+      ctx.fillStyle = c(species.tailColor);
+      ctx.beginPath();
+      ctx.ellipse(-7, -4 + walk*0.3, 7, 9, 0.5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(2, 2, 8, 6, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.headColor);
+      ctx.beginPath();
+      ctx.arc(9, -2, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(11,-3,1.1,0,Math.PI*2); ctx.fill();
+    } else if(species.key === 'deer'){
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 11, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.fillRect(-8,6,3,7); ctx.fillRect(5,6,3,7);
+      ctx.fillStyle = c(species.headColor);
+      ctx.beginPath();
+      ctx.ellipse(11, -4 + walk*0.2, 5, 6, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = c(species.antlerColor);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(9,-9); ctx.lineTo(7,-14); ctx.moveTo(7,-12); ctx.lineTo(9,-13);
+      ctx.moveTo(13,-9); ctx.lineTo(15,-14); ctx.moveTo(15,-12); ctx.lineTo(13,-13);
+      ctx.stroke();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(13,-5,1,0,Math.PI*2); ctx.fill();
+    } else if(species.key === 'flamingo'){
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(-2, -2, 8, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = c(species.bodyColor);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(4,-4); ctx.quadraticCurveTo(11,-10,9,-16);
+      ctx.stroke();
+      ctx.fillStyle = c(species.headColor);
+      ctx.beginPath(); ctx.arc(9,-17,4,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = c(species.beakColor);
+      ctx.beginPath(); ctx.moveTo(12,-17); ctx.lineTo(17,-15); ctx.lineTo(12,-15); ctx.fill();
+      ctx.strokeStyle = c(species.bodyColor);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-3+walk*0.5,4); ctx.lineTo(-4+walk*0.5,13); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2-walk*0.5,4); ctx.lineTo(3-walk*0.5,13); ctx.stroke();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(10,-18,0.9,0,Math.PI*2); ctx.fill();
+    } else if(species.key === 'butterfly'){
+      const flap = Math.sin(performance.now()/110 + m.id.length)*0.6 + 0.7;
+      ctx.save();
+      ctx.scale(1, flap);
+      ctx.fillStyle = c(species.wingColor);
+      ctx.beginPath(); ctx.ellipse(-6,-4,7,9,0.3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(6,-4,7,9,-0.3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = c(species.wingColor2);
+      ctx.beginPath(); ctx.ellipse(-5,3,4.5,5,0.2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(5,3,4.5,5,-0.2,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.fillRect(-1,-8,2,16);
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(0,-9,1.4,0,Math.PI*2); ctx.fill();
+    } else if(species.key === 'porcupine'){
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 10, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = c(species.quillColor);
+      ctx.lineWidth = 1.6;
+      for(let i=-8;i<=8;i+=3){
+        ctx.beginPath();
+        ctx.moveTo(i, -1);
+        ctx.lineTo(i*1.25, -9 - Math.abs(i)*0.15);
+        ctx.stroke();
+      }
+      ctx.fillStyle = c(species.headColor);
+      ctx.beginPath(); ctx.ellipse(9,-1,5,4.5,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(11,-2,1,0,Math.PI*2); ctx.fill();
+    } else {
+      // default generic mutt
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.headColor === '#2e2222' ? '#181010' : species.headColor);
+      ctx.fillRect(-7, 4, 3, 6);
+      ctx.fillRect(4, 4, 3, 6);
+      const hx = m.facing.x*7, hy = m.facing.y*4 - 3;
+      ctx.fillStyle = c(species.headColor);
+      ctx.beginPath();
+      ctx.ellipse(hx, hy, 6, 4.5, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(hx-2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(hx+2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawMutt(m){
+    const species = MUTT_SPECIES[m.species||'default'];
+    ctx.save();
+    ctx.translate(m.x, m.y);
 
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -3657,7 +3898,10 @@
     ctx.ellipse(0, 10, 9, 3, 0, 0, Math.PI*2);
     ctx.fill();
 
-    if(assetReady('mutt')){
+    if(species.key === 'default' && assetReady('mutt')){
+      const bob = Math.sin(performance.now()/220 + m.id.length)*2;
+      const walk = Math.sin(performance.now()/180 + m.id.length)*1.2;
+      const facingSign = m.vx > 0 ? -1 : 1;
       ctx.save();
       ctx.translate(0, bob - 2);
       ctx.scale(facingSign * 1.18, 1.18);
@@ -3666,23 +3910,8 @@
       ctx.restore();
     } else {
       ctx.save();
-      ctx.translate(0, bob);
-      ctx.scale(1.2,1.2);
-      ctx.fillStyle = flash ? '#ffffff' : '#241a1a';
-      ctx.beginPath();
-      ctx.ellipse(0, 1, 10, 6.5, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = flash ? '#ffffff' : '#181010';
-      ctx.fillRect(-7, 4, 3, 6);
-      ctx.fillRect(4, 4, 3, 6);
-      const hx = m.facing.x*7, hy = m.facing.y*4 - 3;
-      ctx.fillStyle = flash ? '#ffffff' : '#2e2222';
-      ctx.beginPath();
-      ctx.ellipse(hx, hy, 6, 4.5, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = '#e8404a';
-      ctx.beginPath(); ctx.arc(hx-2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(hx+2, hy-1, 1.3, 0, Math.PI*2); ctx.fill();
+      ctx.scale(1.15,1.15);
+      drawMuttBody(m, species);
       ctx.restore();
     }
     ctx.restore();
@@ -3693,6 +3922,12 @@
     ctx.fillRect(-14,-24,28,3);
     ctx.fillStyle = '#e8404a';
     ctx.fillRect(-13,-23.5,26*(m.hp/m.maxHp),2);
+    if(species.key !== 'default'){
+      ctx.font = '7px monospace';
+      ctx.fillStyle = '#cfcabb';
+      ctx.textAlign = 'center';
+      ctx.fillText(species.name, 0, -27);
+    }
     ctx.restore();
   }
 
@@ -3898,6 +4133,9 @@
     ctx.restore();
   }
 
+  // Bright, varied petal colors so flower-heavy arenas (Green Hollow) read
+  // as riotously colorful rather than a single repeated palette.
+  const FLOWER_PALETTE = ['#e8637a','#f0c869','#c96fd6','#7fb0e0','#f08aa0','#ff9640','#8ee06a','#ffe066'];
   function drawDecoration(d){
     ctx.save();
     ctx.translate(d.x,d.y);
@@ -3926,11 +4164,14 @@
       if(assetReady(assetKey)){
         drawAssetAspect(assetKey, 10, false);
       } else {
-        const colors = ['#e8637a','#e8c04a','#e8e3d3'];
+        const roll = d.flowerColorRoll != null ? d.flowerColorRoll : (d.phase*10)%1;
+        const color = FLOWER_PALETTE[Math.floor(roll*FLOWER_PALETTE.length)%FLOWER_PALETTE.length];
         ctx.fillStyle = '#2f6a3a';
         ctx.fillRect(-1,-2,2,6);
-        ctx.fillStyle = colors[Math.floor(d.phase*10)%colors.length];
-        ctx.beginPath(); ctx.arc(0,-4,2.4,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(0,-4,2.6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff2c9';
+        ctx.beginPath(); ctx.arc(0,-4,1,0,Math.PI*2); ctx.fill();
       }
     } else if(d.kind === 'pebble'){
       ctx.fillStyle = '#6b6459';
@@ -3944,6 +4185,96 @@
       ctx.beginPath(); ctx.arc(0,0,5,0.4,Math.PI*1.8); ctx.fill();
     }
     ctx.restore();
+  }
+
+  // The volcano itself — a simple layered cone with a glowing crater that
+  // brightens through the warning/eruption states, plus a rising smoke
+  // plume. Purely decorative geometry; the actual danger/gas hitbox is
+  // handled by updateVolcanoEffects()/VOLCANO_GAS_RADIUS elsewhere.
+  function drawVolcano(){
+    if(!VOLCANO) return;
+    ctx.save();
+    ctx.translate(VOLCANO.x, VOLCANO.y);
+    const r = VOLCANO.craterR;
+
+    // mountain body
+    ctx.fillStyle = '#3a2c22';
+    ctx.beginPath();
+    ctx.moveTo(-r*2.1, r*0.9);
+    ctx.lineTo(-r*0.6, -r*1.5);
+    ctx.lineTo(r*0.6, -r*1.5);
+    ctx.lineTo(r*2.1, r*0.9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#4a382a';
+    ctx.beginPath();
+    ctx.moveTo(-r*1.5, r*0.75);
+    ctx.lineTo(-r*0.55, -r*1.35);
+    ctx.lineTo(-r*0.1, -r*1.1);
+    ctx.lineTo(-r*1.1, r*0.75);
+    ctx.closePath();
+    ctx.fill();
+
+    // crater glow — intensifies with volcanoState
+    const glowColor = volcanoState === 'erupting' ? '#ff7a3d' : volcanoState === 'warning' ? '#e0a33d' : '#8a4a2a';
+    ctx.fillStyle = glowColor;
+    ctx.beginPath();
+    ctx.ellipse(0, -r*1.42, r*0.5, r*0.22, 0, 0, Math.PI*2);
+    ctx.fill();
+    if(volcanoState !== 'dormant'){
+      ctx.save();
+      ctx.globalAlpha = 0.55 + Math.sin(performance.now()/150)*0.25;
+      ctx.fillStyle = '#ffdca0';
+      ctx.beginPath();
+      ctx.ellipse(0, -r*1.42, r*0.28, r*0.12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // smoke / gas plume
+    if(volcanoState !== 'dormant'){
+      const t = performance.now()/1000;
+      for(let i=0;i<5;i++){
+        const p = (t*0.4 + i/5) % 1;
+        const puffY = -r*1.5 - p*70;
+        const puffX = Math.sin(t*0.6 + i*1.7) * 14 * p;
+        const puffR = (8 + p*20);
+        ctx.save();
+        ctx.globalAlpha = (volcanoState==='erupting' ? 0.32 : 0.18) * (1-p);
+        ctx.fillStyle = volcanoState === 'erupting' ? '#7ac040' : '#cfcabb';
+        ctx.beginPath();
+        ctx.arc(puffX, puffY, puffR, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    // active gas cloud danger radius, drawn in world space (not translated
+    // to the volcano's local frame, so it correctly overlays the ground)
+    if(volcanoState === 'erupting'){
+      ctx.save();
+      ctx.globalAlpha = 0.22 + Math.sin(performance.now()/220)*0.05;
+      ctx.fillStyle = '#7ac040';
+      ctx.beginPath();
+      ctx.arc(VOLCANO.x, VOLCANO.y - r*0.3, VOLCANO_GAS_RADIUS, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(122,192,64,0.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    } else if(volcanoState === 'warning'){
+      ctx.save();
+      ctx.globalAlpha = 0.16 + Math.sin(performance.now()/140)*0.08;
+      ctx.strokeStyle = 'rgba(232,163,61,0.7)';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6,6]);
+      ctx.beginPath();
+      ctx.arc(VOLCANO.x, VOLCANO.y - r*0.3, VOLCANO_GAS_RADIUS, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
   }
 
   const TILE = 40;
@@ -4017,18 +4348,22 @@
     ctx.restore();
 
     // dirt path crossroads radiating from the cornucopia, like a route hub
-    ctx.save();
-    const sPattern = getSandPattern();
-    ctx.fillStyle = sPattern || '#8a7550';
-    ctx.fillRect(CENTER_X-34, 0, 68, WORLD_H);
-    ctx.fillRect(0, CENTER_Y-34, WORLD_W, 68);
-    if(!sPattern){
-      ctx.strokeStyle = 'rgba(0,0,0,.12)';
-      ctx.lineWidth = 1;
-      for(let x=0;x<WORLD_W;x+=20){ ctx.beginPath(); ctx.moveTo(x,CENTER_Y-34); ctx.lineTo(x,CENTER_Y+34); ctx.stroke(); }
-      for(let y=0;y<WORLD_H;y+=20){ ctx.beginPath(); ctx.moveTo(CENTER_X-34,y); ctx.lineTo(CENTER_X+34,y); ctx.stroke(); }
+    // — some arenas (e.g. Green Hollow) skip this entirely and leave the
+    // cornucopia clearing as open ground instead.
+    if(currentArenaCfg.showPath){
+      ctx.save();
+      const sPattern = getSandPattern();
+      ctx.fillStyle = sPattern || '#8a7550';
+      ctx.fillRect(CENTER_X-34, 0, 68, WORLD_H);
+      ctx.fillRect(0, CENTER_Y-34, WORLD_W, 68);
+      if(!sPattern){
+        ctx.strokeStyle = 'rgba(0,0,0,.12)';
+        ctx.lineWidth = 1;
+        for(let x=0;x<WORLD_W;x+=20){ ctx.beginPath(); ctx.moveTo(x,CENTER_Y-34); ctx.lineTo(x,CENTER_Y+34); ctx.stroke(); }
+        for(let y=0;y<WORLD_H;y+=20){ ctx.beginPath(); ctx.moveTo(CENTER_X-34,y); ctx.lineTo(CENTER_X+34,y); ctx.stroke(); }
+      }
+      ctx.restore();
     }
-    ctx.restore();
 
     // cave clearing patch (rocky ground) under the cave quadrant's cluster
     ctx.save();
@@ -4039,6 +4374,8 @@
     ctx.restore();
 
     decorations.forEach(drawDecoration);
+
+    if(VOLCANO) drawVolcano();
 
     // cornucopia clearing marker (camp-style ring, same footprint as before)
     ctx.save();
@@ -4128,9 +4465,11 @@
     }
     const hidden = tributeInGrass(player);
     const inWater = pondDepthFrac(player) <= 1;
+    const inGas = VOLCANO && volcanoState === 'erupting' && dist(player, VOLCANO) <= VOLCANO_GAS_RADIUS;
     let statusLabel = 'In the open';
     let statusColor = 'var(--bone)';
-    if(player.stunTimer > 0){ statusLabel = 'Poisoned — reeling'; statusColor = '#e8404a'; }
+    if(player.stunTimer > 0){ statusLabel = 'Stunned'; statusColor = '#e8404a'; }
+    else if(inGas){ statusLabel = 'Choking on volcanic gas'; statusColor = '#7ac040'; }
     else if(player.inDeepWater){ statusLabel = 'Drowning in the pond'; statusColor = '#e8404a'; }
     else if(inWater){ statusLabel = 'Wading in the pond'; statusColor = '#7fb0e0'; }
     else if(hidden){ statusLabel = 'Hidden in grass'; statusColor = '#7ac97a'; }
@@ -4145,9 +4484,11 @@
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
     if(muttsUnlocked) alerts.push('Mutts loose');
+    if(VOLCANO && volcanoState === 'warning') alerts.push('Volcano rumbling');
+    if(VOLCANO && volcanoState === 'erupting') alerts.push('Volcano erupting!');
     if(player.hunger <= 0) alerts.push('Starving');
     if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
-    if(player.stunTimer > 0) alerts.push('Stunned by poison');
+    if(player.stunTimer > 0) alerts.push('Stunned');
     if(player.inDeepWater) alerts.push('Drowning!');
     if(player.weapon && WEAPONS[player.weapon].type === 'ranged' && (player.ammo[player.weapon]||0) <= 0) alerts.push('Out of ammo');
     alertTextEl.textContent = alerts.length ? alerts.join(' · ') : 'All quiet';
