@@ -1914,6 +1914,17 @@
     return 'meadow';
   }
 
+  // Distance-based check for the actual pond ellipse (not just the wider
+  // "water" quadrant used for biome coloring) — used to keep decorations
+  // and cover zones from ending up inside the pond itself. `pad` inflates
+  // the pond's radius so callers can keep a safety margin around the edge.
+  function nearPond(x,y,pad){
+    pad = pad || 0;
+    const nx = (x - POND_CENTER.x) / (POND_RADIUS_X + pad);
+    const ny = (y - POND_CENTER.y) / (POND_RADIUS_Y + pad);
+    return (nx*nx + ny*ny) <= 1;
+  }
+
   function makeObstacles(){
     obstacles = [];
     let tries=0;
@@ -1974,6 +1985,7 @@
       const y = rand(70, WORLD_H-70);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 190) continue; // keep cornucopia open
       const r = rand(45,85);
+      if(nearPond(x,y,r)) continue; // keep grass patches (and their tufts) out of the pond
       const overlap = grassZones.some(z=> dist(z,{x,y}) < z.r + r*0.3);
       if(overlap) continue;
       grassZones.push({x,y,r});
@@ -2025,6 +2037,7 @@
         const x = z.x + Math.cos(ang)*rr;
         const y = z.y + Math.sin(ang)*rr;
         if(obstacles.some(o=> dist({x,y},o) < o.r+6)) continue;
+        if(nearPond(x,y,0)) continue; // never let a grass tuft land inside the pond
         decorations.push({x,y,kind:'tallgrass',phase:Math.random()*Math.PI*2});
       }
     });
@@ -2169,11 +2182,21 @@
 
   function resetGame(){
     tributes = [];
-    // Build every district's two reaping slots, then pull the player out
-    // as their chosen district's tribute and shuffle the rest for spawn order.
+    // Build every district's two reaping slots as explicit {district,gender}
+    // pairs so each district always fields one male AND one female tribute
+    // (instead of two random same-gender copies) — the player fills one
+    // slot of their chosen district, and the pool below covers the rest.
     let pool = [];
-    DISTRICTS.forEach(d=>{ pool.push(d, d); });
-    pool.splice(pool.indexOf(selectedDistrict), 1);
+    DISTRICTS.forEach(d=>{
+      if(d === selectedDistrict){
+        // the player already takes one gender slot for this district;
+        // only the opposite-gender tribute still needs to be generated
+        pool.push({district: d, gender: selectedGender === 'male' ? 'female' : 'male'});
+      } else {
+        pool.push({district: d, gender: 'male'});
+        pool.push({district: d, gender: 'female'});
+      }
+    });
     for(let i=pool.length-1;i>0;i--){
       const j = Math.floor(Math.random()*(i+1));
       const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
@@ -2184,7 +2207,7 @@
     // (or off a body) once the gong sounds.
     tributes.push(player);
     for(let i=0;i<pool.length;i++){
-      tributes.push(newTribute(pool[i], false));
+      tributes.push(newTribute(pool[i].district, false, pool[i].gender));
     }
 
     positionTributesOnPlates();
@@ -2291,13 +2314,26 @@
   const selectBtn = document.getElementById('swapBtn');
   const selectOn = (e)=>{
     e.preventDefault();
-    if(introActive() || endScreenActive()){ return; }
+    if(endScreenActive()){ return; }
+    if(introActive()){ introHandleAction('down'); return; }
     cycleWeapon(-1);
   };
   if(selectBtn){
     selectBtn.addEventListener('touchstart', selectOn, {passive:false});
     selectBtn.addEventListener('mousedown', selectOn);
     selectBtn.addEventListener('click', selectOn);
+  }
+
+  const startBtn = document.getElementById('startHint');
+  const startOn = (e)=>{
+    e.preventDefault();
+    if(endScreenActive()){ returnToReaping(); return; }
+    if(introActive()){ introHandleAction('A'); return; }
+  };
+  if(startBtn){
+    startBtn.addEventListener('touchstart', startOn, {passive:false});
+    startBtn.addEventListener('mousedown', startOn);
+    startBtn.addEventListener('click', startOn);
   }
 
   // ============================================================
