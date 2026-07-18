@@ -1344,6 +1344,11 @@
   // and can optionally stun instead of (or alongside) dealing damage, so
   // a big roster of weaker, more varied creatures replaces one tanky
   // generic mutt without making the arena any deadlier overall.
+  //
+  // A species can also set `venom: true` — instead of (or on top of) a
+  // small immediate bite, it inflicts a stacking poison-over-time on the
+  // target using the same poison machinery as bad berries, but with its
+  // own tick damage/duration (see venomTicks/venomTickDmg/venomTickInterval).
   // ============================================================
   const MUTT_SPECIES = {
     default: {
@@ -1393,6 +1398,14 @@
       hp: 150, dmg: 27, speed: 82,
       attackRange: 36, attackCooldown: 1.0, detectRange: 340,
       stunOnHit: 0, bodyColor:'#241010', headColor:'#301414', eyeColor:'#ff3030'
+    },
+    snake: {
+      key:'snake', name:'Venomous Snake',
+      hp: 16, dmg: 3, speed: 62,
+      attackRange: 22, attackCooldown: 1.3, detectRange: 190,
+      stunOnHit: 0, bodyColor:'#e8637a', headColor:'#f0c869', eyeColor:'#1a1210',
+      // low bite damage — the real threat is the venom that follows
+      venom: true, venomTicks: 6, venomTickDmg: 4, venomTickInterval: 1.1
     }
   };
   const DEFAULT_MUTT_ROSTER = ['default'];
@@ -1416,7 +1429,7 @@
 
   // Pond — a body of water tributes can wade into. The shallow ring lets
   // you drink to restore hunger/energy; venture into the deep center and
-  // you start drowning instead.
+  // you start drowning instead. Arenas that set `noPond` skip all of this.
   let POND_CENTER = { x: WORLD_W*0.74, y: WORLD_H*0.78 };
   let POND_RADIUS_X = 220;
   let POND_RADIUS_Y = 140;
@@ -1475,6 +1488,14 @@
   // shrink pace, mutt timing, berry toxicity) without touching the core
   // rules — so every arena still plays by the same systems, just tuned
   // differently.
+  //
+  // `ruins`   — this arena uses the bombed-amphitheater dressing: rubble
+  //             obstacles instead of trees/rocks/bushes, broken seating
+  //             and vendor carts around the border, a weapon pile instead
+  //             of a golden Cornucopia clearing, and blood-red starting
+  //             plates arranged in a bare circle.
+  // `noFood`  — no berries anywhere, and the central pile is weapons only.
+  // `noPond`  — no water source at all; drinking/drowning are disabled.
   // ============================================================
   const ARENAS = {
     meadowlands: {
@@ -1492,20 +1513,21 @@
       muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
       showPath: true, flowerMult: 1, volcano: null
     },
-    frozen: {
-      id:'frozen',
-      name:'The Frozen Waste',
-      desc:'Snowbound tundra, a frozen lake, and thin cover — the cold kills as fast as the Careers.',
-      swatch: 'linear-gradient(135deg,#c9d8e0,#7a94a0 45%,#4a7a94)',
-      tint: 'rgba(170,210,230,0.16)',
-      biomeColors: { forest:'#3a5a5c', meadow:'#7a8f92', cave:'#5c6870', water:'#4a7a94' },
-      pond: { fx:0.72, fy:0.30, rx:250, ry:130 },
-      obstacleMult: 0.65, grassMult: 0.4,
-      zoneScale: 0.88, shrinkMult: 1.25, supplyMult: 0.85,
+    ruins: {
+      id:'ruins',
+      name:'The Shattered Coliseum',
+      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates, rubble, and bomb-blasted tunnels to hide in. No food. No water. Venomous snakes nest in the wreckage.',
+      swatch: 'linear-gradient(135deg,#9a958a,#6b665c 45%,#3a3730)',
+      tint: 'rgba(110,105,95,0.14)',
+      biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
+      pond: { fx:0.5, fy:0.5, rx:1, ry:1 },
+      obstacleMult: 1.15, grassMult: 0.85,
+      zoneScale: 0.86, shrinkMult: 1.15, supplyMult: 0.7,
       muttDayOffset: -1, muttIntervalMult: 0.85,
-      poisonMult: 0.7,
-      muttRoster: DEFAULT_MUTT_ROSTER, muttCountMax: MUTT_COUNT_MAX,
-      showPath: true, flowerMult: 1, volcano: null
+      poisonMult: 1,
+      muttRoster: ['snake'], muttCountMax: 4,
+      showPath: false, flowerMult: 0, volcano: null,
+      ruins: true, noFood: true, noPond: true
     },
     scorched: {
       id:'scorched',
@@ -2251,7 +2273,10 @@
   // "water" quadrant used for biome coloring) — used to keep decorations
   // and cover zones from ending up inside the pond itself. `pad` inflates
   // the pond's radius so callers can keep a safety margin around the edge.
+  // Arenas with `noPond` set have no water source at all, so this always
+  // reports false for them regardless of the (near-zero) pond geometry.
   function nearPond(x,y,pad){
+    if(currentArenaCfg.noPond) return false;
     pad = pad || 0;
     const nx = (x - POND_CENTER.x) / (POND_RADIUS_X + pad);
     const ny = (y - POND_CENTER.y) / (POND_RADIUS_Y + pad);
@@ -2268,6 +2293,7 @@
 
   function makeObstacles(){
     obstacles = [];
+    if(currentArenaCfg.ruins){ makeRuinObstacles(); return; }
     let tries=0;
     while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
       tries++;
@@ -2300,9 +2326,30 @@
     }
   }
 
+  // Rubble field for the Shattered Coliseum: broken concrete chunks and
+  // twisted rebar scattered across the arena floor instead of trees/rocks/
+  // bushes, plus a scatter of abandoned vendor carts. No biome quadrants,
+  // no water, no path — just wreckage.
+  function makeRuinObstacles(){
+    let tries = 0;
+    while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
+      tries++;
+      const x = rand(50, WORLD_W-50);
+      const y = rand(50, WORLD_H-50);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 170) continue; // keep the weapon pile clear
+      const roll = Math.random();
+      const type = roll < 0.72 ? 'rubble' : (roll < 0.92 ? 'cart' : 'stand');
+      const r = type === 'rubble' ? rand(14,26) : type === 'cart' ? 24 : 30;
+      const overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + 10);
+      if(overlap) continue;
+      obstacles.push({x,y,r,type});
+    }
+  }
+
   // A treeline hugging the map edge, like the solid forest border that
   // encloses every Pokemon route — also doubles as extra cover near the walls.
   function makeBorderTrees(){
+    if(currentArenaCfg.ruins){ makeAmphitheaterBorder(); return; }
     const step = 52;
     const margin = 24;
     for(let x=margin; x<WORLD_W-margin; x+=step){
@@ -2315,8 +2362,31 @@
     }
   }
 
+  // Broken seating stands ring the Shattered Coliseum instead of a treeline
+  // — collapsed bleacher chunks along the outer wall, with a few overturned
+  // vendor carts wedged between them, like the crowd fled mid-collapse.
+  function makeAmphitheaterBorder(){
+    const step = 96;
+    const margin = 30;
+    for(let x=margin; x<WORLD_W-margin; x+=step){
+      obstacles.push({x: x+rand(-10,10), y: margin+rand(-6,6), r: 30, type:'stand'});
+      obstacles.push({x: x+rand(-10,10), y: WORLD_H-margin+rand(-6,6), r: 30, type:'stand'});
+    }
+    for(let y=margin; y<WORLD_H-margin; y+=step){
+      obstacles.push({x: margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
+      obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
+    }
+    for(let i=0;i<8;i++){
+      const x = rand(90, WORLD_W-90), y = rand(90, WORLD_H-90);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 220) continue;
+      obstacles.push({x,y,r:24,type:'cart'});
+    }
+  }
+
   // Patches of tall grass — standing inside one makes a tribute harder to
   // spot from a distance, giving players real places to hide and wait out foes.
+  // In the Shattered Coliseum these same zones are re-rendered as bomb-blasted
+  // tunnel craters instead of grass (see drawCraterZone / tributeInGrass).
   let grassZones = [];
   function makeGrassZones(){
     grassZones = [];
@@ -2363,6 +2433,7 @@
   let decorations = [];
   function makeDecorations(){
     decorations = [];
+    if(currentArenaCfg.ruins){ makeRuinDecorations(); return; }
     const flowerMult = currentArenaCfg.flowerMult || 1;
     const decorationCount = Math.round(260 * AREA_SCALE * Math.max(1, flowerMult*0.55));
     for(let i=0;i<decorationCount;i++){
@@ -2417,9 +2488,27 @@
     }
   }
 
+  // Rubble dust/debris decoration for the Shattered Coliseum — no flowers
+  // or grass tufts here, just scattered chunks of broken masonry and dust
+  // clouds drifting off the rubble. The bomb-crater "tunnel" hiding spots
+  // (grassZones) are rendered separately via drawCraterZone() during render().
+  function makeRuinDecorations(){
+    const decorationCount = Math.round(140 * AREA_SCALE);
+    for(let i=0;i<decorationCount;i++){
+      const x = rand(20, WORLD_W-20);
+      const y = rand(20, WORLD_H-20);
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 150) continue;
+      if(obstacles.some(o=> dist({x,y},o) < o.r+10)) continue;
+      if(grassZones.some(z=> dist({x,y},z) < z.r+6)) continue;
+      const kind = Math.random() < 0.6 ? 'debris' : 'crack';
+      decorations.push({x,y,kind,phase:Math.random()*Math.PI*2});
+    }
+  }
+
   function spawnItem(x,y,forcedType,forcedWeaponType){
+    if(forcedType === 'berries' && currentArenaCfg.noFood) return; // this arena has no food at all
     const roll = Math.random();
-    let type = forcedType || (roll < 0.4 ? 'weapon' : roll < 0.62 ? 'medkit' : roll < 0.8 ? 'shield' : 'berries');
+    let type = forcedType || (roll < 0.4 ? 'weapon' : roll < 0.62 ? 'medkit' : roll < 0.8 ? 'shield' : (currentArenaCfg.noFood ? 'medkit' : 'berries'));
     const weaponType = type==='weapon' ? (forcedWeaponType || WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)]) : null;
     items.push({
       x,y,type,weaponType,
@@ -2430,8 +2519,10 @@
 
   // Scatters berry bushes' actual berry pickups near a fraction of the
   // bush obstacles already placed in the arena, so foraging has a reason
-  // to route players toward bush clusters specifically.
+  // to route players toward bush clusters specifically. Arenas with no
+  // food (and therefore no bush obstacles) skip this entirely.
   function makeBerryBushes(){
+    if(currentArenaCfg.noFood) return;
     obstacles.forEach(o=>{
       if(o.type === 'bush'){
         const berryChance = Math.random() < 0.55;
@@ -2453,15 +2544,18 @@
 
   function makeCornucopiaItems(){
     items = [];
+    const ruins = currentArenaCfg.ruins;
 
     const weaponPool = [...WEAPON_KEYS];
     const fullWeaponCount = TOTAL_TRIBUTES;
-    const weaponRingRadius = 120;
+    // The Shattered Coliseum has no golden Cornucopia — just a tight pile
+    // of weapons heaped at the center, so the ring sits closer in.
+    const weaponRingRadius = ruins ? 70 : 120;
 
     for(let i=0;i<fullWeaponCount;i++){
       const ang = (i / fullWeaponCount) * Math.PI * 2;
-      const x = CENTER_X + Math.cos(ang) * (weaponRingRadius + (i % 3) * 16);
-      const y = CENTER_Y + Math.sin(ang) * (weaponRingRadius + (i % 3) * 16);
+      const x = CENTER_X + Math.cos(ang) * (weaponRingRadius + (i % 3) * (ruins?10:16));
+      const y = CENTER_Y + Math.sin(ang) * (weaponRingRadius + (i % 3) * (ruins?10:16));
       const weaponType = weaponPool[i % weaponPool.length];
       items.push({
         x,
@@ -2473,16 +2567,19 @@
       });
     }
 
-    for(let i=0;i<4;i++){
-      const ang = Math.random()*Math.PI*2;
-      const r = rand(28,52);
-      spawnItem(CENTER_X + Math.cos(ang)*r, CENTER_Y + Math.sin(ang)*r, 'berries');
+    if(!currentArenaCfg.noFood){
+      for(let i=0;i<4;i++){
+        const ang = Math.random()*Math.PI*2;
+        const r = rand(28,52);
+        spawnItem(CENTER_X + Math.cos(ang)*r, CENTER_Y + Math.sin(ang)*r, 'berries');
+      }
+      for(let i=0;i<18;i++){
+        spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60), 'berries');
+      }
     }
-    for(let i=0;i<8;i++){
+    const medkitCount = ruins ? 5 : 8;
+    for(let i=0;i<medkitCount;i++){
       spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60), 'medkit');
-    }
-    for(let i=0;i<18;i++){
-      spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60), 'berries');
     }
     for(let i=0;i<6;i++){
       spawnItem(rand(60,WORLD_W-60), rand(60,WORLD_H-60));
@@ -2529,6 +2626,7 @@
       stunTimer: 0,
       poisonTicksRemaining: 0,
       poisonTickTimer: 0,
+      poisonDmgPerTick: POISON_DOT_DAMAGE,
       pondTickTimer: 0,
       inDeepWater: false,
       regenCooldown: 0,
@@ -2818,7 +2916,8 @@
         t.poisonTickTimer = POISON_DOT_INTERVAL;
         t.poisonTicksRemaining--;
         const poisonDmgMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
-        damageTribute(t, POISON_DOT_DAMAGE*poisonDmgMult, null);
+        const baseTickDmg = t.poisonDmgPerTick != null ? t.poisonDmgPerTick : POISON_DOT_DAMAGE;
+        damageTribute(t, baseTickDmg*poisonDmgMult, null);
       }
     }
 
@@ -2837,9 +2936,10 @@
 
   // The pond: drink from the shallows to top up hunger/energy, or push into
   // the deep center and start drowning (damage over time, heavy speed drag).
-  // District 4 (Fishing) never drowns and drinks more efficiently.
+  // District 4 (Fishing) never drowns and drinks more efficiently. Arenas
+  // that set `noPond` (no water source at all) skip this entirely.
   function updatePondEffects(t, dt){
-    if(!t.alive) return;
+    if(!t.alive || currentArenaCfg.noPond) return;
     const perk = t.perk || {};
     const depthFrac = pondDepthFrac(t);
     const inDeep = depthFrac <= POND_DEEP_FRAC*POND_DEEP_FRAC;
@@ -3254,6 +3354,7 @@
           if(poisonous){
             const poisonDurMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
             t.stunTimer = Math.max(t.stunTimer, POISON_STUN_DURATION*poisonDurMult);
+            t.poisonDmgPerTick = POISON_DOT_DAMAGE;
             t.poisonTicksRemaining = POISON_DOT_TICKS;
             t.poisonTickTimer = POISON_DOT_INTERVAL;
             spawnFloatText(t.x,t.y-20,'POISONED!','#e8404a');
@@ -3581,7 +3682,15 @@
       m.attackCooldown = species.attackCooldown;
       const dmg = species.dmg + rand(-2,3);
       damageTribute(nearest, Math.max(1,dmg), m);
-      if(species.stunOnHit > 0){
+      if(species.venom){
+        // a snake bite deals little immediate damage but leaves a stacking
+        // venom DoT that keeps weakening the target after the fangs pull out
+        nearest.poisonDmgPerTick = species.venomTickDmg;
+        nearest.poisonTicksRemaining = Math.max(nearest.poisonTicksRemaining, species.venomTicks);
+        nearest.poisonTickTimer = species.venomTickInterval;
+        spawnFloatText(m.x, m.y-20, 'VENOM!', '#8ee06a');
+        if(nearest.isPlayer) feed('🐍 A venomous snake sinks its fangs into you.');
+      } else if(species.stunOnHit > 0){
         nearest.stunTimer = Math.max(nearest.stunTimer, species.stunOnHit);
         spawnFloatText(m.x, m.y-20, 'STUNNED!', '#f0c869');
       } else {
@@ -3790,7 +3899,7 @@
       updateVolcanoEffects(t, dt);
     }
     const nowHidden = tributeInGrass(player);
-    if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
+    if(nowHidden && !player._inGrass){ feed(currentArenaCfg.ruins ? '🕳 You duck into a bomb-blasted tunnel — harder to spot.' : '🌿 You slip into the tall grass — harder to spot.'); }
     else if(!nowHidden && player._inGrass){ feed('You step back out into the open.'); }
     player._inGrass = nowHidden;
 
@@ -3979,8 +4088,9 @@
   // assets exist for these yet) so each animal reads distinctly at a
   // glance: squirrel (bushy tail), deer (antlers), flamingo (long neck +
   // stilt legs), butterfly (wings, doesn't really "walk"), porcupine
-  // (quill spikes). Falls back cleanly to the generic mutt blob for any
-  // species without dedicated art, and for the default mutt itself.
+  // (quill spikes), snake (bright coiled body with a flicking tongue).
+  // Falls back cleanly to the generic mutt blob for any species without
+  // dedicated art, and for the default mutt itself.
   function drawMuttBody(m, species){
     const bob = Math.sin(performance.now()/220 + m.id.length)*2;
     const walk = Math.sin(performance.now()/180 + m.id.length)*1.2;
@@ -4078,6 +4188,43 @@
       ctx.beginPath(); ctx.ellipse(9,-1,5,4.5,0,0,Math.PI*2); ctx.fill();
       ctx.fillStyle = c(species.eyeColor);
       ctx.beginPath(); ctx.arc(11,-2,1,0,Math.PI*2); ctx.fill();
+    } else if(species.key === 'snake'){
+      // bright coiled venomous snake — S-curve body, small triangular head,
+      // flicking tongue. Vivid coloring so it reads clearly against grey rubble.
+      const slither = Math.sin(performance.now()/160 + m.id.length)*3;
+      ctx.strokeStyle = c(species.bodyColor);
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-11, 5+slither*0.4);
+      ctx.quadraticCurveTo(-4, -2-slither, 2, 2+slither*0.6);
+      ctx.quadraticCurveTo(7, 5, 11, -3-slither*0.3);
+      ctx.stroke();
+      // belly stripe highlight
+      ctx.strokeStyle = c(species.headColor);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-10, 5+slither*0.4);
+      ctx.quadraticCurveTo(-4, -2-slither, 2, 2+slither*0.6);
+      ctx.stroke();
+      // head
+      ctx.fillStyle = c(species.bodyColor);
+      ctx.beginPath();
+      ctx.ellipse(12, -4-slither*0.3, 4.6, 3.4, -0.3, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = c(species.eyeColor);
+      ctx.beginPath(); ctx.arc(13.5,-5-slither*0.3,1,0,Math.PI*2); ctx.fill();
+      // flicking tongue
+      ctx.strokeStyle = '#e8404a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(16,-4-slither*0.3);
+      ctx.lineTo(20,-5-slither*0.3);
+      ctx.moveTo(20,-5-slither*0.3);
+      ctx.lineTo(22,-6.5-slither*0.3);
+      ctx.moveTo(20,-5-slither*0.3);
+      ctx.lineTo(22,-3.5-slither*0.3);
+      ctx.stroke();
     } else {
       // default generic mutt (also used for monkey / beast species, which
       // reuse this generic blob with their own bodyColor/headColor/eyeColor)
@@ -4147,12 +4294,15 @@
   function drawPlate(t){
     ctx.save();
     ctx.translate(t.x, t.y);
-    ctx.strokeStyle = t.isPlayer ? 'rgba(212,175,55,0.9)' : 'rgba(232,227,211,0.45)';
+    // The Shattered Coliseum's plates are bare, blood-red rings around the
+    // weapon pile — every tribute's plate reads the same, not just the player's.
+    const ruins = currentArenaCfg.ruins;
+    ctx.strokeStyle = ruins ? 'rgba(184,35,43,0.85)' : (t.isPlayer ? 'rgba(212,175,55,0.9)' : 'rgba(232,227,211,0.45)');
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.ellipse(0, 13, 17, 6, 0, 0, Math.PI*2);
     ctx.stroke();
-    ctx.fillStyle = t.isPlayer ? 'rgba(212,175,55,0.12)' : 'rgba(232,227,211,0.08)';
+    ctx.fillStyle = ruins ? 'rgba(184,35,43,0.16)' : (t.isPlayer ? 'rgba(212,175,55,0.12)' : 'rgba(232,227,211,0.08)');
     ctx.beginPath();
     ctx.ellipse(0, 13, 17, 6, 0, 0, Math.PI*2);
     ctx.fill();
@@ -4275,7 +4425,72 @@
       ctx.beginPath(); ctx.ellipse(0,o.r*0.6,o.r*0.9,o.r*0.3,0,0,Math.PI*2); ctx.fill();
     }
 
-    if(o.type === 'rock'){
+    if(o.type === 'rubble'){
+      // jagged broken-concrete chunk with exposed rebar
+      ctx.fillStyle = '#8f897c';
+      ctx.beginPath();
+      ctx.moveTo(-o.r,o.r*0.3);
+      ctx.lineTo(-o.r*0.5,-o.r*0.9);
+      ctx.lineTo(o.r*0.15,-o.r*0.55);
+      ctx.lineTo(o.r*0.85,-o.r*0.2);
+      ctx.lineTo(o.r*0.55,o.r*0.7);
+      ctx.lineTo(-o.r*0.25,o.r*0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#3a3730';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#5c584d';
+      ctx.beginPath();
+      ctx.moveTo(-o.r*0.4,-o.r*0.5);
+      ctx.lineTo(o.r*0.1,-o.r*0.3);
+      ctx.lineTo(-o.r*0.1,o.r*0.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#a9645c';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-o.r*0.2,-o.r*0.75);
+      ctx.lineTo(o.r*0.3,-o.r*0.15);
+      ctx.stroke();
+    } else if(o.type === 'cart'){
+      // an abandoned vendor cart, tipped and empty
+      ctx.fillStyle = '#5c4a34';
+      ctx.fillRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
+      ctx.strokeStyle = '#2c2015';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
+      ctx.fillStyle = '#3a2f22';
+      ctx.beginPath(); ctx.arc(-o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7a6448';
+      ctx.fillRect(-o.r*0.6,-o.r*0.62,o.r*1.2,o.r*0.3);
+      ctx.strokeStyle = '#2c2015';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(o.r*0.8,-o.r*0.1); ctx.lineTo(o.r*1.3,o.r*0.3); ctx.stroke();
+    } else if(o.type === 'stand'){
+      // a collapsed chunk of amphitheater bleacher/wall
+      ctx.fillStyle = '#9a958a';
+      ctx.fillRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
+      ctx.strokeStyle = '#3a3730';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
+      ctx.strokeStyle = 'rgba(58,55,48,0.6)';
+      ctx.lineWidth = 1;
+      for(let i=-2;i<=2;i++){
+        ctx.beginPath();
+        ctx.moveTo(i*o.r*0.35, -o.r*0.55);
+        ctx.lineTo(i*o.r*0.35 + rand(-4,4), o.r*0.55);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#c9c3b4';
+      ctx.beginPath();
+      ctx.moveTo(-o.r*0.3,-o.r*0.55);
+      ctx.lineTo(o.r*0.1,-o.r*0.55);
+      ctx.lineTo(-o.r*0.05,-o.r*0.15);
+      ctx.closePath();
+      ctx.fill();
+    } else if(o.type === 'rock'){
       if(assetReady('rock')){
         drawAssetAspect('rock', o.r*2, false);
       } else {
@@ -4352,7 +4567,26 @@
   function drawDecoration(d){
     ctx.save();
     ctx.translate(d.x,d.y);
-    if(d.kind === 'tallgrass'){
+    if(d.kind === 'debris'){
+      // small broken masonry chunk
+      ctx.fillStyle = '#6b6659';
+      ctx.beginPath();
+      ctx.moveTo(-4,2); ctx.lineTo(-2,-3); ctx.lineTo(3,-2); ctx.lineTo(4,3); ctx.lineTo(0,4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#4a463e';
+      ctx.beginPath(); ctx.moveTo(-1,-2); ctx.lineTo(2,-1); ctx.lineTo(1,2); ctx.closePath(); ctx.fill();
+    } else if(d.kind === 'crack'){
+      // hairline crack in the floor
+      ctx.strokeStyle = 'rgba(40,38,32,0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-6,-2);
+      ctx.lineTo(-1,1);
+      ctx.lineTo(2,-1);
+      ctx.lineTo(6,3);
+      ctx.stroke();
+    } else if(d.kind === 'tallgrass'){
       const sway = Math.sin(performance.now()/500 + d.phase)*2;
       if(assetReady('tallGrass')){
         ctx.save();
@@ -4490,6 +4724,99 @@
     }
   }
 
+  // Bomb-blast tunnel craters for the Shattered Coliseum — the same
+  // grassZones data used for "tall grass" hiding elsewhere in the game,
+  // but drawn here as dark rubble-rimmed pits leading down into tunnels,
+  // matching the rebel bombing that cratered the arena floor.
+  function drawCraterZone(z){
+    ctx.save();
+    ctx.translate(z.x, z.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(0, z.r*0.12, z.r*0.85, z.r*0.6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#7a746650';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, z.r*0.12, z.r*0.85, z.r*0.6, 0, 0, Math.PI*2);
+    ctx.stroke();
+    // scattered rim rubble
+    for(let i=0;i<5;i++){
+      const ang = (i/5)*Math.PI*2 + z.r*0.01;
+      const rx = Math.cos(ang)*z.r*0.8, ry = Math.sin(ang)*z.r*0.55;
+      ctx.fillStyle = '#8f897c';
+      ctx.beginPath();
+      ctx.arc(rx, ry, 4, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // The shattered weapon pile at the center of the Shattered Coliseum —
+  // jagged concrete/rebar spires leaning together over the heap of
+  // starting weapons, replacing the golden Cornucopia clearing entirely.
+  function drawWeaponPile(){
+    ctx.save();
+    ctx.translate(CENTER_X, CENTER_Y);
+    // cracked concrete slab underfoot
+    ctx.fillStyle = '#7a7466';
+    ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#4a463e';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,38,32,0.5)';
+    ctx.lineWidth = 1.5;
+    for(let i=0;i<5;i++){
+      const ang = rand(0,Math.PI*2);
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.lineTo(Math.cos(ang)*55, Math.sin(ang)*55);
+      ctx.stroke();
+    }
+    // leaning shattered concrete spires (like the collapsed dome centerpiece)
+    const spireColors = ['#c9c3b4','#a9a396','#8f897c'];
+    for(let i=0;i<6;i++){
+      const ang = -Math.PI/2 + (i-2.5)*0.32;
+      const leanX = Math.sin(ang)*46, leanY = -6;
+      ctx.save();
+      ctx.translate(leanX*0.3, 4);
+      ctx.rotate(ang*0.55);
+      ctx.fillStyle = spireColors[i%spireColors.length];
+      ctx.beginPath();
+      ctx.moveTo(-6,10);
+      ctx.lineTo(-4,-46-i*2);
+      ctx.lineTo(2,-46-i*2);
+      ctx.lineTo(6,10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#3a3730';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Concentric ring of ruined amphitheater walls / arched windows around
+  // the border of the Shattered Coliseum, evoking the bombed stadium dome.
+  function drawAmphitheaterRing(){
+    ctx.save();
+    ctx.translate(CENTER_X, CENTER_Y);
+    ctx.strokeStyle = 'rgba(60,56,48,0.35)';
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.ellipse(0,0, WORLD_W*0.49, WORLD_H*0.47, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,114,100,0.25)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([26,14]);
+    ctx.beginPath();
+    ctx.ellipse(0,0, WORLD_W*0.47, WORLD_H*0.45, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
   const TILE = 40;
 
   function render(){
@@ -4532,38 +4859,39 @@
     }
 
     // pond in the water quadrant — a place to drink (shallows) or drown
-    // (deep center). Draws the user-provided pond.png at the same
-    // footprint the old vector lake used; falls back to that vector art
-    // if the asset hasn't loaded.
-    ctx.save();
-    ctx.translate(POND_CENTER.x, POND_CENTER.y);
-    if(assetReady('pond')){
-      const pw = POND_RADIUS_X*2.05, ph = POND_RADIUS_Y*2.05;
-      ctx.drawImage(assetImages.pond, -pw/2, -ph/2, pw, ph);
-    } else {
+    // (deep center). Arenas with noPond (no water source at all) skip this.
+    if(!currentArenaCfg.noPond){
       ctx.save();
-      ctx.rotate(0.15);
-      ctx.fillStyle = BIOME_BASE.water === '#4a7a94' ? '#3f7d94' : '#2c5f78';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, POND_RADIUS_X, POND_RADIUS_Y, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle = '#1f4658';
-      ctx.lineWidth = 4;
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      for(let i=0;i<6;i++){
+      ctx.translate(POND_CENTER.x, POND_CENTER.y);
+      if(assetReady('pond')){
+        const pw = POND_RADIUS_X*2.05, ph = POND_RADIUS_Y*2.05;
+        ctx.drawImage(assetImages.pond, -pw/2, -ph/2, pw, ph);
+      } else {
+        ctx.save();
+        ctx.rotate(0.15);
+        ctx.fillStyle = BIOME_BASE.water === '#4a7a94' ? '#3f7d94' : '#2c5f78';
         ctx.beginPath();
-        ctx.ellipse(Math.sin(i*1.3)*70, Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+        ctx.ellipse(0, 0, POND_RADIUS_X, POND_RADIUS_Y, 0, 0, Math.PI*2);
         ctx.fill();
+        ctx.strokeStyle = '#1f4658';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        for(let i=0;i<6;i++){
+          ctx.beginPath();
+          ctx.ellipse(Math.sin(i*1.3)*70, Math.cos(i*1.7)*50, 22, 5, 0.2, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
       }
       ctx.restore();
     }
-    ctx.restore();
 
     // dirt path crossroads radiating from the cornucopia, like a route hub
-    // — some arenas (e.g. Green Hollow, Clockwork Shore) skip this entirely
-    // and leave the cornucopia clearing as open ground instead (the Clock
-    // Arena draws its own 12 spokes via drawClockArena() below).
+    // — some arenas (e.g. Green Hollow, Clockwork Shore, Shattered Coliseum)
+    // skip this entirely and leave the center clearing as open ground
+    // instead (the Clock Arena draws its own 12 spokes via drawClockArena()
+    // below, and the Coliseum draws its ring via drawAmphitheaterRing()).
     if(currentArenaCfg.showPath){
       ctx.save();
       const sPattern = getSandPattern();
@@ -4580,34 +4908,49 @@
     }
 
     // cave clearing patch (rocky ground) under the cave quadrant's cluster
-    ctx.save();
-    ctx.fillStyle = 'rgba(60,56,50,0.35)';
-    ctx.beginPath();
-    ctx.ellipse(WORLD_W*0.24, WORLD_H*0.76, 220, 150, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+    // — only relevant to arenas that actually have biome quadrants.
+    if(!currentArenaCfg.ruins){
+      ctx.save();
+      ctx.fillStyle = 'rgba(60,56,50,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(WORLD_W*0.24, WORLD_H*0.76, 220, 150, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     decorations.forEach(drawDecoration);
 
     if(VOLCANO) drawVolcano();
     if(currentArenaCfg.clockArena) drawClockArena();
+    if(currentArenaCfg.ruins) drawAmphitheaterRing();
 
-    // cornucopia clearing marker (camp-style ring, same footprint as before)
-    ctx.save();
-    ctx.translate(CENTER_X,CENTER_Y);
-    ctx.fillStyle = '#a68a55';
-    ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#6e5a36';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.stroke();
-    ctx.fillStyle = 'rgba(212,175,55,0.18)';
-    ctx.beginPath(); ctx.arc(0,0,58,0,Math.PI*2); ctx.fill();
-    // a little signpost so it reads like a Pokemon landmark
-    ctx.fillStyle = '#5c4a2c';
-    ctx.fillRect(-2,-14,4,14);
-    ctx.fillStyle = '#c9a13b';
-    ctx.fillRect(-10,-20,20,8);
-    ctx.restore();
+    // bomb-crater tunnel hiding spots, ruins arena only — drawn here since
+    // makeRuinDecorations() deliberately leaves grassZones undecorated
+    if(currentArenaCfg.ruins){
+      grassZones.forEach(drawCraterZone);
+    }
+
+    // center clearing marker: golden Cornucopia ring normally, or the
+    // Shattered Coliseum's bare weapon pile in ruins arenas
+    if(currentArenaCfg.ruins){
+      drawWeaponPile();
+    } else {
+      ctx.save();
+      ctx.translate(CENTER_X,CENTER_Y);
+      ctx.fillStyle = '#a68a55';
+      ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#6e5a36';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = 'rgba(212,175,55,0.18)';
+      ctx.beginPath(); ctx.arc(0,0,58,0,Math.PI*2); ctx.fill();
+      // a little signpost so it reads like a Pokemon landmark
+      ctx.fillStyle = '#5c4a2c';
+      ctx.fillRect(-2,-14,4,14);
+      ctx.fillStyle = '#c9a13b';
+      ctx.fillRect(-10,-20,20,8);
+      ctx.restore();
+    }
 
     obstacles.forEach(drawObstacle);
     items.forEach(drawItem);
@@ -4679,7 +5022,7 @@
       weaponNameEl.textContent = 'Unarmed';
     }
     const hidden = tributeInGrass(player);
-    const inWater = pondDepthFrac(player) <= 1;
+    const inWater = !currentArenaCfg.noPond && pondDepthFrac(player) <= 1;
     const inGas = VOLCANO && volcanoState === 'erupting' && dist(player, VOLCANO) <= VOLCANO_GAS_RADIUS;
     let statusLabel = 'In the open';
     let statusColor = 'var(--bone)';
@@ -4687,7 +5030,7 @@
     else if(inGas){ statusLabel = 'Choking on volcanic gas'; statusColor = '#7ac040'; }
     else if(player.inDeepWater){ statusLabel = 'Drowning in the pond'; statusColor = '#e8404a'; }
     else if(inWater){ statusLabel = 'Wading in the pond'; statusColor = '#7fb0e0'; }
-    else if(hidden){ statusLabel = 'Hidden in grass'; statusColor = '#7ac97a'; }
+    else if(hidden){ statusLabel = currentArenaCfg.ruins ? 'Hidden in a tunnel' : 'Hidden in grass'; statusColor = '#7ac97a'; }
     statusTextEl.textContent = statusLabel;
     statusTextEl.style.color = statusColor;
 
@@ -4698,7 +5041,7 @@
 
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
-    if(muttsUnlocked) alerts.push('Mutts loose');
+    if(muttsUnlocked) alerts.push(currentArenaCfg.ruins ? 'Snakes loose' : 'Mutts loose');
     if(VOLCANO && volcanoState === 'warning') alerts.push('Volcano rumbling');
     if(VOLCANO && volcanoState === 'erupting') alerts.push('Volcano erupting!');
     if(currentArenaCfg.clockArena && clockActiveHour >= 0){
@@ -4708,6 +5051,7 @@
     if(player.hunger <= 0) alerts.push('Starving');
     if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
     if(player.stunTimer > 0) alerts.push('Stunned');
+    if(player.poisonTicksRemaining > 0) alerts.push('Venom in your blood');
     if(player.inDeepWater) alerts.push('Drowning!');
     if(player.weapon && WEAPONS[player.weapon].type === 'ranged' && (player.ammo[player.weapon]||0) <= 0) alerts.push('Out of ammo');
     alertTextEl.textContent = alerts.length ? alerts.join(' · ') : 'All quiet';
