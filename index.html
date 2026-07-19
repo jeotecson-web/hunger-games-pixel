@@ -1463,18 +1463,18 @@
   // whole 12-hour cycle loops indefinitely once it completes — matching
   // the way the traps reset at noon and midnight.
   // ============================================================
-  const CLOCK_HOUR_MS = 22000; // real ms per in-arena "hour"
+  const CLOCK_HOUR_MS = 9000; // real ms per in-arena "hour"
   const CLOCK_TRAPS = [
     { key:'lightning',  name:'Lightning Tree', icon:'\u26A1', color:'#f0c869', desc:'Lightning blasts the tallest tree in this sector.' },
     { key:'bloodrain',  name:'Blood Rain',     icon:'\u2600',  color:'#8a1a1a', desc:'A downpour of caustic, metallic blood scorches anyone caught in it.' },
     { key:'fog',        name:'Paralyzing Fog', icon:'\u2601',  color:'#9fdca0', desc:'A creeping fog paralyzes on contact.' },
     { key:'monkeys',    name:'Monkey Mutts',   icon:'\u2668',  color:'#8a5c3a', desc:'Razor-clawed monkey muttations drop from the canopy.' },
     { key:'jabberjays', name:'Jabberjays',     icon:'\u2666',  color:'#5c8ac9', desc:'Jabberjays scream with the voices of loved ones.' },
-    { key:'unknown1',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'wasps',      name:'Tracker Jacker Wasps', icon:'\u2739', color:'#e8c56a', desc:'A nest of tracker jackers bursts open, stinging and disorienting anyone in range.' },
     { key:'beast',      name:'The Beast',      icon:'\u2620',  color:'#3a2020', desc:'A massive, unseen predator prowls this sector.' },
-    { key:'unknown2',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
-    { key:'unknown3',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
-    { key:'unknown4',   name:'Unknown Terror', icon:'?',       color:'#6b6e60', desc:'Something is wrong here, but no one knows what yet.' },
+    { key:'heatwave',   name:'Heat Wave',      icon:'\u263C',  color:'#e87a3d', desc:'Blistering heat rolls through the sector, sapping strength and scorching skin.' },
+    { key:'gas',        name:'Poison Gas',     icon:'\u2622',  color:'#7ac040', desc:'A chemical fog seeps up from cracks in the ground, poisoning anyone who breathes it.' },
+    { key:'rockslide',  name:'Rockslide',      icon:'\u25B2',  color:'#8a7a5c', desc:'The ground gives way, sending stone and rubble crashing down.' },
     { key:'tidalwave',  name:'Tidal Wave',     icon:'\u2248',  color:'#3a7a9a', desc:'A wall of water surges out from the lake.' },
     { key:'insects',    name:'Insect Swarm',   icon:'\u2735',  color:'#8a8a3a', desc:'Clicking insects swarm out, stripping flesh.' }
   ];
@@ -1496,6 +1496,16 @@
   //             plates arranged in a bare circle.
   // `noFood`  — no berries anywhere, and the central pile is weapons only.
   // `noPond`  — no water source at all; drinking/drowning are disabled.
+  // `pondAsset` — optional asset key overriding the default pond sprite.
+  // `pondEffects` — set to false to keep the pond visually present without
+  //             any drink/drown gameplay effects.
+  // `skipCornucopiaArt` — skip drawing the separate procedural golden
+  //             Cornucopia ring (used when the pond/center art already
+  //             depicts the landmark, e.g. the Clockwork Shore's island).
+  // `berryAsset` — optional asset key overriding the default berry sprite.
+  // `rockAssets` / `treeAssets` — optional arrays of asset keys; when set,
+  //             each rock/tree obstacle randomly picks one variant at
+  //             creation time instead of using the single default sprite.
   // ============================================================
   const ARENAS = {
     meadowlands: {
@@ -1537,6 +1547,12 @@
       tint: 'rgba(60,140,120,0.10)',
       biomeColors: { forest:'#2e5c4a', meadow:'#3f7a5c', cave:'#4a6a56', water:'#2a7a94' },
       pond: { fx:0.5, fy:0.5, rx:170, ry:170 },
+      pondAsset: 'clockPond',
+      pondEffects: false,
+      skipCornucopiaArt: true,
+      berryAsset: 'appleBerry',
+      rockAssets: ['clockRockOne','clockRockTwo','clockRockThree'],
+      treeAssets: ['clockTreeOne','clockTreeTwo','clockTreeThree'],
       obstacleMult: 0.85, grassMult: 0.8,
       zoneScale: 1.0, shrinkMult: 0.9, supplyMult: 1.1,
       muttDayOffset: 1, muttIntervalMult: 1.4,
@@ -1918,6 +1934,14 @@
     sandPath: 'assets/sand-path.png',
     bush: 'assets/bush.png',
     pond: 'assets/pond.png',
+    clockPond: 'assets/clock-pond.png',
+    appleBerry: 'assets/apple.png',
+    clockRockOne: 'assets/clock-rock-one.png',
+    clockRockTwo: 'assets/clock-rock-two.png',
+    clockRockThree: 'assets/clock-rock-three.png',
+    clockTreeOne: 'assets/clock-tree-one.png',
+    clockTreeTwo: 'assets/clock-tree-two.png',
+    clockTreeThree: 'assets/clock-tree-three.png',
     'district-1-male': 'assets/tributes/district-1-male.png',
     'district-1-female': 'assets/tributes/district-1-female.png',
     'district-2-male': 'assets/tributes/district-2-male.png',
@@ -2269,6 +2293,17 @@
     return 'meadow';
   }
 
+  // Picks a random asset-variant key for a tree/rock obstacle when the
+  // current arena defines a roster of variants (e.g. Clockwork Shore's
+  // clock-rock-one/two/three, clock-tree-one/two/three). Returns null when
+  // the arena has no variant roster for that type, so callers fall back to
+  // the single default sprite.
+  function pickVariantAsset(type){
+    const arr = type === 'tree' ? currentArenaCfg.treeAssets : type === 'rock' ? currentArenaCfg.rockAssets : null;
+    if(arr && arr.length) return arr[randi(0, arr.length-1)];
+    return null;
+  }
+
   // Distance-based check for the actual pond ellipse (not just the wider
   // "water" quadrant used for biome coloring) — used to keep decorations
   // and cover zones from ending up inside the pond itself. `pad` inflates
@@ -2322,7 +2357,7 @@
 
       let overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + (type==='bush'?6:14));
       if(overlap) continue;
-      obstacles.push({x,y,r,type});
+      obstacles.push({x,y,r,type,assetKey: pickVariantAsset(type)});
     }
   }
 
@@ -2353,12 +2388,12 @@
     const step = 52;
     const margin = 24;
     for(let x=margin; x<WORLD_W-margin; x+=step){
-      obstacles.push({x: x+rand(-8,8), y: margin+rand(-6,6), r: TREE_R, type:'tree'});
-      obstacles.push({x: x+rand(-8,8), y: WORLD_H-margin+rand(-6,6), r: TREE_R, type:'tree'});
+      obstacles.push({x: x+rand(-8,8), y: margin+rand(-6,6), r: TREE_R, type:'tree', assetKey: pickVariantAsset('tree')});
+      obstacles.push({x: x+rand(-8,8), y: WORLD_H-margin+rand(-6,6), r: TREE_R, type:'tree', assetKey: pickVariantAsset('tree')});
     }
     for(let y=margin; y<WORLD_H-margin; y+=step){
-      obstacles.push({x: margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
-      obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree'});
+      obstacles.push({x: margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree', assetKey: pickVariantAsset('tree')});
+      obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree', assetKey: pickVariantAsset('tree')});
     }
   }
 
@@ -2937,9 +2972,11 @@
   // The pond: drink from the shallows to top up hunger/energy, or push into
   // the deep center and start drowning (damage over time, heavy speed drag).
   // District 4 (Fishing) never drowns and drinks more efficiently. Arenas
-  // that set `noPond` (no water source at all) skip this entirely.
+  // that set `noPond` (no water source at all) skip this entirely, and
+  // arenas that set `pondEffects: false` keep the pond visually present
+  // but disable all drink/drown gameplay effects (e.g. Clockwork Shore).
   function updatePondEffects(t, dt){
-    if(!t.alive || currentArenaCfg.noPond) return;
+    if(!t.alive || currentArenaCfg.noPond || currentArenaCfg.pondEffects === false) return;
     const perk = t.perk || {};
     const depthFrac = pondDepthFrac(t);
     const inDeep = depthFrac <= POND_DEEP_FRAC*POND_DEEP_FRAC;
@@ -3061,6 +3098,18 @@
     }
   }
 
+  function triggerRockslide(){
+    playRumbleSound();
+    for(const t of tributes){
+      if(!t.alive) continue;
+      if(wedgeIndexForPoint(t.x,t.y) === clockActiveHour){
+        const perk = t.perk || {};
+        damageTribute(t, 20 * (perk.zoneDmgMult != null ? perk.zoneDmgMult : 1), null);
+        if(t.isPlayer) feed('\uD83E\uDEA8 Rocks crash down around you!');
+      }
+    }
+  }
+
   function onClockHourChange(){
     const trap = CLOCK_TRAPS[clockActiveHour];
     const sectorNum = clockActiveHour + 1;
@@ -3069,6 +3118,7 @@
     else if(trap.key === 'tidalwave') triggerTidalWave();
     else if(trap.key === 'monkeys') spawnWedgeMutt('monkey', 2);
     else if(trap.key === 'beast') spawnWedgeMutt('beast', 1);
+    else if(trap.key === 'rockslide') triggerRockslide();
   }
 
   function updateClockArena(dt){
@@ -3101,8 +3151,20 @@
         if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'PARALYZED', '#9fdca0');
       } else if(trap.key === 'jabberjays' && doTick){
         if(t.isPlayer){ spawnFloatText(t.x, t.y-20, 'SCREAMS...', '#5c8ac9'); feed('\uD83D\uDC26 Jabberjays shriek with familiar voices.'); }
-      } else if(trap.key.startsWith('unknown') && doTick){
-        if(Math.random() < 0.35) damageTribute(t, 3, null);
+      } else if(trap.key === 'wasps' && doTick){
+        const stunMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+        damageTribute(t, 4 * stunMult, null);
+        t.stunTimer = Math.max(t.stunTimer, 0.6*stunMult);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'STUNG!', '#e8c56a');
+      } else if(trap.key === 'heatwave' && doTick){
+        const heatMult = perk.zoneDmgMult != null ? perk.zoneDmgMult : 1;
+        damageTribute(t, 4 * heatMult, null);
+        t.energy = Math.max(0, t.energy - 6);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'HEAT!', '#e87a3d');
+      } else if(trap.key === 'gas' && doTick){
+        const poisonMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+        damageTribute(t, 5 * poisonMult, null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'GAS!', '#7ac040');
       }
     }
   }
@@ -3700,21 +3762,23 @@
   }
 
   function updateMutts(dt){
-    if(!muttsUnlocked){
-      if(dayCount >= MUTT_SPAWN_DAY){
-        muttsUnlocked = true;
-        nextMuttSpawnAt = 4000;
-        feed('🐺 Mutts have been released into the arena. Stay alert.');
-      } else {
-        return;
+    if(!muttsUnlocked && dayCount >= MUTT_SPAWN_DAY){
+      muttsUnlocked = true;
+      nextMuttSpawnAt = 4000;
+      feed('🐺 Mutts have been released into the arena. Stay alert.');
+    }
+    if(muttsUnlocked){
+      nextMuttSpawnAt -= dt*1000;
+      const aliveMuttCount = mutts.filter(m=>m.alive).length;
+      if(nextMuttSpawnAt <= 0 && aliveMuttCount < MUTT_COUNT_MAX_ACTIVE){
+        nextMuttSpawnAt = MUTT_SPAWN_INTERVAL;
+        spawnMutt();
       }
     }
-    nextMuttSpawnAt -= dt*1000;
-    const aliveMuttCount = mutts.filter(m=>m.alive).length;
-    if(nextMuttSpawnAt <= 0 && aliveMuttCount < MUTT_COUNT_MAX_ACTIVE){
-      nextMuttSpawnAt = MUTT_SPAWN_INTERVAL;
-      spawnMutt();
-    }
+    // Movement/AI runs for every mutt already in the arena regardless of
+    // whether the random-spawn system has unlocked yet — otherwise mutts
+    // dropped in directly (e.g. the Clock Arena's monkey/beast traps) would
+    // just stand frozen in place until day-based mutts unlock separately.
     for(const m of mutts){
       if(!m.alive) continue;
       updateMuttAI(m, dt);
@@ -4374,8 +4438,9 @@
         ctx.fillRect(-4,-1,8,2);
       }
     } else if(it.type === 'berries'){
-      if(assetReady('berry')){
-        drawAssetAspect('berry', 14, false);
+      const berryKey = currentArenaCfg.berryAsset || 'berry';
+      if(assetReady(berryKey)){
+        drawAssetAspect(berryKey, 14, false);
       } else {
         ctx.fillStyle = '#2f6a3a';
         ctx.beginPath(); ctx.moveTo(0,4); ctx.lineTo(0,-2); ctx.lineWidth=2; ctx.strokeStyle='#2f6a3a'; ctx.stroke();
@@ -4491,8 +4556,9 @@
       ctx.closePath();
       ctx.fill();
     } else if(o.type === 'rock'){
-      if(assetReady('rock')){
-        drawAssetAspect('rock', o.r*2, false);
+      const rockKey = o.assetKey || 'rock';
+      if(assetReady(rockKey)){
+        drawAssetAspect(rockKey, o.r*2, false);
       } else {
         // GBA-route ore boulder: grey block with darker outline + lighter facets
         ctx.fillStyle = '#7a7268';
@@ -4538,8 +4604,9 @@
       }
     } else {
       // tree
-      if(assetReady('tree')){
-        drawAssetAspect('tree', o.r*2.4, true);
+      const treeKey = o.assetKey || 'tree';
+      if(assetReady(treeKey)){
+        drawAssetAspect(treeKey, o.r*2.4, true);
       } else {
         // tree: layered round canopy like FR/LG route trees
         ctx.fillStyle = '#4a3a2a';
@@ -4860,12 +4927,16 @@
 
     // pond in the water quadrant — a place to drink (shallows) or drown
     // (deep center). Arenas with noPond (no water source at all) skip this.
+    // Some arenas (e.g. the Clockwork Shore) override the sprite used via
+    // `pondAsset` so the water reads as a distinct sea rather than the
+    // default lake art.
     if(!currentArenaCfg.noPond){
       ctx.save();
       ctx.translate(POND_CENTER.x, POND_CENTER.y);
-      if(assetReady('pond')){
+      const pondKey = currentArenaCfg.pondAsset || 'pond';
+      if(assetReady(pondKey)){
         const pw = POND_RADIUS_X*2.05, ph = POND_RADIUS_Y*2.05;
-        ctx.drawImage(assetImages.pond, -pw/2, -ph/2, pw, ph);
+        ctx.drawImage(assetImages[pondKey], -pw/2, -ph/2, pw, ph);
       } else {
         ctx.save();
         ctx.rotate(0.15);
@@ -4931,10 +5002,12 @@
     }
 
     // center clearing marker: golden Cornucopia ring normally, or the
-    // Shattered Coliseum's bare weapon pile in ruins arenas
+    // Shattered Coliseum's bare weapon pile in ruins arenas. Arenas that
+    // set `skipCornucopiaArt` (e.g. Clockwork Shore, whose pond/island
+    // sprite already depicts the landmark) skip this entirely.
     if(currentArenaCfg.ruins){
       drawWeaponPile();
-    } else {
+    } else if(!currentArenaCfg.skipCornucopiaArt){
       ctx.save();
       ctx.translate(CENTER_X,CENTER_Y);
       ctx.fillStyle = '#a68a55';
@@ -5022,7 +5095,7 @@
       weaponNameEl.textContent = 'Unarmed';
     }
     const hidden = tributeInGrass(player);
-    const inWater = !currentArenaCfg.noPond && pondDepthFrac(player) <= 1;
+    const inWater = !currentArenaCfg.noPond && currentArenaCfg.pondEffects !== false && pondDepthFrac(player) <= 1;
     const inGas = VOLCANO && volcanoState === 'erupting' && dist(player, VOLCANO) <= VOLCANO_GAS_RADIUS;
     let statusLabel = 'In the open';
     let statusColor = 'var(--bone)';
