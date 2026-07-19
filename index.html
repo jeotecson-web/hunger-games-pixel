@@ -1531,7 +1531,7 @@
       tint: 'rgba(110,105,95,0.14)',
       biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
       pond: { fx:0.5, fy:0.5, rx:1, ry:1 },
-      obstacleMult: 0.55, grassMult: 0.7,
+      obstacleMult: 0.22, grassMult: 0.5,
       zoneScale: 0.86, shrinkMult: 1.15, supplyMult: 0.7,
       muttDayOffset: -1, muttIntervalMult: 0.85,
       poisonMult: 1,
@@ -1608,7 +1608,7 @@
     volcanoStateTimer = 0;
     clockActiveHour = -1;
     clockTickTimer = 0;
-    grassPattern = null; sandPattern = null; // force pattern/tint re-derivation next render
+    grassPattern = null; sandPattern = null; colTilePattern = null; // force pattern/tint re-derivation next render
   }
 
   // ============================================================
@@ -1947,6 +1947,11 @@
     colRockThree: 'assets/col-rock-three.png',
     colRockFour: 'assets/col-rock-four.png',
     colRockFive: 'assets/col-rock-five.png',
+    colTile: 'assets/col-tile.jpg',
+    colSnake: 'assets/snake.gif',
+    colCornucopia: 'assets/col-cornucopia.png',
+    colBarrier: 'assets/col-barrier.png',
+    colCircle: 'assets/col-circle.png',
     'district-1-male': 'assets/tributes/district-1-male.png',
     'district-1-female': 'assets/tributes/district-1-female.png',
     'district-2-male': 'assets/tributes/district-2-male.png',
@@ -1984,7 +1989,7 @@
   }
   // Tiling patterns for the ground/path textures — built lazily once the
   // source image has actually finished loading, then cached.
-  let grassPattern = null, sandPattern = null;
+  let grassPattern = null, sandPattern = null, colTilePattern = null;
   function getGrassPattern(){
     if(!grassPattern && assetReady('grass')){
       grassPattern = ctx.createPattern(assetImages.grass, 'repeat');
@@ -1996,6 +2001,12 @@
       sandPattern = ctx.createPattern(assetImages.sandPath, 'repeat');
     }
     return sandPattern;
+  }
+  function getColTilePattern(){
+    if(!colTilePattern && assetReady('colTile')){
+      colTilePattern = ctx.createPattern(assetImages.colTile, 'repeat');
+    }
+    return colTilePattern;
   }
   // Draws an asset centered at the current translated origin, scaled to
   // targetW while preserving the source image's native aspect ratio (so
@@ -2407,12 +2418,11 @@
   }
 
   // Broken seating stands ring the Shattered Coliseum instead of a treeline
-  // — collapsed bleacher chunks along the outer wall, with a few overturned
-  // vendor carts wedged between them, like the crowd fled mid-collapse.
-  // Spaced further apart and fewer carts than before, to keep the border
-  // from feeling as cluttered.
+  // — collapsed bleacher chunks along the outer wall, with a rare overturned
+  // vendor cart wedged between them, like the crowd fled mid-collapse. Kept
+  // sparse and widely spaced so the arena reads as bare and empty.
   function makeAmphitheaterBorder(){
-    const step = 150;
+    const step = 260;
     const margin = 30;
     for(let x=margin; x<WORLD_W-margin; x+=step){
       obstacles.push({x: x+rand(-10,10), y: margin+rand(-6,6), r: 30, type:'stand'});
@@ -2422,7 +2432,7 @@
       obstacles.push({x: margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
       obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
     }
-    for(let i=0;i<4;i++){
+    for(let i=0;i<1;i++){
       const x = rand(90, WORLD_W-90), y = rand(90, WORLD_H-90);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 220) continue;
       obstacles.push({x,y,r:24,type:'cart'});
@@ -2538,9 +2548,9 @@
   // or grass tufts here, just scattered chunks of broken masonry and dust
   // clouds drifting off the rubble. The bomb-crater "tunnel" hiding spots
   // (grassZones) are rendered separately via drawCraterZone() during render().
-  // Density is reduced along with the rest of the ruins arena's clutter.
+  // Density is kept low to keep the arena as bare and open as possible.
   function makeRuinDecorations(){
-    const decorationCount = Math.round(90 * AREA_SCALE);
+    const decorationCount = Math.round(28 * AREA_SCALE);
     for(let i=0;i<decorationCount;i++){
       const x = rand(20, WORLD_W-20);
       const y = rand(20, WORLD_H-20);
@@ -4344,6 +4354,14 @@
       ctx.rotate(walk * 0.04);
       drawAssetAspect('mutt', 28, false);
       ctx.restore();
+    } else if(species.key === 'snake' && assetReady('colSnake')){
+      const bob = Math.sin(performance.now()/220 + m.id.length)*2;
+      const facingSign = m.vx > 0 ? -1 : 1;
+      ctx.save();
+      ctx.translate(0, bob - 2);
+      ctx.scale(facingSign, 1);
+      drawAssetAspect('colSnake', 34, false);
+      ctx.restore();
     } else {
       ctx.save();
       ctx.scale(species.key === 'beast' ? 1.5 : 1.15, species.key === 'beast' ? 1.5 : 1.15);
@@ -4497,7 +4515,7 @@
   function drawObstacle(o){
     ctx.save();
     ctx.translate(o.x,o.y);
-    if(o.type !== 'tree'){
+    if(o.type !== 'tree' && !currentArenaCfg.ruins){
       ctx.fillStyle = 'rgba(0,0,0,.35)';
       ctx.beginPath(); ctx.ellipse(0,o.r*0.6,o.r*0.9,o.r*0.3,0,0,Math.PI*2); ctx.fill();
     }
@@ -4537,42 +4555,52 @@
         ctx.stroke();
       }
     } else if(o.type === 'cart'){
-      // an abandoned vendor cart, tipped and empty
-      ctx.fillStyle = '#5c4a34';
-      ctx.fillRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
-      ctx.strokeStyle = '#2c2015';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
-      ctx.fillStyle = '#3a2f22';
-      ctx.beginPath(); ctx.arc(-o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#7a6448';
-      ctx.fillRect(-o.r*0.6,-o.r*0.62,o.r*1.2,o.r*0.3);
-      ctx.strokeStyle = '#2c2015';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(o.r*0.8,-o.r*0.1); ctx.lineTo(o.r*1.3,o.r*0.3); ctx.stroke();
-    } else if(o.type === 'stand'){
-      // a collapsed chunk of amphitheater bleacher/wall
-      ctx.fillStyle = '#9a958a';
-      ctx.fillRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
-      ctx.strokeStyle = '#3a3730';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
-      ctx.strokeStyle = 'rgba(58,55,48,0.6)';
-      ctx.lineWidth = 1;
-      for(let i=-2;i<=2;i++){
-        ctx.beginPath();
-        ctx.moveTo(i*o.r*0.35, -o.r*0.55);
-        ctx.lineTo(i*o.r*0.35 + rand(-4,4), o.r*0.55);
-        ctx.stroke();
+      // the "circle" border marker — replaced with assets/col-circle.png
+      // when available, falling back to the original tipped-cart vector art
+      if(assetReady('colCircle')){
+        drawAssetAspect('colCircle', o.r*2.3, false);
+      } else {
+        ctx.fillStyle = '#5c4a34';
+        ctx.fillRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
+        ctx.strokeStyle = '#2c2015';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
+        ctx.fillStyle = '#3a2f22';
+        ctx.beginPath(); ctx.arc(-o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#7a6448';
+        ctx.fillRect(-o.r*0.6,-o.r*0.62,o.r*1.2,o.r*0.3);
+        ctx.strokeStyle = '#2c2015';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(o.r*0.8,-o.r*0.1); ctx.lineTo(o.r*1.3,o.r*0.3); ctx.stroke();
       }
-      ctx.fillStyle = '#c9c3b4';
-      ctx.beginPath();
-      ctx.moveTo(-o.r*0.3,-o.r*0.55);
-      ctx.lineTo(o.r*0.1,-o.r*0.55);
-      ctx.lineTo(-o.r*0.05,-o.r*0.15);
-      ctx.closePath();
-      ctx.fill();
+    } else if(o.type === 'stand'){
+      // grey rectangular barrier — replaced with assets/col-barrier.png
+      // when available, falling back to the original collapsed-bleacher vector art
+      if(assetReady('colBarrier')){
+        drawAssetAspect('colBarrier', o.r*2.4, false);
+      } else {
+        ctx.fillStyle = '#9a958a';
+        ctx.fillRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
+        ctx.strokeStyle = '#3a3730';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
+        ctx.strokeStyle = 'rgba(58,55,48,0.6)';
+        ctx.lineWidth = 1;
+        for(let i=-2;i<=2;i++){
+          ctx.beginPath();
+          ctx.moveTo(i*o.r*0.35, -o.r*0.55);
+          ctx.lineTo(i*o.r*0.35 + rand(-4,4), o.r*0.55);
+          ctx.stroke();
+        }
+        ctx.fillStyle = '#c9c3b4';
+        ctx.beginPath();
+        ctx.moveTo(-o.r*0.3,-o.r*0.55);
+        ctx.lineTo(o.r*0.1,-o.r*0.55);
+        ctx.lineTo(-o.r*0.05,-o.r*0.15);
+        ctx.closePath();
+        ctx.fill();
+      }
     } else if(o.type === 'rock'){
       const rockKey = o.assetKey || 'rock';
       if(assetReady(rockKey)){
@@ -4838,46 +4866,36 @@
   }
 
   // The shattered weapon pile at the center of the Shattered Coliseum —
-  // jagged concrete/rebar spires leaning together over the heap of
-  // starting weapons, replacing the golden Cornucopia clearing entirely.
+  // replaced with assets/col-cornucopia.png when available. Falls back to
+  // the original jagged concrete/rebar spires when the asset hasn't
+  // loaded — with no grey circular base/shadow beneath them.
   function drawWeaponPile(){
     ctx.save();
     ctx.translate(CENTER_X, CENTER_Y);
-    // cracked concrete slab underfoot
-    ctx.fillStyle = '#7a7466';
-    ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#4a463e';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0,0,60,0,Math.PI*2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(40,38,32,0.5)';
-    ctx.lineWidth = 1.5;
-    for(let i=0;i<5;i++){
-      const ang = rand(0,Math.PI*2);
-      ctx.beginPath();
-      ctx.moveTo(0,0);
-      ctx.lineTo(Math.cos(ang)*55, Math.sin(ang)*55);
-      ctx.stroke();
-    }
-    // leaning shattered concrete spires (like the collapsed dome centerpiece)
-    const spireColors = ['#c9c3b4','#a9a396','#8f897c'];
-    for(let i=0;i<6;i++){
-      const ang = -Math.PI/2 + (i-2.5)*0.32;
-      const leanX = Math.sin(ang)*46, leanY = -6;
-      ctx.save();
-      ctx.translate(leanX*0.3, 4);
-      ctx.rotate(ang*0.55);
-      ctx.fillStyle = spireColors[i%spireColors.length];
-      ctx.beginPath();
-      ctx.moveTo(-6,10);
-      ctx.lineTo(-4,-46-i*2);
-      ctx.lineTo(2,-46-i*2);
-      ctx.lineTo(6,10);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#3a3730';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
+    if(assetReady('colCornucopia')){
+      drawAssetAspect('colCornucopia', 170, false);
+    } else {
+      // leaning shattered concrete spires (like the collapsed dome centerpiece)
+      const spireColors = ['#c9c3b4','#a9a396','#8f897c'];
+      for(let i=0;i<6;i++){
+        const ang = -Math.PI/2 + (i-2.5)*0.32;
+        const leanX = Math.sin(ang)*46, leanY = -6;
+        ctx.save();
+        ctx.translate(leanX*0.3, 4);
+        ctx.rotate(ang*0.55);
+        ctx.fillStyle = spireColors[i%spireColors.length];
+        ctx.beginPath();
+        ctx.moveTo(-6,10);
+        ctx.lineTo(-4,-46-i*2);
+        ctx.lineTo(2,-46-i*2);
+        ctx.lineTo(6,10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#3a3730';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
     }
     ctx.restore();
   }
@@ -4916,31 +4934,41 @@
     ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
     ctx.translate(VIEW_W/2 - camX, VIEW_H/2 - camY);
 
-    // --- base ground tiles: pixel-art grass texture, tiled across the arena ---
-    const gPattern = getGrassPattern();
-    if(gPattern){
+    // --- base ground tiles ---
+    // The Shattered Coliseum uses its own tiled floor texture instead of
+    // the grass pattern used everywhere else.
+    if(currentArenaCfg.ruins){
+      const tilePattern = getColTilePattern();
       ctx.save();
-      ctx.fillStyle = gPattern;
+      ctx.fillStyle = tilePattern || '#6b6659';
       ctx.fillRect(0,0,WORLD_W,WORLD_H);
       ctx.restore();
     } else {
-      for(let ty=0; ty<WORLD_H; ty+=TILE){
-        for(let tx=0; tx<WORLD_W; tx+=TILE){
-          const biome = biomeAt(tx+TILE/2, ty+TILE/2);
-          const checker = ((tx/TILE + ty/TILE) % 2 === 0);
-          ctx.fillStyle = checker ? BIOME_BASE[biome] : shade(BIOME_BASE[biome], -10);
-          ctx.fillRect(tx,ty,TILE,TILE);
+      const gPattern = getGrassPattern();
+      if(gPattern){
+        ctx.save();
+        ctx.fillStyle = gPattern;
+        ctx.fillRect(0,0,WORLD_W,WORLD_H);
+        ctx.restore();
+      } else {
+        for(let ty=0; ty<WORLD_H; ty+=TILE){
+          for(let tx=0; tx<WORLD_W; tx+=TILE){
+            const biome = biomeAt(tx+TILE/2, ty+TILE/2);
+            const checker = ((tx/TILE + ty/TILE) % 2 === 0);
+            ctx.fillStyle = checker ? BIOME_BASE[biome] : shade(BIOME_BASE[biome], -10);
+            ctx.fillRect(tx,ty,TILE,TILE);
+          }
         }
       }
-    }
 
-    // arena-specific tint overlay — reskins the ground/pattern palette to
-    // match the selected arena without needing separate tile assets
-    if(currentArenaTint){
-      ctx.save();
-      ctx.fillStyle = currentArenaTint;
-      ctx.fillRect(0,0,WORLD_W,WORLD_H);
-      ctx.restore();
+      // arena-specific tint overlay — reskins the ground/pattern palette to
+      // match the selected arena without needing separate tile assets
+      if(currentArenaTint){
+        ctx.save();
+        ctx.fillStyle = currentArenaTint;
+        ctx.fillRect(0,0,WORLD_W,WORLD_H);
+        ctx.restore();
+      }
     }
 
     // pond in the water quadrant — a place to drink (shallows) or drown
