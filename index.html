@@ -1531,7 +1531,7 @@
       tint: 'rgba(110,105,95,0.14)',
       biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
       pond: { fx:0.5, fy:0.5, rx:1, ry:1 },
-      obstacleMult: 1.15, grassMult: 0.85,
+      obstacleMult: 0.55, grassMult: 0.7,
       zoneScale: 0.86, shrinkMult: 1.15, supplyMult: 0.7,
       muttDayOffset: -1, muttIntervalMult: 0.85,
       poisonMult: 1,
@@ -1942,6 +1942,11 @@
     clockTreeOne: 'assets/clock-tree-one.png',
     clockTreeTwo: 'assets/clock-tree-two.png',
     clockTreeThree: 'assets/clock-tree-three.png',
+    colRockOne: 'assets/col-rock-one.png',
+    colRockTwo: 'assets/col-rock-two.png',
+    colRockThree: 'assets/col-rock-three.png',
+    colRockFour: 'assets/col-rock-four.png',
+    colRockFive: 'assets/col-rock-five.png',
     'district-1-male': 'assets/tributes/district-1-male.png',
     'district-1-female': 'assets/tributes/district-1-female.png',
     'district-2-male': 'assets/tributes/district-2-male.png',
@@ -2364,7 +2369,10 @@
   // Rubble field for the Shattered Coliseum: broken concrete chunks and
   // twisted rebar scattered across the arena floor instead of trees/rocks/
   // bushes, plus a scatter of abandoned vendor carts. No biome quadrants,
-  // no water, no path — just wreckage.
+  // no water, no path — just wreckage. The rubble chunks are drawn using
+  // the col-rock-one..five pixel-art variants (see COL_RUIN_ROCK_ASSETS)
+  // instead of the old procedural jagged-concrete vector art.
+  const COL_RUIN_ROCK_ASSETS = ['colRockOne','colRockTwo','colRockThree','colRockFour','colRockFive'];
   function makeRuinObstacles(){
     let tries = 0;
     while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
@@ -2373,11 +2381,12 @@
       const y = rand(50, WORLD_H-50);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 170) continue; // keep the weapon pile clear
       const roll = Math.random();
-      const type = roll < 0.72 ? 'rubble' : (roll < 0.92 ? 'cart' : 'stand');
+      const type = roll < 0.78 ? 'rubble' : (roll < 0.94 ? 'cart' : 'stand');
       const r = type === 'rubble' ? rand(14,26) : type === 'cart' ? 24 : 30;
       const overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + 10);
       if(overlap) continue;
-      obstacles.push({x,y,r,type});
+      const assetKey = type === 'rubble' ? COL_RUIN_ROCK_ASSETS[randi(0, COL_RUIN_ROCK_ASSETS.length-1)] : null;
+      obstacles.push({x,y,r,type,assetKey});
     }
   }
 
@@ -2400,8 +2409,10 @@
   // Broken seating stands ring the Shattered Coliseum instead of a treeline
   // — collapsed bleacher chunks along the outer wall, with a few overturned
   // vendor carts wedged between them, like the crowd fled mid-collapse.
+  // Spaced further apart and fewer carts than before, to keep the border
+  // from feeling as cluttered.
   function makeAmphitheaterBorder(){
-    const step = 96;
+    const step = 150;
     const margin = 30;
     for(let x=margin; x<WORLD_W-margin; x+=step){
       obstacles.push({x: x+rand(-10,10), y: margin+rand(-6,6), r: 30, type:'stand'});
@@ -2411,7 +2422,7 @@
       obstacles.push({x: margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
       obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
     }
-    for(let i=0;i<8;i++){
+    for(let i=0;i<4;i++){
       const x = rand(90, WORLD_W-90), y = rand(90, WORLD_H-90);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 220) continue;
       obstacles.push({x,y,r:24,type:'cart'});
@@ -2527,8 +2538,9 @@
   // or grass tufts here, just scattered chunks of broken masonry and dust
   // clouds drifting off the rubble. The bomb-crater "tunnel" hiding spots
   // (grassZones) are rendered separately via drawCraterZone() during render().
+  // Density is reduced along with the rest of the ruins arena's clutter.
   function makeRuinDecorations(){
-    const decorationCount = Math.round(140 * AREA_SCALE);
+    const decorationCount = Math.round(90 * AREA_SCALE);
     for(let i=0;i<decorationCount;i++){
       const x = rand(20, WORLD_W-20);
       const y = rand(20, WORLD_H-20);
@@ -4491,33 +4503,39 @@
     }
 
     if(o.type === 'rubble'){
-      // jagged broken-concrete chunk with exposed rebar
-      ctx.fillStyle = '#8f897c';
-      ctx.beginPath();
-      ctx.moveTo(-o.r,o.r*0.3);
-      ctx.lineTo(-o.r*0.5,-o.r*0.9);
-      ctx.lineTo(o.r*0.15,-o.r*0.55);
-      ctx.lineTo(o.r*0.85,-o.r*0.2);
-      ctx.lineTo(o.r*0.55,o.r*0.7);
-      ctx.lineTo(-o.r*0.25,o.r*0.6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#3a3730';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = '#5c584d';
-      ctx.beginPath();
-      ctx.moveTo(-o.r*0.4,-o.r*0.5);
-      ctx.lineTo(o.r*0.1,-o.r*0.3);
-      ctx.lineTo(-o.r*0.1,o.r*0.1);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#a9645c';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(-o.r*0.2,-o.r*0.75);
-      ctx.lineTo(o.r*0.3,-o.r*0.15);
-      ctx.stroke();
+      // Shattered Coliseum rubble chunk — drawn using one of the
+      // col-rock-one..five pixel-art variants when available, falling
+      // back to the original jagged-concrete vector art otherwise.
+      if(o.assetKey && assetReady(o.assetKey)){
+        drawAssetAspect(o.assetKey, o.r*2.1, false);
+      } else {
+        ctx.fillStyle = '#8f897c';
+        ctx.beginPath();
+        ctx.moveTo(-o.r,o.r*0.3);
+        ctx.lineTo(-o.r*0.5,-o.r*0.9);
+        ctx.lineTo(o.r*0.15,-o.r*0.55);
+        ctx.lineTo(o.r*0.85,-o.r*0.2);
+        ctx.lineTo(o.r*0.55,o.r*0.7);
+        ctx.lineTo(-o.r*0.25,o.r*0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#3a3730';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#5c584d';
+        ctx.beginPath();
+        ctx.moveTo(-o.r*0.4,-o.r*0.5);
+        ctx.lineTo(o.r*0.1,-o.r*0.3);
+        ctx.lineTo(-o.r*0.1,o.r*0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#a9645c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-o.r*0.2,-o.r*0.75);
+        ctx.lineTo(o.r*0.3,-o.r*0.15);
+        ctx.stroke();
+      }
     } else if(o.type === 'cart'){
       // an abandoned vendor cart, tipped and empty
       ctx.fillStyle = '#5c4a34';
