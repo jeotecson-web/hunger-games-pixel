@@ -1399,13 +1399,27 @@
       attackRange: 36, attackCooldown: 1.0, detectRange: 340,
       stunOnHit: 0, bodyColor:'#241010', headColor:'#301414', eyeColor:'#ff3030'
     },
-    snake: {
+snake: {
       key:'snake', name:'Venomous Snake',
       hp: 16, dmg: 3, speed: 62,
       attackRange: 22, attackCooldown: 1.3, detectRange: 190,
       stunOnHit: 0, bodyColor:'#e8637a', headColor:'#f0c869', eyeColor:'#1a1210',
       // low bite damage — the real threat is the venom that follows
       venom: true, venomTicks: 6, venomTickDmg: 4, venomTickInterval: 1.1
+    },
+    snakeTwo: {
+      key:'snakeTwo', name:'Pit Viper',
+      hp: 18, dmg: 4, speed: 68,
+      attackRange: 22, attackCooldown: 1.2, detectRange: 200,
+      stunOnHit: 0, bodyColor:'#7ac040', headColor:'#a9d96a', eyeColor:'#1a1210',
+      venom: true, venomTicks: 5, venomTickDmg: 5, venomTickInterval: 1.0
+    },
+    snakeThree: {
+      key:'snakeThree', name:'Black Adder',
+      hp: 14, dmg: 3, speed: 74,
+      attackRange: 22, attackCooldown: 1.1, detectRange: 210,
+      stunOnHit: 0, bodyColor:'#3a2c3a', headColor:'#5c4a5c', eyeColor:'#e8404a',
+      venom: true, venomTicks: 7, venomTickDmg: 4, venomTickInterval: 1.1
     }
   };
   const DEFAULT_MUTT_ROSTER = ['default'];
@@ -1526,16 +1540,16 @@
     ruins: {
       id:'ruins',
       name:'The Shattered Coliseum',
-      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates, rubble, and bomb-blasted tunnels to hide in. No food. No water. Venomous snakes nest in the wreckage.',
+      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates and heaps of rubble. No food. No water. Nests of venomous snakes swarm the wreckage.',
       swatch: 'linear-gradient(135deg,#9a958a,#6b665c 45%,#3a3730)',
       tint: 'rgba(110,105,95,0.14)',
       biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
       pond: { fx:0.5, fy:0.5, rx:1, ry:1 },
-      obstacleMult: 0.22, grassMult: 0.5,
+      obstacleMult: 2.2, grassMult: 0,
       zoneScale: 0.86, shrinkMult: 1.15, supplyMult: 0.7,
-      muttDayOffset: -1, muttIntervalMult: 0.85,
+      muttDayOffset: -1, muttIntervalMult: 0.4,
       poisonMult: 1,
-      muttRoster: ['snake'], muttCountMax: 4,
+      muttRoster: ['snake','snakeTwo','snakeThree'], muttCountMax: 14,
       showPath: false, flowerMult: 0, volcano: null,
       ruins: true, noFood: true, noPond: true
     },
@@ -1569,6 +1583,8 @@
       tint: 'rgba(20,60,30,0.10)',
       biomeColors: { forest:'#1f4a24', meadow:'#2e5c33', cave:'#233828', water:'#1f5c52' },
       pond: { fx:0.24, fy:0.74, rx:190, ry:130 },
+      rockAssets: ['jungleRockOne','jungleRockTwo'],
+      treeAssets: ['jungleTreeOne','jungleTreeTwo'],
       obstacleMult: 1.35, grassMult: 1.6,
       zoneScale: 0.95, shrinkMult: 1.05, supplyMult: 0.9,
       muttDayOffset: 0, muttIntervalMult: 0.75,
@@ -1922,6 +1938,11 @@
     'flower-one': 'assets/flower-one.png',
     'flower-two': 'assets/flower-two.png',
     'flower-three': 'assets/flower-three.png',
+    'flower-four': 'assets/flower-four.png',
+    'flower-five': 'assets/flower-five.png',
+    flowerBushOne: 'assets/flower-bush-one.png',
+    flowerBushTwo: 'assets/flower-bush-two.png',
+    flowerBushThree: 'assets/flower-bush-three.png',
     berry: 'assets/berry.png',
     dagger: 'assets/dagger.png',
     firstAid: 'assets/first-aid.png',
@@ -1930,10 +1951,12 @@
     shield: 'assets/shield.png',
     knife: 'assets/knife.png',
     mutt: 'assets/mutt.png',
+    squirrelMutt: 'assets/squirrel.png',
     rock: 'assets/rock.png',
     sandPath: 'assets/sand-path.png',
     bush: 'assets/bush.png',
     pond: 'assets/pond.png',
+    volcano: 'assets/volcano.png',
     clockPond: 'assets/clock-pond.png',
     appleBerry: 'assets/apple.png',
     clockRockOne: 'assets/clock-rock-one.png',
@@ -1942,14 +1965,21 @@
     clockTreeOne: 'assets/clock-tree-one.png',
     clockTreeTwo: 'assets/clock-tree-two.png',
     clockTreeThree: 'assets/clock-tree-three.png',
+    jungleTreeOne: 'assets/tree-three.png',
+    jungleTreeTwo: 'assets/tree-two.png',
+    jungleRockOne: 'assets/hollow-rock.png',
+    jungleRockTwo: 'assets/hollow-rock-two.png',
     colRockOne: 'assets/col-rock-one.png',
     colRockTwo: 'assets/col-rock-two.png',
     colRockThree: 'assets/col-rock-three.png',
-    colRockFour: 'assets/col-rock-four.png',
-    colRockFive: 'assets/col-rock-five.png',
-    colTile: 'assets/col-tile.jpg',
-    colSnake: 'assets/snake.gif',
-    colCornucopia: 'assets/col-cornucopia.png',
+    colRockFour: 'assets/col-rock-one.png',
+    colRockFive: 'assets/ruin-one.png',
+    colRockSix: 'assets/col-rock-six.png',
+    colTile: 'assets/col-tile.png',
+    colSnake: 'assets/snake.png',
+    colSnakeTwo: 'assets/snake-two.png',
+    colSnakeThree: 'assets/snake-three.png',
+    colCornucopia: 'assets/ruin-one.png',
     colBarrier: 'assets/col-barrier.png',
     colCircle: 'assets/col-circle.png',
     'district-1-male': 'assets/tributes/district-1-male.png',
@@ -2377,27 +2407,26 @@
     }
   }
 
-  // Rubble field for the Shattered Coliseum: broken concrete chunks and
-  // twisted rebar scattered across the arena floor instead of trees/rocks/
-  // bushes, plus a scatter of abandoned vendor carts. No biome quadrants,
-  // no water, no path — just wreckage. The rubble chunks are drawn using
-  // the col-rock-one..five pixel-art variants (see COL_RUIN_ROCK_ASSETS)
-  // instead of the old procedural jagged-concrete vector art.
-  const COL_RUIN_ROCK_ASSETS = ['colRockOne','colRockTwo','colRockThree','colRockFour','colRockFive'];
+  // Rubble field for the Shattered Coliseum: broken concrete chunks
+  // scattered across the arena floor instead of trees/rocks/bushes. No
+  // biome quadrants, no water, no path — just wreckage. Every rubble chunk
+  // is a uniform small size, drawn using the col-rock-one..six pixel-art
+  // variants (see COL_RUIN_ROCK_ASSETS), matching the same size used for
+  // regular rocks elsewhere in the game.
+  const COL_RUIN_ROCK_ASSETS = ['colRockOne','colRockTwo','colRockThree','colRockFour','colRockFive','colRockSix'];
+  const COL_RUIN_ROCK_R = ROCK_R; // uniform small rubble size, matching normal rocks
   function makeRuinObstacles(){
     let tries = 0;
-    while(obstacles.length < OBSTACLE_COUNT && tries < 6000){
+    while(obstacles.length < OBSTACLE_COUNT && tries < 20000){
       tries++;
       const x = rand(50, WORLD_W-50);
       const y = rand(50, WORLD_H-50);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 170) continue; // keep the weapon pile clear
-      const roll = Math.random();
-      const type = roll < 0.78 ? 'rubble' : (roll < 0.94 ? 'cart' : 'stand');
-      const r = type === 'rubble' ? rand(14,26) : type === 'cart' ? 24 : 30;
-      const overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + 10);
+      const r = COL_RUIN_ROCK_R;
+      const overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + 4);
       if(overlap) continue;
-      const assetKey = type === 'rubble' ? COL_RUIN_ROCK_ASSETS[randi(0, COL_RUIN_ROCK_ASSETS.length-1)] : null;
-      obstacles.push({x,y,r,type,assetKey});
+      const assetKey = COL_RUIN_ROCK_ASSETS[randi(0, COL_RUIN_ROCK_ASSETS.length-1)];
+      obstacles.push({x,y,r,type:'rubble',assetKey});
     }
   }
 
@@ -2417,32 +2446,16 @@
     }
   }
 
-  // Broken seating stands ring the Shattered Coliseum instead of a treeline
-  // — collapsed bleacher chunks along the outer wall, with a rare overturned
-  // vendor cart wedged between them, like the crowd fled mid-collapse. Kept
-  // sparse and widely spaced so the arena reads as bare and empty.
+  // The Shattered Coliseum has no bordering structures at all — the arena
+  // floor simply runs out to the walls, bare and open, so this is a no-op.
   function makeAmphitheaterBorder(){
-    const step = 260;
-    const margin = 30;
-    for(let x=margin; x<WORLD_W-margin; x+=step){
-      obstacles.push({x: x+rand(-10,10), y: margin+rand(-6,6), r: 30, type:'stand'});
-      obstacles.push({x: x+rand(-10,10), y: WORLD_H-margin+rand(-6,6), r: 30, type:'stand'});
-    }
-    for(let y=margin; y<WORLD_H-margin; y+=step){
-      obstacles.push({x: margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
-      obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-10,10), r: 30, type:'stand'});
-    }
-    for(let i=0;i<1;i++){
-      const x = rand(90, WORLD_W-90), y = rand(90, WORLD_H-90);
-      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 220) continue;
-      obstacles.push({x,y,r:24,type:'cart'});
-    }
+    // intentionally empty — no rectangular barriers/stands around the border
   }
 
   // Patches of tall grass — standing inside one makes a tribute harder to
   // spot from a distance, giving players real places to hide and wait out foes.
-  // In the Shattered Coliseum these same zones are re-rendered as bomb-blasted
-  // tunnel craters instead of grass (see drawCraterZone / tributeInGrass).
+  // The Shattered Coliseum has no grass zones (grassMult: 0) since its
+  // bomb-crater tunnel hiding spots have been removed.
   let grassZones = [];
   function makeGrassZones(){
     grassZones = [];
@@ -2541,22 +2554,33 @@
           decorations.push({x,y,kind:'flower',phase:Math.random()*Math.PI*2, flowerColorRoll: Math.random()});
         }
       }
+
+      // dense flower bushes — larger, bushier clumps of blooms scattered
+      // throughout especially colorful arenas (e.g. the Green Hollow),
+      // using the flower-bush pixel-art variants instead of single stems.
+      const bushCount = Math.round(20 * (flowerMult-1));
+      for(let b=0;b<bushCount;b++){
+        const x = rand(40, WORLD_W-40), y = rand(40, WORLD_H-40);
+        if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 150) continue;
+        if(nearVolcano(x,y,45)) continue;
+        if(nearPond(x,y,25)) continue;
+        if(obstacles.some(o=> dist({x,y},o) < o.r+16)) continue;
+        decorations.push({x,y,kind:'flowerbush',phase:Math.random()*Math.PI*2, flowerColorRoll: Math.random()});
+      }
     }
   }
 
   // Rubble dust/debris decoration for the Shattered Coliseum — no flowers
   // or grass tufts here, just scattered chunks of broken masonry and dust
-  // clouds drifting off the rubble. The bomb-crater "tunnel" hiding spots
-  // (grassZones) are rendered separately via drawCraterZone() during render().
-  // Density is kept low to keep the arena as bare and open as possible.
+  // clouds drifting off the rubble. Density is kept low to keep the arena
+  // as bare and open as possible.
   function makeRuinDecorations(){
-    const decorationCount = Math.round(28 * AREA_SCALE);
+    const decorationCount = Math.round(60 * AREA_SCALE);
     for(let i=0;i<decorationCount;i++){
       const x = rand(20, WORLD_W-20);
       const y = rand(20, WORLD_H-20);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 150) continue;
       if(obstacles.some(o=> dist({x,y},o) < o.r+10)) continue;
-      if(grassZones.some(z=> dist({x,y},z) < z.r+6)) continue;
       const kind = Math.random() < 0.6 ? 'debris' : 'crack';
       decorations.push({x,y,kind,phase:Math.random()*Math.PI*2});
     }
@@ -3985,7 +4009,7 @@
       updateVolcanoEffects(t, dt);
     }
     const nowHidden = tributeInGrass(player);
-    if(nowHidden && !player._inGrass){ feed(currentArenaCfg.ruins ? '🕳 You duck into a bomb-blasted tunnel — harder to spot.' : '🌿 You slip into the tall grass — harder to spot.'); }
+    if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
     else if(!nowHidden && player._inGrass){ feed('You step back out into the open.'); }
     player._inGrass = nowHidden;
 
@@ -4274,7 +4298,7 @@
       ctx.beginPath(); ctx.ellipse(9,-1,5,4.5,0,0,Math.PI*2); ctx.fill();
       ctx.fillStyle = c(species.eyeColor);
       ctx.beginPath(); ctx.arc(11,-2,1,0,Math.PI*2); ctx.fill();
-    } else if(species.key === 'snake'){
+    } else if(species.key === 'snake' || species.key === 'snakeTwo' || species.key === 'snakeThree'){
       // bright coiled venomous snake — S-curve body, small triangular head,
       // flicking tongue. Vivid coloring so it reads clearly against grey rubble.
       const slither = Math.sin(performance.now()/160 + m.id.length)*3;
@@ -4354,14 +4378,32 @@
       ctx.rotate(walk * 0.04);
       drawAssetAspect('mutt', 28, false);
       ctx.restore();
-    } else if(species.key === 'snake' && assetReady('colSnake')){
+    } else if(species.key === 'squirrel' && assetReady('squirrelMutt')){
       const bob = Math.sin(performance.now()/220 + m.id.length)*2;
+      const walk = Math.sin(performance.now()/180 + m.id.length)*1.2;
       const facingSign = m.vx > 0 ? -1 : 1;
       ctx.save();
       ctx.translate(0, bob - 2);
       ctx.scale(facingSign, 1);
-      drawAssetAspect('colSnake', 34, false);
+      ctx.rotate(walk * 0.03);
+      drawAssetAspect('squirrelMutt', 26, false);
       ctx.restore();
+    } else if((species.key === 'snake' || species.key === 'snakeTwo' || species.key === 'snakeThree')){
+      const snakeAssetKey = species.key === 'snake' ? 'colSnake' : species.key === 'snakeTwo' ? 'colSnakeTwo' : 'colSnakeThree';
+      if(assetReady(snakeAssetKey)){
+        const bob = Math.sin(performance.now()/220 + m.id.length)*2;
+        const facingSign = m.vx > 0 ? -1 : 1;
+        ctx.save();
+        ctx.translate(0, bob - 2);
+        ctx.scale(facingSign, 1);
+        drawAssetAspect(snakeAssetKey, 34, false);
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.scale(1.15, 1.15);
+        drawMuttBody(m, species);
+        ctx.restore();
+      }
     } else {
       ctx.save();
       ctx.scale(species.key === 'beast' ? 1.5 : 1.15, species.key === 'beast' ? 1.5 : 1.15);
@@ -4521,11 +4563,12 @@
     }
 
     if(o.type === 'rubble'){
-      // Shattered Coliseum rubble chunk — drawn using one of the
-      // col-rock-one..five pixel-art variants when available, falling
-      // back to the original jagged-concrete vector art otherwise.
+      // Shattered Coliseum rubble chunk — small, uniform-size rock drawn
+      // using one of the col-rock-one..six pixel-art variants when
+      // available, falling back to the original jagged-concrete vector art
+      // otherwise. Sized the same as a normal rock (COL_RUIN_ROCK_R).
       if(o.assetKey && assetReady(o.assetKey)){
-        drawAssetAspect(o.assetKey, o.r*2.1, false);
+        drawAssetAspect(o.assetKey, o.r*2, false);
       } else {
         ctx.fillStyle = '#8f897c';
         ctx.beginPath();
@@ -4553,53 +4596,6 @@
         ctx.moveTo(-o.r*0.2,-o.r*0.75);
         ctx.lineTo(o.r*0.3,-o.r*0.15);
         ctx.stroke();
-      }
-    } else if(o.type === 'cart'){
-      // the "circle" border marker — replaced with assets/col-circle.png
-      // when available, falling back to the original tipped-cart vector art
-      if(assetReady('colCircle')){
-        drawAssetAspect('colCircle', o.r*2.3, false);
-      } else {
-        ctx.fillStyle = '#5c4a34';
-        ctx.fillRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
-        ctx.strokeStyle = '#2c2015';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(-o.r*0.8,-o.r*0.35,o.r*1.6,o.r*0.75);
-        ctx.fillStyle = '#3a2f22';
-        ctx.beginPath(); ctx.arc(-o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(o.r*0.5,o.r*0.42,o.r*0.28,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#7a6448';
-        ctx.fillRect(-o.r*0.6,-o.r*0.62,o.r*1.2,o.r*0.3);
-        ctx.strokeStyle = '#2c2015';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(o.r*0.8,-o.r*0.1); ctx.lineTo(o.r*1.3,o.r*0.3); ctx.stroke();
-      }
-    } else if(o.type === 'stand'){
-      // grey rectangular barrier — replaced with assets/col-barrier.png
-      // when available, falling back to the original collapsed-bleacher vector art
-      if(assetReady('colBarrier')){
-        drawAssetAspect('colBarrier', o.r*2.4, false);
-      } else {
-        ctx.fillStyle = '#9a958a';
-        ctx.fillRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
-        ctx.strokeStyle = '#3a3730';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(-o.r,-o.r*0.55,o.r*2,o.r*1.1);
-        ctx.strokeStyle = 'rgba(58,55,48,0.6)';
-        ctx.lineWidth = 1;
-        for(let i=-2;i<=2;i++){
-          ctx.beginPath();
-          ctx.moveTo(i*o.r*0.35, -o.r*0.55);
-          ctx.lineTo(i*o.r*0.35 + rand(-4,4), o.r*0.55);
-          ctx.stroke();
-        }
-        ctx.fillStyle = '#c9c3b4';
-        ctx.beginPath();
-        ctx.moveTo(-o.r*0.3,-o.r*0.55);
-        ctx.lineTo(o.r*0.1,-o.r*0.55);
-        ctx.lineTo(-o.r*0.05,-o.r*0.15);
-        ctx.closePath();
-        ctx.fill();
       }
     } else if(o.type === 'rock'){
       const rockKey = o.assetKey || 'rock';
@@ -4719,7 +4715,7 @@
         }
       }
     } else if(d.kind === 'flower'){
-      const flowerAssets = ['flower-one','flower-two','flower-three'];
+      const flowerAssets = ['flower-one','flower-two','flower-three','flower-four','flower-five'];
       const assetKey = flowerAssets[Math.floor(d.phase * 10) % flowerAssets.length];
       if(assetReady(assetKey)){
         drawAssetAspect(assetKey, 10, false);
@@ -4732,6 +4728,25 @@
         ctx.beginPath(); ctx.arc(0,-4,2.6,0,Math.PI*2); ctx.fill();
         ctx.fillStyle = '#fff2c9';
         ctx.beginPath(); ctx.arc(0,-4,1,0,Math.PI*2); ctx.fill();
+      }
+    } else if(d.kind === 'flowerbush'){
+      const bushAssets = ['flowerBushOne','flowerBushTwo','flowerBushThree'];
+      const assetKey = bushAssets[Math.floor(d.phase * 10) % bushAssets.length];
+      if(assetReady(assetKey)){
+        drawAssetAspect(assetKey, 34, false);
+      } else {
+        // fallback: a bushy clump of several small blooms
+        const roll = d.flowerColorRoll != null ? d.flowerColorRoll : (d.phase*10)%1;
+        ctx.fillStyle = '#2c5c30';
+        ctx.beginPath(); ctx.arc(0,2,11,0,Math.PI*2); ctx.fill();
+        const spots = [[-6,-2],[-1,-5],[5,-2],[0,3],[-4,4],[4,4]];
+        spots.forEach((s,i)=>{
+          const color = FLOWER_PALETTE[Math.floor((roll*10+i)) % FLOWER_PALETTE.length];
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(s[0],s[1],3,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#fff2c9';
+          ctx.beginPath(); ctx.arc(s[0],s[1],1.1,0,Math.PI*2); ctx.fill();
+        });
       }
     } else if(d.kind === 'pebble'){
       ctx.fillStyle = '#6b6459';
@@ -4747,65 +4762,100 @@
     ctx.restore();
   }
 
-  // The volcano itself — a simple layered cone with a glowing crater that
-  // brightens through the warning/eruption states, plus a rising smoke
-  // plume. Purely decorative geometry; the actual danger/gas hitbox is
-  // handled by updateVolcanoEffects()/VOLCANO_GAS_RADIUS elsewhere.
+  // The volcano itself — draws assets/volcano.png when available (Green
+  // Hollow arena) and layers the eruption glow / smoke plume / gas-radius
+  // indicator on top so those effects still read correctly against the
+  // custom art. Falls back to the original procedural cone/crater when
+  // the image hasn't loaded yet.
   function drawVolcano(){
     if(!VOLCANO) return;
     ctx.save();
     ctx.translate(VOLCANO.x, VOLCANO.y);
     const r = VOLCANO.craterR;
 
-    // mountain body
-    ctx.fillStyle = '#3a2c22';
-    ctx.beginPath();
-    ctx.moveTo(-r*2.1, r*0.9);
-    ctx.lineTo(-r*0.6, -r*1.5);
-    ctx.lineTo(r*0.6, -r*1.5);
-    ctx.lineTo(r*2.1, r*0.9);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#4a382a';
-    ctx.beginPath();
-    ctx.moveTo(-r*1.5, r*0.75);
-    ctx.lineTo(-r*0.55, -r*1.35);
-    ctx.lineTo(-r*0.1, -r*1.1);
-    ctx.lineTo(-r*1.1, r*0.75);
-    ctx.closePath();
-    ctx.fill();
+    if(assetReady('volcano')){
+      drawAssetAspect('volcano', r*4.4, false);
 
-    // crater glow — intensifies with volcanoState
-    const glowColor = volcanoState === 'erupting' ? '#ff7a3d' : volcanoState === 'warning' ? '#e0a33d' : '#8a4a2a';
-    ctx.fillStyle = glowColor;
-    ctx.beginPath();
-    ctx.ellipse(0, -r*1.42, r*0.5, r*0.22, 0, 0, Math.PI*2);
-    ctx.fill();
-    if(volcanoState !== 'dormant'){
-      ctx.save();
-      ctx.globalAlpha = 0.55 + Math.sin(performance.now()/150)*0.25;
-      ctx.fillStyle = '#ffdca0';
-      ctx.beginPath();
-      ctx.ellipse(0, -r*1.42, r*0.28, r*0.12, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // smoke / gas plume
-    if(volcanoState !== 'dormant'){
-      const t = performance.now()/1000;
-      for(let i=0;i<5;i++){
-        const p = (t*0.4 + i/5) % 1;
-        const puffY = -r*1.5 - p*70;
-        const puffX = Math.sin(t*0.6 + i*1.7) * 14 * p;
-        const puffR = (8 + p*20);
+      // crater glow overlay — intensifies with volcanoState
+      if(volcanoState !== 'dormant'){
+        const glowColor = volcanoState === 'erupting' ? '#ff7a3d' : '#e0a33d';
         ctx.save();
-        ctx.globalAlpha = (volcanoState==='erupting' ? 0.32 : 0.18) * (1-p);
-        ctx.fillStyle = volcanoState === 'erupting' ? '#7ac040' : '#cfcabb';
+        ctx.globalAlpha = 0.45 + Math.sin(performance.now()/150)*0.2;
+        ctx.fillStyle = glowColor;
         ctx.beginPath();
-        ctx.arc(puffX, puffY, puffR, 0, Math.PI*2);
+        ctx.ellipse(0, -r*1.5, r*0.42, r*0.2, 0, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
+      }
+
+      // smoke / gas plume
+      if(volcanoState !== 'dormant'){
+        const t = performance.now()/1000;
+        for(let i=0;i<5;i++){
+          const p = (t*0.4 + i/5) % 1;
+          const puffY = -r*1.6 - p*70;
+          const puffX = Math.sin(t*0.6 + i*1.7) * 14 * p;
+          const puffR = (8 + p*20);
+          ctx.save();
+          ctx.globalAlpha = (volcanoState==='erupting' ? 0.32 : 0.18) * (1-p);
+          ctx.fillStyle = volcanoState === 'erupting' ? '#7ac040' : '#cfcabb';
+          ctx.beginPath();
+          ctx.arc(puffX, puffY, puffR, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    } else {
+      // mountain body (procedural fallback)
+      ctx.fillStyle = '#3a2c22';
+      ctx.beginPath();
+      ctx.moveTo(-r*2.1, r*0.9);
+      ctx.lineTo(-r*0.6, -r*1.5);
+      ctx.lineTo(r*0.6, -r*1.5);
+      ctx.lineTo(r*2.1, r*0.9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#4a382a';
+      ctx.beginPath();
+      ctx.moveTo(-r*1.5, r*0.75);
+      ctx.lineTo(-r*0.55, -r*1.35);
+      ctx.lineTo(-r*0.1, -r*1.1);
+      ctx.lineTo(-r*1.1, r*0.75);
+      ctx.closePath();
+      ctx.fill();
+
+      // crater glow — intensifies with volcanoState
+      const glowColor = volcanoState === 'erupting' ? '#ff7a3d' : volcanoState === 'warning' ? '#e0a33d' : '#8a4a2a';
+      ctx.fillStyle = glowColor;
+      ctx.beginPath();
+      ctx.ellipse(0, -r*1.42, r*0.5, r*0.22, 0, 0, Math.PI*2);
+      ctx.fill();
+      if(volcanoState !== 'dormant'){
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(performance.now()/150)*0.25;
+        ctx.fillStyle = '#ffdca0';
+        ctx.beginPath();
+        ctx.ellipse(0, -r*1.42, r*0.28, r*0.12, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // smoke / gas plume
+      if(volcanoState !== 'dormant'){
+        const t = performance.now()/1000;
+        for(let i=0;i<5;i++){
+          const p = (t*0.4 + i/5) % 1;
+          const puffY = -r*1.5 - p*70;
+          const puffX = Math.sin(t*0.6 + i*1.7) * 14 * p;
+          const puffR = (8 + p*20);
+          ctx.save();
+          ctx.globalAlpha = (volcanoState==='erupting' ? 0.32 : 0.18) * (1-p);
+          ctx.fillStyle = volcanoState === 'erupting' ? '#7ac040' : '#cfcabb';
+          ctx.beginPath();
+          ctx.arc(puffX, puffY, puffR, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
       }
     }
     ctx.restore();
@@ -4835,34 +4885,6 @@
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }
-
-  // Bomb-blast tunnel craters for the Shattered Coliseum — the same
-  // grassZones data used for "tall grass" hiding elsewhere in the game,
-  // but drawn here as dark rubble-rimmed pits leading down into tunnels,
-  // matching the rebel bombing that cratered the arena floor.
-  function drawCraterZone(z){
-    ctx.save();
-    ctx.translate(z.x, z.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.beginPath();
-    ctx.ellipse(0, z.r*0.12, z.r*0.85, z.r*0.6, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = '#7a746650';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(0, z.r*0.12, z.r*0.85, z.r*0.6, 0, 0, Math.PI*2);
-    ctx.stroke();
-    // scattered rim rubble
-    for(let i=0;i<5;i++){
-      const ang = (i/5)*Math.PI*2 + z.r*0.01;
-      const rx = Math.cos(ang)*z.r*0.8, ry = Math.sin(ang)*z.r*0.55;
-      ctx.fillStyle = '#8f897c';
-      ctx.beginPath();
-      ctx.arc(rx, ry, 4, 0, Math.PI*2);
-      ctx.fill();
-    }
-    ctx.restore();
   }
 
   // The shattered weapon pile at the center of the Shattered Coliseum —
@@ -4897,26 +4919,6 @@
         ctx.restore();
       }
     }
-    ctx.restore();
-  }
-
-  // Concentric ring of ruined amphitheater walls / arched windows around
-  // the border of the Shattered Coliseum, evoking the bombed stadium dome.
-  function drawAmphitheaterRing(){
-    ctx.save();
-    ctx.translate(CENTER_X, CENTER_Y);
-    ctx.strokeStyle = 'rgba(60,56,48,0.35)';
-    ctx.lineWidth = 26;
-    ctx.beginPath();
-    ctx.ellipse(0,0, WORLD_W*0.49, WORLD_H*0.47, 0, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(120,114,100,0.25)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([26,14]);
-    ctx.beginPath();
-    ctx.ellipse(0,0, WORLD_W*0.47, WORLD_H*0.45, 0, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.setLineDash([]);
     ctx.restore();
   }
 
@@ -5008,7 +5010,7 @@
     // — some arenas (e.g. Green Hollow, Clockwork Shore, Shattered Coliseum)
     // skip this entirely and leave the center clearing as open ground
     // instead (the Clock Arena draws its own 12 spokes via drawClockArena()
-    // below, and the Coliseum draws its ring via drawAmphitheaterRing()).
+    // below).
     if(currentArenaCfg.showPath){
       ctx.save();
       const sPattern = getSandPattern();
@@ -5039,13 +5041,6 @@
 
     if(VOLCANO) drawVolcano();
     if(currentArenaCfg.clockArena) drawClockArena();
-    if(currentArenaCfg.ruins) drawAmphitheaterRing();
-
-    // bomb-crater tunnel hiding spots, ruins arena only — drawn here since
-    // makeRuinDecorations() deliberately leaves grassZones undecorated
-    if(currentArenaCfg.ruins){
-      grassZones.forEach(drawCraterZone);
-    }
 
     // center clearing marker: golden Cornucopia ring normally, or the
     // Shattered Coliseum's bare weapon pile in ruins arenas. Arenas that
@@ -5149,7 +5144,7 @@
     else if(inGas){ statusLabel = 'Choking on volcanic gas'; statusColor = '#7ac040'; }
     else if(player.inDeepWater){ statusLabel = 'Drowning in the pond'; statusColor = '#e8404a'; }
     else if(inWater){ statusLabel = 'Wading in the pond'; statusColor = '#7fb0e0'; }
-    else if(hidden){ statusLabel = currentArenaCfg.ruins ? 'Hidden in a tunnel' : 'Hidden in grass'; statusColor = '#7ac97a'; }
+    else if(hidden){ statusLabel = 'Hidden in grass'; statusColor = '#7ac97a'; }
     statusTextEl.textContent = statusLabel;
     statusTextEl.style.color = statusColor;
 
