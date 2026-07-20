@@ -1236,6 +1236,8 @@
       <div id="countdownNum">10</div>
       <div class="countdownLabel" id="countdownLabel">STAY ON YOUR PLATE</div>
     </div>
+
+    <div id="tunnelFade"></div>
     </div>
     </div>
 
@@ -1520,6 +1522,10 @@ snake: {
   // `rockAssets` / `treeAssets` — optional arrays of asset keys; when set,
   //             each rock/tree obstacle randomly picks one variant at
   //             creation time instead of using the single default sprite.
+  // `tunnelPoints` — optional array of {fx,fy} fractional world positions
+  //             where a Pokemon-house-style tunnel entrance is placed;
+  //             walking onto one transitions to a separate underground
+  //             scene (see the TUNNEL SYSTEM section below).
   // ============================================================
   const ARENAS = {
     meadowlands: {
@@ -1540,7 +1546,7 @@ snake: {
     ruins: {
       id:'ruins',
       name:'The Shattered Coliseum',
-      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates and heaps of rubble. No food. No water. Nests of venomous snakes swarm the wreckage.',
+      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates and heaps of rubble. No food. No water. Nests of venomous snakes swarm the wreckage. Two tunnel mouths lead underground, where Peacekeepers and desperate tributes still lurk.',
       swatch: 'linear-gradient(135deg,#9a958a,#6b665c 45%,#3a3730)',
       tint: 'rgba(110,105,95,0.14)',
       biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
@@ -1551,7 +1557,8 @@ snake: {
       poisonMult: 1,
       muttRoster: ['snake','snakeTwo','snakeThree'], muttCountMax: 14,
       showPath: false, flowerMult: 0, volcano: null,
-      ruins: true, noFood: true, noPond: true
+      ruins: true, noFood: true, noPond: true,
+      tunnelPoints: [ {fx:0.10, fy:0.85}, {fx:0.90, fy:0.14} ]
     },
     scorched: {
       id:'scorched',
@@ -1625,6 +1632,16 @@ snake: {
     clockActiveHour = -1;
     clockTickTimer = 0;
     grassPattern = null; sandPattern = null; colTilePattern = null; // force pattern/tint re-derivation next render
+
+    // Tunnel entrances (world-space), see TUNNEL SYSTEM section below.
+    tunnelEntrances = (a.tunnelPoints || []).map((p,i)=>({
+      id: 'tunnel'+i,
+      x: WORLD_W*p.fx, y: WORLD_H*p.fy,
+      r: 30
+    }));
+    inTunnel = false;
+    activeTunnel = null;
+    tunnelTransition = null;
   }
 
   // ============================================================
@@ -1793,6 +1810,24 @@ snake: {
     gain.connect(ctxA.destination);
     osc.start(now);
     osc.stop(now + 2.2);
+  }
+
+  function playDoorSound(){
+    const ctxA = getAudioCtx();
+    if(!ctxA) return;
+    const now = ctxA.currentTime;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(340, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.28);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+    osc.connect(gain);
+    gain.connect(ctxA.destination);
+    osc.start(now);
+    osc.stop(now + 0.32);
   }
 
   // ============================================================
@@ -1972,9 +2007,15 @@ snake: {
     colRockOne: 'assets/col-rock-one.png',
     colRockTwo: 'assets/col-rock-two.png',
     colRockThree: 'assets/col-rock-three.png',
-    colRockFour: 'assets/col-rock-one.png',
-    colRockFive: 'assets/ruin-one.png',
+    colRockFour: 'assets/col-rock-four.png',
+    colRockFive: 'assets/col-rock-five.png',
     colRockSix: 'assets/col-rock-six.png',
+    colRockSeven: 'assets/col-rock-seven.png',
+    colRockEight: 'assets/col-rock-eight.png',
+    colRockNine: 'assets/col-rock-nine.png',
+    colRockTen: 'assets/col-rock-ten.png',
+    colRockEleven: 'assets/col-rock-eleven.png',
+    ruinFive: 'assets/ruin-five.png', 
     colTile: 'assets/col-tile.png',
     colSnake: 'assets/snake.png',
     colSnakeTwo: 'assets/snake-two.png',
@@ -2071,6 +2112,7 @@ snake: {
   const countdownNum = document.getElementById('countdownNum');
   const countdownLabel = document.getElementById('countdownLabel');
   const playerHudLabel = document.getElementById('playerHudLabel');
+  const tunnelFadeEl = document.getElementById('tunnelFade');
 
   // ============================================================
   // INTRO STATE MACHINE (title -> menu -> arena -> district -> tribute -> game)
@@ -2093,7 +2135,7 @@ snake: {
   const tributeDistrictLabelEl = document.getElementById('tributeDistrictLabel');
 
   const STORY_TEXT = "The Capitol has spoken.\n\nTwenty-four tributes enter the arena. Only one leaves.\n\nYou have been reaped. Choose your arena, your district, take your place on the plate, and when the gong sounds — run, fight, survive.";
-  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.\n\nEach arena plays differently — check its briefing before you commit. Each district trains its tributes differently too — check your district's perk before you pick.";
+  const INSTRUCTIONS_TEXT = "MOVE: WASD or Arrow Keys / D-Pad\nATTACK: Space / A Button\nSWITCH WEAPON: Q/E or 1-6 / B Button\n\nGrab a weapon from the Cornucopia when the gong sounds. Eat berries to fight hunger — some are poisonous. Watch the shrinking safe zone, and beware the mutts after day 3.\n\nIn the Shattered Coliseum, dark tunnel mouths lead underground — walk into one to duck below the arena. Snakes, Peacekeepers and desperate rival tributes lurk down there, but so does extra loot. Find the stairwell glow to climb back out.\n\nEach arena plays differently — check its briefing before you commit. Each district trains its tributes differently too — check your district's perk before you pick.";
 
   let introScreen = 'title';
   let menuIndex = 0, arenaIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false, arenaArmed = false;
@@ -2312,6 +2354,13 @@ snake: {
   let lastCountdownTick = -1;
   let livePhaseStartTime = 0;
 
+  // ---- Tunnel / underground scene state (see TUNNEL SYSTEM below) ----
+  let tunnelEntrances = [];   // outdoor world-space entrance markers for the current arena
+  let inTunnel = false;       // true while the player is in the underground scene
+  let activeTunnel = null;    // the generated layout+enemies+items for the current visit
+  let tunnelTransition = null; // {phase:'out'|'hold'|'in', t, duration, pending} fade state
+  let outdoorReturnPos = null; // {x,y} the player's outdoor position to restore on exit
+
   const keys = {};
   const touchDir = {up:false,down:false,left:false,right:false};
   let attackPressed = false;
@@ -2372,6 +2421,13 @@ snake: {
     return dist({x,y}, VOLCANO) < (VOLCANO.craterR + pad);
   }
 
+  // Keeps obstacles/decor away from tunnel entrance mouths so the doorway
+  // stays clear to walk into.
+  function nearTunnelEntrance(x,y,pad){
+    pad = pad || 0;
+    return tunnelEntrances.some(te => dist({x,y}, te) < (te.r + pad));
+  }
+
   function makeObstacles(){
     obstacles = [];
     if(currentArenaCfg.ruins){ makeRuinObstacles(); return; }
@@ -2382,6 +2438,7 @@ snake: {
       const y = rand(50, WORLD_H-50);
       if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 160) continue; // keep cornucopia clear
       if(nearVolcano(x,y,40)) continue; // keep the volcano's slopes clear of clutter
+      if(nearTunnelEntrance(x,y,50)) continue;
       const biome = biomeAt(x,y);
       const isPath = currentArenaCfg.showPath && Math.abs(x - CENTER_X) < 70 && Math.abs(y - CENTER_Y) < 70;
       const isWater = biome === 'water';
@@ -2413,9 +2470,49 @@ snake: {
   // is a uniform small size, drawn using the col-rock-one..six pixel-art
   // variants (see COL_RUIN_ROCK_ASSETS), matching the same size used for
   // regular rocks elsewhere in the game.
-  const COL_RUIN_ROCK_ASSETS = ['colRockOne','colRockTwo','colRockThree','colRockFour','colRockFive','colRockSix'];
+  const COL_RUIN_ROCK_ASSETS = ['colRockOne','colRockTwo','colRockThree','colRockFour','colRockFive','colRockSix','colRockSeven','colRockEight','colRockNine','colRockTen','colRockEleven'];
   const COL_RUIN_ROCK_R = ROCK_R; // uniform small rubble size, matching normal rocks
+
+    // Keeps rubble from spawning on top of the four ruin-five corner landmarks.
+    function nearRuinCorner(x,y,pad){
+      if(!currentArenaCfg.ruins) return false;
+      pad = pad || 0;
+      const margin = 90;
+      const corners = [
+        {x: margin, y: margin},
+        {x: WORLD_W-margin, y: margin},
+        {x: margin, y: WORLD_H-margin},
+        {x: WORLD_W-margin, y: WORLD_H-margin}
+      ];
+      return corners.some(c=> dist({x,y}, c) < (70+pad));
+    }
+
+  // Shuffle-bag picker
+
+  // Shuffle-bag picker so the same rock/rubble variant never gets drawn
+  // over and over — pulls without replacement from a shuffled deck of all
+  // variants, reshuffling once exhausted, and swaps the first pick of a
+  // fresh shuffle if it would repeat the variant that just came before it.
+  let ruinRockBag = [];
+  let lastRuinRockAsset = null;
+  function pickRuinRockAsset(){
+    if(ruinRockBag.length === 0){
+      ruinRockBag = [...COL_RUIN_ROCK_ASSETS];
+      for(let i=ruinRockBag.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        const tmp = ruinRockBag[i]; ruinRockBag[i]=ruinRockBag[j]; ruinRockBag[j]=tmp;
+      }
+      if(ruinRockBag[0] === lastRuinRockAsset && ruinRockBag.length > 1){
+        const tmp = ruinRockBag[0]; ruinRockBag[0] = ruinRockBag[1]; ruinRockBag[1] = tmp;
+      }
+    }
+    const picked = ruinRockBag.pop();
+    lastRuinRockAsset = picked;
+    return picked;
+  }
+
   function makeRuinObstacles(){
+    ruinRockBag = []; lastRuinRockAsset = null; // fresh shuffle each new game
     let tries = 0;
     while(obstacles.length < OBSTACLE_COUNT && tries < 20000){
       tries++;
@@ -2425,13 +2522,13 @@ snake: {
       const r = COL_RUIN_ROCK_R;
       const overlap = obstacles.some(o=> dist(o,{x,y}) < o.r + r + 4);
       if(overlap) continue;
-      const assetKey = COL_RUIN_ROCK_ASSETS[randi(0, COL_RUIN_ROCK_ASSETS.length-1)];
+      if(nearRuinCorner(x,y,20)) continue;
+      if(nearTunnelEntrance(x,y,55)) continue;
+      const assetKey = pickRuinRockAsset();
       obstacles.push({x,y,r,type:'rubble',assetKey});
     }
   }
 
-  // A treeline hugging the map edge, like the solid forest border that
-  // encloses every Pokemon route — also doubles as extra cover near the walls.
   function makeBorderTrees(){
     if(currentArenaCfg.ruins){ makeAmphitheaterBorder(); return; }
     const step = 52;
@@ -2445,17 +2542,10 @@ snake: {
       obstacles.push({x: WORLD_W-margin+rand(-6,6), y: y+rand(-8,8), r: TREE_R, type:'tree', assetKey: pickVariantAsset('tree')});
     }
   }
-
-  // The Shattered Coliseum has no bordering structures at all — the arena
-  // floor simply runs out to the walls, bare and open, so this is a no-op.
   function makeAmphitheaterBorder(){
     // intentionally empty — no rectangular barriers/stands around the border
   }
 
-  // Patches of tall grass — standing inside one makes a tribute harder to
-  // spot from a distance, giving players real places to hide and wait out foes.
-  // The Shattered Coliseum has no grass zones (grassMult: 0) since its
-  // bomb-crater tunnel hiding spots have been removed.
   let grassZones = [];
   function makeGrassZones(){
     grassZones = [];
@@ -2464,10 +2554,10 @@ snake: {
       tries++;
       const x = rand(70, WORLD_W-70);
       const y = rand(70, WORLD_H-70);
-      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 190) continue; // keep cornucopia open
+      if(dist({x,y},{x:CENTER_X,y:CENTER_Y}) < 190) continue; 
       if(nearVolcano(x,y,50)) continue;
       const r = rand(45,85);
-      if(nearPond(x,y,r)) continue; // keep grass patches (and their tufts) out of the pond
+      if(nearPond(x,y,r)) continue;
       const overlap = grassZones.some(z=> dist(z,{x,y}) < z.r + r*0.3);
       if(overlap) continue;
       grassZones.push({x,y,r});
@@ -2478,16 +2568,12 @@ snake: {
     return grassZones.some(z => dist(t,z) < z.r);
   }
 
-  // Distance of a point from the pond center, normalized so <=1 is inside
-  // the pond's outer edge (matches the ellipse used to draw/detect it).
   function pondDepthFrac(t){
     const nx = (t.x - POND_CENTER.x)/POND_RADIUS_X;
     const ny = (t.y - POND_CENTER.y)/POND_RADIUS_Y;
     return nx*nx + ny*ny;
   }
 
-  // Whether a tribute is currently standing near enough to a tree obstacle
-  // to get their lumberjack damage bonus (District 7 perk).
   function nearTrees(t, radius){
     for(const o of obstacles){
       if(o.type !== 'tree') continue;
@@ -2496,9 +2582,6 @@ snake: {
     return false;
   }
 
-  // Non-collidable decoration: tall grass tufts, flowers and lily-pads,
-  // generated once per game so the arena reads as a lived-in overworld
-  // without touching any obstacle/collision/AI logic.
   let decorations = [];
   function makeDecorations(){
     decorations = [];
@@ -2524,7 +2607,6 @@ snake: {
       decorations.push({x,y,kind,phase:Math.random()*Math.PI*2, flowerColorRoll: Math.random()});
     }
 
-    // pack each grass zone with dense tufts so it visibly reads as cover
     grassZones.forEach(z=>{
       const tuftCount = Math.floor(z.r/5);
       for(let i=0;i<tuftCount;i++){
@@ -2538,7 +2620,6 @@ snake: {
       }
     });
 
-    // extra scattered flower clusters for especially colorful arenas
     if(flowerMult > 1.4){
       const clusterCount = Math.round(26 * (flowerMult-1));
       for(let c=0;c<clusterCount;c++){
@@ -2555,9 +2636,6 @@ snake: {
         }
       }
 
-      // dense flower bushes — larger, bushier clumps of blooms scattered
-      // throughout especially colorful arenas (e.g. the Green Hollow),
-      // using the flower-bush pixel-art variants instead of single stems.
       const bushCount = Math.round(20 * (flowerMult-1));
       for(let b=0;b<bushCount;b++){
         const x = rand(40, WORLD_W-40), y = rand(40, WORLD_H-40);
@@ -2570,10 +2648,6 @@ snake: {
     }
   }
 
-  // Rubble dust/debris decoration for the Shattered Coliseum — no flowers
-  // or grass tufts here, just scattered chunks of broken masonry and dust
-  // clouds drifting off the rubble. Density is kept low to keep the arena
-  // as bare and open as possible.
   function makeRuinDecorations(){
     const decorationCount = Math.round(60 * AREA_SCALE);
     for(let i=0;i<decorationCount;i++){
@@ -2598,10 +2672,6 @@ snake: {
     });
   }
 
-  // Scatters berry bushes' actual berry pickups near a fraction of the
-  // bush obstacles already placed in the arena, so foraging has a reason
-  // to route players toward bush clusters specifically. Arenas with no
-  // food (and therefore no bush obstacles) skip this entirely.
   function makeBerryBushes(){
     if(currentArenaCfg.noFood) return;
     obstacles.forEach(o=>{
@@ -2629,8 +2699,6 @@ snake: {
 
     const weaponPool = [...WEAPON_KEYS];
     const fullWeaponCount = TOTAL_TRIBUTES;
-    // The Shattered Coliseum has no golden Cornucopia — just a tight pile
-    // of weapons heaped at the center, so the ring sits closer in.
     const weaponRingRadius = ruins ? 70 : 120;
 
     for(let i=0;i<fullWeaponCount;i++){
@@ -2668,8 +2736,6 @@ snake: {
   }
 
   function newTribute(district, isPlayer, forcedGender){
-    // Position is assigned afterward by positionTributesOnPlates() so every
-    // tribute starts evenly spaced around the cornucopia, like the reaping circle.
     const perk = perkFor(district);
     const baseHp = 150 + (perk.hpBonus || 0);
     const baseSpeed = (isPlayer ? 58 : rand(40,52)) * (perk.speedMult || 1);
@@ -2715,8 +2781,6 @@ snake: {
     };
   }
 
-  // Arrange every tribute evenly around the cornucopia on their starting
-  // "plate", all facing inward — the classic Hunger Games reaping circle.
   function positionTributesOnPlates(){
     const total = tributes.length;
     tributes.forEach((t, i)=>{
@@ -2742,10 +2806,6 @@ snake: {
   function resetGame(){
     applyArenaConfig();
     tributes = [];
-    // Build every district's two reaping slots as explicit {district,gender}
-    // pairs so each district always fields one male AND one female tribute
-    // (instead of two random same-gender copies) — the player fills one
-    // slot of their chosen district, and the pool below covers the rest.
     let pool = [];
     DISTRICTS.forEach(d=>{
       if(d === selectedDistrict){
@@ -2762,9 +2822,6 @@ snake: {
       const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
     }
     player = newTribute(selectedDistrict, true, selectedGender);
-    // Player starts unarmed on the plate, same as every other tribute —
-    // the only way to get a weapon is to grab one from the Cornucopia
-    // (or off a body) once the gong sounds.
     tributes.push(player);
     for(let i=0;i<pool.length;i++){
       tributes.push(newTribute(pool[i].district, false, pool[i].gender));
@@ -2808,9 +2865,6 @@ snake: {
     updateHud();
   }
 
-  // ============================================================
-  // INPUT
-  // ============================================================
   window.addEventListener('keydown', e=>{
     if(endScreenActive()){
       const k = e.key.toLowerCase();
@@ -2897,9 +2951,6 @@ snake: {
     startBtn.addEventListener('click', startOn);
   }
 
-  // ============================================================
-  // KILL FEED
-  // ============================================================
   function feed(msg){
     const el = document.createElement('div');
     el.className = 'feedLine';
@@ -2909,9 +2960,6 @@ snake: {
     while(killFeed.children.length > 5){ killFeed.removeChild(killFeed.firstChild); }
   }
 
-  // ============================================================
-  // COMBAT / DAMAGE
-  // ============================================================
   function damageTribute(t, amount, source){
     if(!t.alive) return;
     let dmg = amount;
@@ -2957,9 +3005,6 @@ snake: {
     particles.push({x,y,text,color,life:1.0,vy:-30});
   }
 
-  // Effective movement speed after low-energy fatigue and deep-water drag
-  // are applied. District 4's water-speed perk cancels the deep-water
-  // drag entirely (they swim like it's nothing).
   function speedMult(t){
     let mult = t.energy < LOW_ENERGY_THRESHOLD ? LOW_ENERGY_SPEED_MULT : 1;
     if(t.inDeepWater){
@@ -2968,11 +3013,6 @@ snake: {
     return mult;
   }
 
-  // Hunger/energy drain, starvation damage, poison damage-over-time, and
-  // stun countdown — runs for every living tribute, player included.
-  // District perks: District 9 (Grain) drains hunger slower, District 5
-  // (Power) drains energy slower, District 8 (Textiles) shrugs off poison
-  // faster, District 10 (Livestock) slowly heals over time.
   function updateSurvival(t, dt){
     if(!t.alive) return;
     const perk = t.perk || {};
@@ -3269,6 +3309,7 @@ snake: {
   }
 
   function tryAttack(attacker){
+    if(inTunnel && attacker.isPlayer){ tryAttackTunnel(attacker); return; }
     if(attacker.attackCooldown > 0) return;
     let wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
     const alliedCareer = attacker.isCareer && !allianceBroken;
@@ -3871,8 +3912,9 @@ snake: {
   // MOVEMENT / COLLISION
   // ============================================================
   function resolveObstacles(t){
+    const activeList = inTunnel ? (activeTunnel ? activeTunnel.walls : []) : obstacles;
     let pushX = 0, pushY = 0;
-    for(const o of obstacles){
+    for(const o of activeList){
       const d = dist(t,o);
       const minD = o.r + 10;
       if(d < minD && d > 0.0001){
@@ -3960,10 +4002,558 @@ snake: {
   }
 
   // ============================================================
+  // TUNNEL SYSTEM — Pokemon-house-style transition into an underground
+  // scene. Walking onto a tunnel mouth in the outdoor world fades to
+  // black, generates (or regenerates) a small winding corridor map, and
+  // drops the player at its entrance. Venomous snakes, armored
+  // Peacekeepers, and a desperate rival tribute prowl the tunnels;
+  // loot down there tends to be a little better than what's outside.
+  // Finding the glowing stairwell and stepping onto it fades back out to
+  // the exact spot on the surface where the player went in.
+  // ============================================================
+  const TUNNEL_W = 1000, TUNNEL_H = 620;
+  const TUNNEL_CORRIDOR_HALF = 62;   // half-width of the walkable corridor
+  const TUNNEL_ROOM_R = 130;         // radius of the open combat "rooms"
+  const TUNNEL_WALL_R = 24;
+  const TUNNEL_WALL_STEP = 42;
+  const TUNNEL_FADE_MS = 380;
+
+  const PEACEKEEPER_STATS = { hp:55, dmg:11, speed:58, attackRange:150, attackCooldown:1.3, detectRange:280 };
+  const RIVAL_STATS       = { hp:85, dmg:13, speed:66, attackRange:42,  attackCooldown:0.6, detectRange:230 };
+
+  // Builds a winding path of connected segments from a start point to an
+  // end point, alternating horizontal/vertical hops, with a couple of
+  // wider "room" waypoints along the way for open combat. Returns
+  // {waypoints:[{x,y,room:bool}], start, end}.
+  function generateTunnelPath(){
+    const start = { x: 70, y: TUNNEL_H - 70 };
+    const end   = { x: TUNNEL_W - 80, y: 90 };
+    const waypoints = [start];
+    let cur = {x:start.x, y:start.y};
+    let horizontalTurn = true;
+    const hops = 5;
+    for(let i=0;i<hops;i++){
+      const isRoom = (i===2 || i===4);
+      let nx, ny;
+      if(horizontalTurn){
+        nx = clamp(cur.x + rand(160,240) * (end.x>cur.x?1:-1), 90, TUNNEL_W-90);
+        ny = cur.y;
+      } else {
+        nx = cur.x;
+        ny = clamp(cur.y + rand(110,170) * (end.y>cur.y?1:-1), 90, TUNNEL_H-90);
+      }
+      cur = {x:nx, y:ny};
+      waypoints.push({x:nx, y:ny, room:isRoom});
+      horizontalTurn = !horizontalTurn;
+    }
+    waypoints.push({x:end.x, y:end.y, room:true});
+    return { waypoints, start, end };
+  }
+
+  function pointNearSegments(px, py, waypoints, halfWidth){
+    for(let i=0;i<waypoints.length-1;i++){
+      const a = waypoints[i], b = waypoints[i+1];
+      // distance from point to segment a-b
+      const abx = b.x-a.x, aby = b.y-a.y;
+      const abLen2 = abx*abx+aby*aby || 1;
+      let t = ((px-a.x)*abx + (py-a.y)*aby) / abLen2;
+      t = clamp(t,0,1);
+      const cx = a.x + abx*t, cy = a.y + aby*t;
+      if(Math.hypot(px-cx, py-cy) < halfWidth) return true;
+    }
+    for(const w of waypoints){
+      if(w.room && Math.hypot(px-w.x, py-w.y) < TUNNEL_ROOM_R) return true;
+    }
+    return false;
+  }
+
+  function buildTunnelLayout(entranceId){
+    const { waypoints, start, end } = generateTunnelPath();
+
+    // wall-fill: any grid cell not covered by the corridor/rooms becomes
+    // a small circular wall obstacle, densely packed so it reads solid.
+    const walls = [];
+    for(let gx=20; gx<TUNNEL_W-20; gx+=TUNNEL_WALL_STEP){
+      for(let gy=20; gy<TUNNEL_H-20; gy+=TUNNEL_WALL_STEP){
+        const jx = gx + rand(-6,6), jy = gy + rand(-6,6);
+        if(pointNearSegments(jx, jy, waypoints, TUNNEL_CORRIDOR_HALF)) continue;
+        walls.push({x:jx, y:jy, r:TUNNEL_WALL_R, type:'tunnelWall'});
+      }
+    }
+
+    // loot: a handful of weapon/medkit/shield pickups scattered along the
+    // path, biased toward the rooms — the tunnels reward the risk.
+    const tItems = [];
+    const roomWaypoints = waypoints.filter(w=>w.room);
+    roomWaypoints.forEach(w=>{
+      const n = randi(2,3);
+      for(let i=0;i<n;i++){
+        const ang = rand(0,Math.PI*2);
+        const r = rand(20,70);
+        const x = clamp(w.x+Math.cos(ang)*r, 40, TUNNEL_W-40);
+        const y = clamp(w.y+Math.sin(ang)*r, 40, TUNNEL_H-40);
+        const roll = Math.random();
+        const type = roll<0.5 ? 'weapon' : roll<0.8 ? 'medkit' : 'shield';
+        tItems.push({
+          x,y,type,
+          weaponType: type==='weapon' ? WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)] : null,
+          id: Math.random().toString(36).slice(2), bob: Math.random()*Math.PI*2
+        });
+      }
+    });
+
+    // enemies: snake mutts scattered along the corridor, a Peacekeeper or
+    // two guarding a room, and a rival tribute holed up somewhere inside.
+    const enemies = [];
+    const snakeSpecies = ['snake','snakeTwo','snakeThree'];
+    waypoints.forEach((w,i)=>{
+      if(i===0) return; // nothing right on top of the entrance
+      if(Math.random() < 0.55){
+        const key = snakeSpecies[randi(0,snakeSpecies.length-1)];
+        const sp = MUTT_SPECIES[key];
+        enemies.push(makeTunnelEnemy('snake', key, w.x+rand(-30,30), w.y+rand(-30,30), sp));
+      }
+    });
+    roomWaypoints.forEach((w,i)=>{
+      enemies.push(makeTunnelEnemy('peacekeeper', null, w.x+rand(-40,40), w.y+rand(-40,40), PEACEKEEPER_STATS));
+      if(i===roomWaypoints.length-1){
+        enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS));
+      }
+    });
+
+    return {
+      w: TUNNEL_W, h: TUNNEL_H,
+      walls, items: tItems, enemies,
+      entryPoint: {x:start.x, y:start.y},
+      exitPoint: {x:end.x, y:end.y},
+      entranceId
+    };
+  }
+
+  function makeTunnelEnemy(kind, speciesKey, x, y, stats){
+    return {
+      id: Math.random().toString(36).slice(2),
+      kind, species: speciesKey,
+      x: clamp(x,40,TUNNEL_W-40), y: clamp(y,40,TUNNEL_H-40),
+      vx:0, vy:0, facing:{x:0,y:1},
+      hp: stats.hp, maxHp: stats.hp,
+      dmg: stats.dmg, speed: stats.speed,
+      attackRange: stats.attackRange, attackCooldown: stats.attackCooldown, detectRange: stats.detectRange,
+      cooldownTimer: 0, alive:true, hitFlash:0,
+      wanderTarget:null, wanderTimer:0,
+      tributeSkin: kind==='rival' ? ('district-'+randi(1,12)+'-'+(Math.random()<0.5?'male':'female')) : null
+    };
+  }
+
+  function tunnelFadeTo(alpha, ms, cb){
+    if(!tunnelFadeEl) { if(cb) cb(); return; }
+    tunnelFadeEl.style.transition = 'opacity '+ms+'ms ease';
+    tunnelFadeEl.style.opacity = String(alpha);
+    if(cb) setTimeout(cb, ms);
+  }
+
+  function enterTunnel(entrance){
+    if(inTunnel || tunnelTransition) return;
+    outdoorReturnPos = { x: player.x, y: player.y };
+    playDoorSound();
+    feed('You duck into the tunnel mouth and disappear underground.');
+    tunnelTransition = { phase:'out' };
+    tunnelFadeTo(1, TUNNEL_FADE_MS, ()=>{
+      activeTunnel = buildTunnelLayout(entrance.id);
+      inTunnel = true;
+      player.x = activeTunnel.entryPoint.x;
+      player.y = activeTunnel.entryPoint.y;
+      player.vx = 0; player.vy = 0;
+      feed('🕯 The tunnels are cramped and dark. Something is moving nearby.');
+      tunnelFadeTo(0, TUNNEL_FADE_MS, ()=>{ tunnelTransition = null; });
+    });
+  }
+
+  function exitTunnel(){
+    if(!inTunnel || tunnelTransition) return;
+    playDoorSound();
+    tunnelTransition = { phase:'in' };
+    tunnelFadeTo(1, TUNNEL_FADE_MS, ()=>{
+      inTunnel = false;
+      activeTunnel = null;
+      const back = outdoorReturnPos || {x:CENTER_X,y:CENTER_Y};
+      player.x = back.x; player.y = back.y;
+      player.vx = 0; player.vy = 0;
+      feed('You climb back out into the light of the arena.');
+      tunnelFadeTo(0, TUNNEL_FADE_MS, ()=>{ tunnelTransition = null; });
+    });
+  }
+
+  function damageTunnelEnemy(e, amount, source){
+    if(!e.alive) return;
+    e.hp -= amount;
+    e.hitFlash = 0.25;
+    spawnFloatText(e.x, e.y-16, '-'+Math.round(amount), '#e8404a');
+    if(e.hp <= 0 && e.alive){
+      e.alive = false;
+      const label = e.kind==='snake' ? MUTT_SPECIES[e.species].name : e.kind==='peacekeeper' ? 'Peacekeeper' : 'rival tribute';
+      spawnFloatText(e.x, e.y-26, 'DOWN', '#7ac97a');
+      if(source && source.isPlayer) feed('You take down a ' + label.toLowerCase() + ' in the tunnels.');
+    }
+  }
+
+  function tryAttackTunnel(attacker){
+    if(attacker.attackCooldown > 0) return;
+    const wpn = attacker.weapon ? WEAPONS[attacker.weapon] : null;
+    const perk = attacker.perk || {};
+
+    if(wpn && wpn.type === 'ranged'){
+      const ammoLeft = attacker.ammo[attacker.weapon] || 0;
+      if(ammoLeft <= 0){
+        spawnFloatText(attacker.x, attacker.y-30, 'OUT OF AMMO', '#e8404a');
+        feed('Your ' + wpn.name + ' is out of ammo.');
+      } else {
+        attacker.ammo[attacker.weapon] = ammoLeft - 1;
+        attacker.attackCooldown = wpn.cooldown * (perk.rangedCooldownMult || 1);
+        fireProjectileTunnel(attacker, wpn);
+        return;
+      }
+    }
+
+    const range = wpn ? wpn.range : 40;
+    let target = null, best = 9999;
+    for(const e of activeTunnel.enemies){
+      if(!e.alive) continue;
+      const d = dist(attacker, e);
+      if(d < range && d < best){ best = d; target = e; }
+    }
+    attacker.attackCooldown = wpn ? wpn.cooldown : 0.45;
+    if(target){
+      let dmg = (wpn ? wpn.dmg : attacker.baseDamage) + rand(-2,4);
+      if(perk.dmgMult) dmg *= perk.dmgMult;
+      damageTunnelEnemy(target, Math.max(3,dmg), attacker);
+      const dx = target.x-attacker.x, dy = target.y-attacker.y;
+      const len = Math.hypot(dx,dy)||1;
+      target.x += (dx/len)*10; target.y += (dy/len)*10;
+      spawnFloatText(attacker.x, attacker.y-30, 'STRIKE!', '#e8a33d');
+    }
+  }
+
+  function fireProjectileTunnel(attacker, wpn){
+    let dx = attacker.facing.x, dy = attacker.facing.y;
+    const len = Math.hypot(dx,dy) || 1;
+    dx/=len; dy/=len;
+    const perk = attacker.perk || {};
+    let dmg = wpn.dmg;
+    if(perk.dmgMult) dmg *= perk.dmgMult;
+    projectiles.push({
+      x: attacker.x + dx*16, y: attacker.y + dy*16,
+      vx: dx*wpn.projectileSpeed, vy: dy*wpn.projectileSpeed,
+      dmg: dmg, range: wpn.range, traveled: 0,
+      owner: attacker, tint: wpn.tint,
+      assetKey: wpn.name === 'Throwing Knives' ? 'knife' : 'arrow',
+      tunnelShot: true
+    });
+    spawnFloatText(attacker.x, attacker.y-30, wpn.name.toUpperCase()+'!', '#e8a33d');
+  }
+
+  function updateTunnelEnemyAI(e, dt){
+    e.cooldownTimer = Math.max(0, e.cooldownTimer-dt);
+    e.hitFlash = Math.max(0, e.hitFlash-dt);
+    const nd = dist(e, player);
+    let tx=e.x, ty=e.y;
+    if(player.alive && nd < e.detectRange){
+      tx = player.x; ty = player.y;
+    } else {
+      e.wanderTimer -= dt;
+      if(!e.wanderTarget || e.wanderTimer<=0){
+        e.wanderTarget = { x: clamp(e.x+rand(-140,140),40,TUNNEL_W-40), y: clamp(e.y+rand(-140,140),40,TUNNEL_H-40) };
+        e.wanderTimer = rand(2,4);
+      }
+      tx = e.wanderTarget.x; ty = e.wanderTarget.y;
+    }
+    const dx = tx-e.x, dy = ty-e.y;
+    const len = Math.hypot(dx,dy) || 1;
+    if(len > 4){
+      e.vx = (dx/len)*e.speed; e.vy = (dy/len)*e.speed;
+      const blend = Math.min(1, 10*dt);
+      let fx = e.facing.x + (dx/len - e.facing.x)*blend;
+      let fy = e.facing.y + (dy/len - e.facing.y)*blend;
+      const flen = Math.hypot(fx,fy)||1;
+      e.facing = {x:fx/flen,y:fy/flen};
+    } else { e.vx=0; e.vy=0; }
+
+    if(player.alive && nd < e.attackRange && e.cooldownTimer<=0){
+      e.cooldownTimer = e.attackCooldown;
+      const dmg = e.dmg + rand(-2,3);
+      damageTribute(player, Math.max(1,dmg), {isMutt:false, alive:true, isPlayer:false, district:'?'});
+      if(e.kind==='snake'){
+        const sp = MUTT_SPECIES[e.species];
+        player.poisonDmgPerTick = sp.venomTickDmg;
+        player.poisonTicksRemaining = Math.max(player.poisonTicksRemaining, sp.venomTicks);
+        player.poisonTickTimer = sp.venomTickInterval;
+        spawnFloatText(e.x, e.y-20, 'VENOM!', '#8ee06a');
+        feed('🐍 A snake bites you in the dark.');
+      } else if(e.kind==='peacekeeper'){
+        spawnFloatText(e.x, e.y-20, 'SHOT!', '#e8e3d3');
+        feed('A Peacekeeper opens fire on you.');
+      } else {
+        spawnFloatText(e.x, e.y-20, 'HIT!', '#e8404a');
+      }
+    }
+  }
+
+  function updateTunnelWorld(dt){
+    if(!activeTunnel) return;
+    updatePlayerMovement(dt);
+    player.x += player.vx*dt;
+    player.y += player.vy*dt;
+    player.x = clamp(player.x, 16, TUNNEL_W-16);
+    player.y = clamp(player.y, 16, TUNNEL_H-16);
+    resolveObstacles(player);
+    player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+    player.hitFlash = Math.max(0, player.hitFlash - dt);
+    updateSurvival(player, dt);
+
+    // tunnel item pickup uses the tunnel-local item list
+    for(let i=activeTunnel.items.length-1;i>=0;i--){
+      const it = activeTunnel.items[i];
+      if(dist(player,it) < 22){
+        if(it.type==='weapon'){
+          const wpnDef = WEAPONS[it.weaponType];
+          if(player.inventory.includes(it.weaponType)){
+            if(wpnDef.type==='ranged'){
+              const gain = randi(AMMO_PICKUP_MIN, AMMO_PICKUP_MAX);
+              player.ammo[it.weaponType] = Math.min(wpnDef.ammoMax, (player.ammo[it.weaponType]||0)+gain);
+              spawnFloatText(player.x,player.y-20,'+AMMO','#ffcf5c');
+            } else {
+              spawnFloatText(player.x,player.y-20,'HAVE IT','#8f9086');
+            }
+          } else {
+            player.inventory.push(it.weaponType);
+            if(wpnDef.type==='ranged') player.ammo[it.weaponType] = randi(AMMO_PICKUP_MIN, AMMO_PICKUP_MAX);
+            if(!player.weapon){ equipWeaponIndex(player.inventory.length-1); }
+            spawnFloatText(player.x,player.y-20,'+'+wpnDef.name.toUpperCase(),'#ffcf5c');
+          }
+        } else if(it.type==='medkit'){
+          player.hp = Math.min(player.maxHp, player.hp+35);
+          spawnFloatText(player.x,player.y-20,'+35 HP','#7ac97a');
+        } else if(it.type==='shield'){
+          player.shield = Math.min(40, player.shield+25);
+          spawnFloatText(player.x,player.y-20,'+SHIELD','#7fb0e0');
+        }
+        activeTunnel.items.splice(i,1);
+      }
+    }
+
+    for(const e of activeTunnel.enemies){
+      if(!e.alive) continue;
+      updateTunnelEnemyAI(e, dt);
+      e.x += e.vx*dt; e.y += e.vy*dt;
+      e.x = clamp(e.x, 16, TUNNEL_W-16);
+      e.y = clamp(e.y, 16, TUNNEL_H-16);
+      resolveObstacles(e);
+    }
+
+    // tunnel-scoped projectile update (walls + enemies only)
+    for(let i=projectiles.length-1;i>=0;i--){
+      const p = projectiles[i];
+      if(!p.tunnelShot) continue;
+      const stepX = p.vx*dt, stepY = p.vy*dt;
+      p.x += stepX; p.y += stepY;
+      p.traveled += Math.hypot(stepX,stepY);
+      let removed = false;
+      for(const wobs of activeTunnel.walls){
+        if(dist(p,wobs) < wobs.r){ removed = true; break; }
+      }
+      if(!removed){
+        for(const e of activeTunnel.enemies){
+          if(!e.alive) continue;
+          if(dist(p,e) < 15){
+            damageTunnelEnemy(e, Math.max(3,p.dmg+rand(-2,3)), p.owner);
+            removed = true; break;
+          }
+        }
+      }
+      if(removed || p.traveled > p.range || p.x<0||p.x>TUNNEL_W||p.y<0||p.y>TUNNEL_H){
+        projectiles.splice(i,1);
+      }
+    }
+
+    // exit stairwell trigger
+    if(dist(player, activeTunnel.exitPoint) < 30){
+      exitTunnel();
+    }
+
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.life -= dt*0.8;
+      p.y += p.vy*dt;
+      if(p.life<=0) particles.splice(i,1);
+    }
+
+    updateHud();
+    if(!player.alive){ endGame(false, tributes.filter(t=>t.alive).length); }
+  }
+
+  function drawTunnelWorld(){
+    ctx.clearRect(0,0,WORLD_W,WORLD_H);
+    const camX = clamp(player.x, VIEW_W/2, TUNNEL_W - VIEW_W/2);
+    const camY = clamp(player.y, VIEW_H/2, TUNNEL_H - VIEW_H/2);
+    ctx.save();
+    ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+    ctx.translate(VIEW_W/2 - camX, VIEW_H/2 - camY);
+
+    // dark cave floor
+    ctx.fillStyle = '#1c1a18';
+    ctx.fillRect(0,0,TUNNEL_W,TUNNEL_H);
+    for(let ty=0; ty<TUNNEL_H; ty+=40){
+      for(let tx=0; tx<TUNNEL_W; tx+=40){
+        if(((tx/40+ty/40)|0)%2===0){
+          ctx.fillStyle = 'rgba(255,255,255,0.02)';
+          ctx.fillRect(tx,ty,40,40);
+        }
+      }
+    }
+
+    // entry/exit glow markers
+    ctx.save();
+    ctx.translate(activeTunnel.entryPoint.x, activeTunnel.entryPoint.y);
+    ctx.fillStyle = 'rgba(184,35,43,0.35)';
+    ctx.beginPath(); ctx.ellipse(0,0,26,14,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(activeTunnel.exitPoint.x, activeTunnel.exitPoint.y);
+    const glow = 0.35 + Math.sin(performance.now()/220)*0.15;
+    ctx.fillStyle = 'rgba(212,175,55,'+glow+')';
+    ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(212,175,55,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.stroke();
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#f5dfa0';
+    ctx.textAlign = 'center';
+    ctx.fillText('STAIRS UP', 0, -22);
+    ctx.restore();
+
+    // walls (cave rock)
+    activeTunnel.walls.forEach(o=>{
+      ctx.save();
+      ctx.translate(o.x,o.y);
+      ctx.fillStyle = '#3a352c';
+      ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#18140f';
+      ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.beginPath(); ctx.arc(-o.r*0.25,-o.r*0.3,o.r*0.35,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+
+    activeTunnel.items.forEach(drawItem);
+
+    const drawList = [...activeTunnel.enemies.filter(e=>e.alive)];
+    drawList.sort((a,b)=>a.y-b.y);
+    drawList.forEach(drawTunnelEnemy);
+    if(player.alive) drawPixelChar(player);
+
+    projectiles.filter(p=>p.tunnelShot).forEach(drawProjectile);
+
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    particles.forEach(p=>{
+      ctx.globalAlpha = clamp(p.life,0,1);
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x, p.y);
+    });
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    // vignette so it reads as underground/enclosed
+    ctx.save();
+    const grad = ctx.createRadialGradient(WORLD_W/2,WORLD_H/2,WORLD_H*0.25,WORLD_W/2,WORLD_H/2,WORLD_H*0.75);
+    grad.addColorStop(0,'rgba(0,0,0,0)');
+    grad.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,WORLD_W,WORLD_H);
+    ctx.restore();
+  }
+
+  function drawTunnelEnemy(e){
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(0,10,9,3,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    if(e.kind === 'snake'){
+      const species = MUTT_SPECIES[e.species];
+      const fakeM = { id:e.id, x:e.x, y:e.y, hp:e.hp, maxHp:e.maxHp, hitFlash:e.hitFlash, species:e.species, vx:e.vx, facing:e.facing };
+      drawMutt(fakeM);
+      return;
+    }
+
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.scale(1.3,1.3);
+    const flash = e.hitFlash > 0;
+
+    if(e.kind === 'rival' && e.tributeSkin && assetReady(e.tributeSkin)){
+      ctx.save();
+      ctx.scale(e.facing.x < 0 ? -1 : 1, 1);
+      drawAssetAspect(e.tributeSkin, 30, true);
+      ctx.restore();
+    } else if(e.kind === 'peacekeeper'){
+      // white/silver armored Peacekeeper with a dark visor + baton/gun
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath(); ctx.ellipse(0,12,10,4,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = flash ? '#ffffff' : '#2a2c2e';
+      ctx.fillRect(-6,4,4,8); ctx.fillRect(2,4,4,8);
+      ctx.fillStyle = flash ? '#ffffff' : '#d7d9d6';
+      ctx.fillRect(-8,-8,16,14);
+      ctx.fillStyle = flash ? '#ffffff' : '#aeb2ae';
+      ctx.fillRect(-8,-8,3,14); ctx.fillRect(5,-8,3,14);
+      ctx.fillStyle = '#e8e3d3';
+      ctx.fillRect(-6,-18,12,10);
+      ctx.fillStyle = '#14161a';
+      ctx.fillRect(-6,-16,12,4);
+      ctx.fillStyle = '#c81d25';
+      ctx.fillRect(-2,-6,4,4);
+      ctx.save();
+      ctx.translate(9,-2);
+      ctx.fillStyle = '#2a2c2e';
+      ctx.fillRect(0,-2,14,3);
+      ctx.restore();
+    } else {
+      // fallback generic hostile silhouette
+      ctx.fillStyle = flash ? '#ffffff' : '#7a3a3a';
+      ctx.fillRect(-8,-8,16,14);
+      ctx.fillStyle = '#d9b48f';
+      ctx.fillRect(-6,-18,12,10);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.font = '8px monospace';
+    ctx.fillStyle = 'rgba(0,0,0,.6)';
+    ctx.fillRect(-16,-33,32,4);
+    ctx.fillStyle = e.hp/e.maxHp > 0.5 ? '#5fbf5f' : e.hp/e.maxHp>0.25 ? '#e8a33d' : '#e8404a';
+    ctx.fillRect(-15,-32,30*(e.hp/e.maxHp),2);
+    ctx.fillStyle = '#cfcabb';
+    ctx.textAlign = 'center';
+    const label = e.kind==='peacekeeper' ? 'PEACEKEEPER' : e.kind==='rival' ? 'RIVAL' : 'SNAKE';
+    ctx.fillText(label, 0, -36);
+    ctx.restore();
+  }
+
+  // ============================================================
   // MAIN UPDATE
   // ============================================================
   function update(dt){
     if(!running) return;
+    if(tunnelTransition) return; // frozen mid-fade
+
+    if(inTunnel){
+      updateTunnelWorld(dt);
+      return;
+    }
 
     if(gamePhase === 'countdown'){
       attackPressed = false;
@@ -4012,6 +4602,14 @@ snake: {
     if(nowHidden && !player._inGrass){ feed('🌿 You slip into the tall grass — harder to spot.'); }
     else if(!nowHidden && player._inGrass){ feed('You step back out into the open.'); }
     player._inGrass = nowHidden;
+
+    // tunnel entrance trigger: walking onto a tunnel mouth in the outdoor
+    // world transitions to the underground scene, Pokemon-house style.
+    if(gamePhase === 'live' && !inTunnel){
+      for(const te of tunnelEntrances){
+        if(dist(player, te) < te.r){ enterTunnel(te); break; }
+      }
+    }
 
     updateZone(dt);
     updateProjectiles(dt);
@@ -4922,9 +5520,58 @@ snake: {
     ctx.restore();
   }
 
+// The four corner landmarks in the Shattered Coliseum — collapsed
+  // structure pieces marking the edges of the arena.
+  function drawRuinCorners(){
+    const margin = 90;
+    const corners = [
+      {x: margin, y: margin},
+      {x: WORLD_W-margin, y: margin},
+      {x: margin, y: WORLD_H-margin},
+      {x: WORLD_W-margin, y: WORLD_H-margin}
+    ];
+    corners.forEach(c=>{
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      if(assetReady('ruinFive')){
+        drawAssetAspect('ruinFive', 140, false);
+      } else {
+        ctx.fillStyle = '#6b6659';
+        ctx.strokeStyle = '#3a3730';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0,0,40,0,Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+
+  // Tunnel entrance mouths — dark archway markers drawn onto the outdoor
+  // world so the player can see where to walk in.
+  function drawTunnelEntrance(te){
+    ctx.save();
+    ctx.translate(te.x, te.y);
+    const pulse = 0.7 + Math.sin(performance.now()/260)*0.12;
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(184,35,43,'+pulse+')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = '#3a352c';
+    ctx.beginPath(); ctx.ellipse(0,0,20,26,0,Math.PI,0); ctx.fill();
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#e8a33d';
+    ctx.textAlign = 'center';
+    ctx.fillText('TUNNEL', 0, -32);
+    ctx.restore();
+  }
+
   const TILE = 40;
 
   function render(){
+    if(inTunnel){ drawTunnelWorld(); return; }
     ctx.clearRect(0,0,WORLD_W,WORLD_H);
     const BIOME_BASE = BIOME_BASE_ACTIVE || ARENAS.meadowlands.biomeColors;
 
@@ -5048,6 +5695,7 @@ snake: {
     // sprite already depicts the landmark) skip this entirely.
     if(currentArenaCfg.ruins){
       drawWeaponPile();
+      drawRuinCorners();
     } else if(!currentArenaCfg.skipCornucopiaArt){
       ctx.save();
       ctx.translate(CENTER_X,CENTER_Y);
@@ -5067,6 +5715,7 @@ snake: {
     }
 
     obstacles.forEach(drawObstacle);
+    tunnelEntrances.forEach(drawTunnelEntrance);
     items.forEach(drawItem);
 
     if(gamePhase === 'countdown'){
@@ -5079,7 +5728,7 @@ snake: {
     // tall grass drawn again on top so it visually swallows tributes' feet
     decorations.forEach(d=>{ if(d.kind === 'tallgrass') drawDecoration(d); });
 
-    projectiles.forEach(drawProjectile);
+    projectiles.forEach(p=>{ if(!p.tunnelShot) drawProjectile(p); });
 
     // gas / danger zone overlay
     ctx.save();
@@ -5135,6 +5784,27 @@ snake: {
     } else {
       weaponNameEl.textContent = 'Unarmed';
     }
+
+    if(inTunnel){
+      statusTextEl.textContent = 'In the tunnels';
+      statusTextEl.style.color = '#e8a33d';
+      if(perkTextEl){
+        const perk = player.perk || {};
+        perkTextEl.textContent = perk.name ? ('D'+player.district+' '+perk.name) : 'None';
+      }
+      const alerts = [];
+      const aliveEnemies = activeTunnel ? activeTunnel.enemies.filter(e=>e.alive).length : 0;
+      if(aliveEnemies) alerts.push(aliveEnemies + ' hostile' + (aliveEnemies===1?'':'s') + ' nearby');
+      if(player.hunger <= 0) alerts.push('Starving');
+      if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
+      if(player.poisonTicksRemaining > 0) alerts.push('Venom in your blood');
+      if(player.weapon && WEAPONS[player.weapon].type === 'ranged' && (player.ammo[player.weapon]||0) <= 0) alerts.push('Out of ammo');
+      alerts.push('Find the glowing stairs to climb out');
+      alertTextEl.textContent = alerts.join(' · ');
+      alertTextEl.style.color = aliveEnemies ? '#e8404a' : 'var(--bone)';
+      return;
+    }
+
     const hidden = tributeInGrass(player);
     const inWater = !currentArenaCfg.noPond && currentArenaCfg.pondEffects !== false && pondDepthFrac(player) <= 1;
     const inGas = VOLCANO && volcanoState === 'erupting' && dist(player, VOLCANO) <= VOLCANO_GAS_RADIUS;
@@ -5162,6 +5832,7 @@ snake: {
       const trap = CLOCK_TRAPS[clockActiveHour];
       if(wedgeIndexForPoint(player.x,player.y) === clockActiveHour) alerts.push(trap.name+' active here!');
     }
+    if(tunnelEntrances.length) alerts.push('Tunnel entrances nearby lead underground');
     if(player.hunger <= 0) alerts.push('Starving');
     if(player.energy < LOW_ENERGY_THRESHOLD) alerts.push('Exhausted — slower');
     if(player.stunTimer > 0) alerts.push('Stunned');
