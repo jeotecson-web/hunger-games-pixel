@@ -1443,6 +1443,11 @@ snake: {
   const POISON_DOT_TICKS = 3;
   const POISON_DOT_INTERVAL = 1;        // seconds between poison damage ticks
 
+  // Peacekeeper gunshot wounds bleed indefinitely until treated with a medkit —
+  // unlike poison, this never wears off on its own.
+  const BLEED_TICK_DAMAGE = 3;
+  const BLEED_TICK_INTERVAL = 1.2;      // seconds between bleed damage ticks
+
   // Pond — a body of water tributes can wade into. The shallow ring lets
   // you drink to restore hunger/energy; venture into the deep center and
   // you start drowning instead. Arenas that set `noPond` skip all of this.
@@ -2782,7 +2787,11 @@ snake: {
       inDeepWater: false,
       regenCooldown: 0,
       gasTickTimer: 0,
-      inTunnel: false
+      inTunnel: false,
+      wantsTunnel: false,
+      tunnelSeekCooldown: rand(5,15),
+      bleeding: false,
+      bleedTickTimer: 0
     };
   }
   
@@ -3046,6 +3055,15 @@ snake: {
         const poisonDmgMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
         const baseTickDmg = t.poisonDmgPerTick != null ? t.poisonDmgPerTick : POISON_DOT_DAMAGE;
         damageTribute(t, baseTickDmg*poisonDmgMult, null);
+      }
+    }
+
+    if(t.bleeding){
+      t.bleedTickTimer -= dt;
+      if(t.bleedTickTimer <= 0){
+        t.bleedTickTimer = BLEED_TICK_INTERVAL;
+        damageTribute(t, BLEED_TICK_DAMAGE, null);
+        if(t.isPlayer) spawnFloatText(t.x, t.y-20, 'BLEEDING', '#e8404a');
       }
     }
 
@@ -3497,6 +3515,7 @@ snake: {
           }
         } else if(it.type === 'medkit'){
           t.hp = Math.min(t.maxHp, t.hp + 35);
+          t.bleeding = false;
           spawnFloatText(t.x,t.y-20,'+35 HP','#7ac97a');
           if(t.isPlayer) feed('You picked up a medkit.');
         } else if(it.type === 'shield'){
@@ -3546,6 +3565,14 @@ snake: {
     for(const z of grassZones){
       const d = Math.hypot(z.x-x, z.y-y);
       if(d < bd){ bd = d; best = z; }
+    }
+    return best;
+  }
+  function nearestTunnelEntranceOutdoor(x,y){
+    let best = null, bd = Infinity;
+    for(const te of tunnelEntrances){
+      const d = Math.hypot(te.x-x, te.y-y);
+      if(d < bd){ bd = d; best = te; }
     }
     return best;
   }
@@ -3646,6 +3673,18 @@ snake: {
       // rather than roam the open arena
       mode = 'seekHide';
     }
+    // Tunnel-seeking: hungry or badly wounded tributes duck underground for
+    // shelter and food when this arena has tunnels, as long as they aren't
+    // actively locked in a chase.
+    if(tunnelEntrances.length && !t.isCareer && mode !== 'chase'){
+      t.tunnelSeekCooldown -= dt;
+      if(t.tunnelSeekCooldown <= 0){
+        t.tunnelSeekCooldown = rand(6,14);
+        const wantsShelter = (t.hunger < 28) || (t.hp < t.maxHp*0.35);
+        if(wantsShelter && Math.random() < 0.6) t.wantsTunnel = true;
+      }
+      if(t.wantsTunnel) mode = 'seekTunnel';
+    }
 
     // also seek nearby items if not in combat
     let seekItem = null;
@@ -3715,6 +3754,22 @@ snake: {
           t.wanderTimer = rand(2,4.5);
         }
         tx = t.wanderTarget.x; ty = t.wanderTarget.y;
+      }
+    } else if(mode === 'seekTunnel'){
+      const te = nearestTunnelEntranceOutdoor(t.x, t.y);
+      if(te){
+        const undergroundCount = tributes.filter(o=>o.inTunnel && o.alive).length;
+        if(dist(t, te) < te.r + 8 && undergroundCount < 3){
+          t.inTunnel = true;
+          t.wantsTunnel = false;
+          feed((t.hp < t.maxHp*0.35 ? 'A wounded District ' : 'A hungry District ') + t.district + ' tribute slips into a tunnel.');
+          tx = t.x; ty = t.y;
+          holdStill = true;
+        } else {
+          tx = te.x; ty = te.y;
+        }
+      } else {
+        t.wantsTunnel = false;
       }
     } else if(seekItem){
       tx = seekItem.x; ty = seekItem.y;
@@ -4025,7 +4080,7 @@ snake: {
   const TUNNEL_WALL_STEP = 42;
   const TUNNEL_FADE_MS = 380;
 
-  const PEACEKEEPER_STATS = { hp:55, dmg:11, speed:58, attackRange:150, attackCooldown:1.3, detectRange:280 };
+  const PEACEKEEPER_STATS = { hp:55, dmg:11, speed:58, attackRange:110, attackCooldown:1.3, detectRange:120 };
   const RIVAL_STATS       = { hp:85, dmg:13, speed:66, attackRange:42,  attackCooldown:0.6, detectRange:230 };
 
   // Builds a winding path of connected segments from a start point to an
@@ -4074,12 +4129,17 @@ snake: {
     return false;
   }
 
-  function pickTunnelRivalTribute(){
-    const candidates = tributes.filter(t => !t.isPlayer && t.alive && !t.inTunnel);
-    if(!candidates.length) return null;
-    const t = candidates[randi(0, candidates.length-1)];
-    t.inTunnel = true;
-    return t;
+  function pickTunnelDwellers(max){
+    // Only tributes who actually walked underground via the seekTunnel AI —
+    // these are real casualties waiting to happen, not random teleports.
+    const dwellers = tributes.filter(t => !t.isPlayer && t.alive && t.inTunnel);
+    if(dwellers.length <= max) return dwellers;
+    const pool = [...dwellers];
+    const picked = [];
+    while(picked.length < max && pool.length){
+      picked.push(pool.splice(randi(0,pool.length-1),1)[0]);
+    }
+    return picked;
   }
 
   function buildTunnelLayout(entranceId){
@@ -4101,14 +4161,14 @@ snake: {
     const tItems = [];
     const roomWaypoints = waypoints.filter(w=>w.room);
     roomWaypoints.forEach(w=>{
-      const n = randi(2,3);
+      const n = randi(4,6);
       for(let i=0;i<n;i++){
         const ang = rand(0,Math.PI*2);
         const r = rand(20,70);
         const x = clamp(w.x+Math.cos(ang)*r, 40, TUNNEL_W-40);
         const y = clamp(w.y+Math.sin(ang)*r, 40, TUNNEL_H-40);
         const roll = Math.random();
-        const type = roll<0.25 ? 'weapon' : roll<0.6 ? 'medkit' : roll<0.9 ? 'berries' : 'shield';
+        const type = roll<0.15 ? 'weapon' : roll<0.55 ? 'medkit' : roll<0.92 ? 'berries' : 'shield';
         tItems.push({
           x,y,type,
           weaponType: type==='weapon' ? WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)] : null,
@@ -4129,13 +4189,12 @@ snake: {
         enemies.push(makeTunnelEnemy('snake', key, w.x+rand(-30,30), w.y+rand(-30,30), sp));
       }
     });
+    const dwellers = pickTunnelDwellers(roomWaypoints.length);
     roomWaypoints.forEach((w,i)=>{
       enemies.push(makeTunnelEnemy('peacekeeper', null, w.x+rand(-40,40), w.y+rand(-40,40), PEACEKEEPER_STATS));
-      if(i===roomWaypoints.length-1){
-        const rivalTribute = pickTunnelRivalTribute();
-        if(rivalTribute){
-          enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS, rivalTribute));
-        }
+      const rivalTribute = dwellers[i];
+      if(rivalTribute){
+        enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS, rivalTribute));
       }
     });
 
@@ -4159,7 +4218,8 @@ snake: {
       kind, species: speciesKey,
       x: clamp(x,40,TUNNEL_W-40), y: clamp(y,40,TUNNEL_H-40),
       vx:0, vy:0, facing:{x:0,y:1},
-      hp: stats.hp, maxHp: stats.hp,
+      hp: (kind==='rival' && refTribute) ? refTribute.hp : stats.hp,
+      maxHp: (kind==='rival' && refTribute) ? refTribute.maxHp : stats.hp,
       dmg: stats.dmg, speed: stats.speed,
       attackRange: stats.attackRange, attackCooldown: stats.attackCooldown, detectRange: stats.detectRange,
       cooldownTimer: 0, alive:true, hitFlash:0,
@@ -4211,6 +4271,7 @@ snake: {
   function damageTunnelEnemy(e, amount, source){
     if(!e.alive) return;
     e.hp -= amount;
+    if(e.kind==='rival' && e.refTribute){ e.refTribute.hp = Math.max(0, e.hp); }
     e.hitFlash = 0.25;
     spawnFloatText(e.x, e.y-16, '-'+Math.round(amount), '#e8404a');
     if(e.hp <= 0 && e.alive){
@@ -4221,7 +4282,10 @@ snake: {
         rt.alive = false;
         rt.hp = 0;
         playCannonSound();
-        feed('🔔 A cannon sounds. District ' + rt.district + ' has fallen in the tunnels' + (source && source.isPlayer ? ' — slain by you' : '') + '.');
+        feed('🔔 A cannon sounds. District ' + rt.district + ' has fallen in the tunnels' +
+          (source && source.isPlayer ? ' — slain by you' :
+           source && source.kind === 'peacekeeper' ? ' — shot by a Peacekeeper' :
+           source && source.kind === 'snake' ? ' — killed by a snake bite' : '') + '.');
         if(rt.weapon){
           activeTunnel.items.push({
             x: e.x, y: e.y, type:'weapon', weaponType: rt.weapon,
@@ -4295,10 +4359,25 @@ snake: {
   function updateTunnelEnemyAI(e, dt){
     e.cooldownTimer = Math.max(0, e.cooldownTimer-dt);
     e.hitFlash = Math.max(0, e.hitFlash-dt);
-    const nd = dist(e, player);
+
+    // What is this enemy hunting — the player, or (Peacekeepers only) a
+    // rival tribute sharing the tunnel?
+    let target = null, nd = Infinity;
+    if(player.alive){
+      const dPlayer = dist(e, player);
+      if(dPlayer < e.detectRange){ target = player; nd = dPlayer; }
+    }
+    if(e.kind === 'peacekeeper' && activeTunnel){
+      for(const other of activeTunnel.enemies){
+        if(other===e || !other.alive || other.kind !== 'rival') continue;
+        const d = dist(e, other);
+        if(d < e.detectRange && d < nd){ target = other; nd = d; }
+      }
+    }
+
     let tx=e.x, ty=e.y;
-    if(player.alive && nd < e.detectRange){
-      tx = player.x; ty = player.y;
+    if(target){
+      tx = target.x; ty = target.y;
     } else {
       e.wanderTimer -= dt;
       if(!e.wanderTarget || e.wanderTimer<=0){
@@ -4318,22 +4397,33 @@ snake: {
       e.facing = {x:fx/flen,y:fy/flen};
     } else { e.vx=0; e.vy=0; }
 
-    if(player.alive && nd < e.attackRange && e.cooldownTimer<=0){
+    if(target && nd < e.attackRange && e.cooldownTimer<=0){
       e.cooldownTimer = e.attackCooldown;
-      const dmg = e.dmg + rand(-2,3);
-      damageTribute(player, Math.max(1,dmg), {isMutt:false, alive:true, isPlayer:false, district:'?'});
-      if(e.kind==='snake'){
-        const sp = MUTT_SPECIES[e.species];
-        player.poisonDmgPerTick = sp.venomTickDmg;
-        player.poisonTicksRemaining = Math.max(player.poisonTicksRemaining, sp.venomTicks);
-        player.poisonTickTimer = sp.venomTickInterval;
-        spawnFloatText(e.x, e.y-20, 'VENOM!', '#8ee06a');
-        feed('🐍 A snake bites you in the dark.');
-      } else if(e.kind==='peacekeeper'){
-        spawnFloatText(e.x, e.y-20, 'SHOT!', '#e8e3d3');
-        feed('A Peacekeeper opens fire on you.');
+      if(target === player){
+        if(e.kind==='peacekeeper'){
+          damageTribute(player, 3, {isMutt:false, alive:true, isPlayer:false, district:'?'});
+          player.bleeding = true;
+          spawnFloatText(e.x, e.y-20, 'SHOT!', '#e8e3d3');
+          feed('A Peacekeeper opens fire on you — you\'re bleeding and need a medkit.');
+        } else {
+          const dmg = e.dmg + rand(-2,3);
+          damageTribute(player, Math.max(1,dmg), {isMutt:false, alive:true, isPlayer:false, district:'?'});
+          if(e.kind==='snake'){
+            const sp = MUTT_SPECIES[e.species];
+            player.poisonDmgPerTick = sp.venomTickDmg;
+            player.poisonTicksRemaining = Math.max(player.poisonTicksRemaining, sp.venomTicks);
+            player.poisonTickTimer = sp.venomTickInterval;
+            spawnFloatText(e.x, e.y-20, 'VENOM!', '#8ee06a');
+            feed('🐍 A snake bites you in the dark.');
+          } else {
+            spawnFloatText(e.x, e.y-20, 'HIT!', '#e8404a');
+          }
+        }
       } else {
-        spawnFloatText(e.x, e.y-20, 'HIT!', '#e8404a');
+        // Peacekeeper gunning down a rival tribute
+        const dmg = e.dmg + rand(-2,5);
+        damageTunnelEnemy(target, Math.max(1,dmg), e);
+        spawnFloatText(e.x, e.y-20, 'SHOT!', '#e8e3d3');
       }
     }
   }
@@ -4372,28 +4462,19 @@ snake: {
           }
         } else if(it.type==='medkit'){
           player.hp = Math.min(player.maxHp, player.hp+35);
+          if(player.bleeding){ player.bleeding = false; feed('The medkit patches you up — the bleeding stops.'); }
           spawnFloatText(player.x,player.y-20,'+35 HP','#7ac97a');
         } else if(it.type==='shield'){
           player.shield = Math.min(40, player.shield+25);
           spawnFloatText(player.x,player.y-20,'+SHIELD','#7fb0e0');
         } else if(it.type==='berries'){
-          feed('🍓 You found berries in the tunnel dark.');
+          // tunnel berries are always safe to eat — no poison chance down here
+          feed('🍓 You found berries in the tunnel dark. Safe to eat.');
           const perk = player.perk || {};
-          const poisonChance = BERRY_POISON_CHANCE * (perk.poisonChanceMult != null ? perk.poisonChanceMult : 1);
-          if(Math.random() < poisonChance){
-            const poisonDurMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
-            player.stunTimer = Math.max(player.stunTimer, POISON_STUN_DURATION*poisonDurMult);
-            player.poisonDmgPerTick = POISON_DOT_DAMAGE;
-            player.poisonTicksRemaining = POISON_DOT_TICKS;
-            player.poisonTickTimer = POISON_DOT_INTERVAL;
-            spawnFloatText(player.x,player.y-20,'POISONED!','#e8404a');
-            feed('☠ Those berries were poisonous.');
-          } else {
-            const foodMult = perk.foodMult || 1;
-            player.hunger = Math.min(HUNGER_MAX, player.hunger + 40*foodMult);
-            player.energy = Math.min(ENERGY_MAX, player.energy + 15*foodMult);
-            spawnFloatText(player.x,player.y-20,'+HUNGER','#e8c56a');
-          }
+          const foodMult = perk.foodMult || 1;
+          player.hunger = Math.min(HUNGER_MAX, player.hunger + 40*foodMult);
+          player.energy = Math.min(ENERGY_MAX, player.energy + 15*foodMult);
+          spawnFloatText(player.x,player.y-20,'+HUNGER','#e8c56a');
         }
         activeTunnel.items.splice(i,1);
       }
@@ -4469,6 +4550,15 @@ snake: {
       }
     }
 
+    // faint light following the player, so the tunnels aren't pitch black
+    ctx.save();
+    const lightGrad = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, 220);
+    lightGrad.addColorStop(0, 'rgba(255,230,180,0.22)');
+    lightGrad.addColorStop(1, 'rgba(255,230,180,0)');
+    ctx.fillStyle = lightGrad;
+    ctx.fillRect(0,0,TUNNEL_W,TUNNEL_H);
+    ctx.restore();
+
     // entry/exit glow markers
 
     ctx.save();
@@ -4536,11 +4626,11 @@ snake: {
 
     ctx.restore();
 
-    // vignette so it reads as underground/enclosed
+    // vignette so it reads as underground/enclosed — softened so it's not pitch black
     ctx.save();
-    const grad = ctx.createRadialGradient(WORLD_W/2,WORLD_H/2,WORLD_H*0.25,WORLD_W/2,WORLD_H/2,WORLD_H*0.75);
+    const grad = ctx.createRadialGradient(WORLD_W/2,WORLD_H/2,WORLD_H*0.35,WORLD_W/2,WORLD_H/2,WORLD_H*0.75);
     grad.addColorStop(0,'rgba(0,0,0,0)');
-    grad.addColorStop(1,'rgba(0,0,0,0.55)');
+    grad.addColorStop(1,'rgba(0,0,0,0.32)');
     ctx.fillStyle = grad;
     ctx.fillRect(0,0,WORLD_W,WORLD_H);
     ctx.restore();
@@ -4616,7 +4706,7 @@ snake: {
     ctx.fillRect(-15,-32,30*(e.hp/e.maxHp),2);
     ctx.fillStyle = '#cfcabb';
     ctx.textAlign = 'center';
-    const label = e.kind==='peacekeeper' ? 'PEACEKEEPER' : e.kind==='rival' ? 'RIVAL' : 'SNAKE';
+    const label = e.kind==='peacekeeper' ? 'PEACEKEEPER' : e.kind==='rival' ? ('DISTRICT '+(e.refTribute?e.refTribute.district:'?')) : 'SNAKE';
     ctx.fillText(label, 0, -36);
     ctx.restore();
   }
