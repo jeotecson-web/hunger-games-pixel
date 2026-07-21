@@ -1643,8 +1643,6 @@ snake: {
     activeTunnel = null;
     tunnelTransition = null;
   }
-
-  // ============================================================
   // DISTRICT PERKS — each home district trains its tributes differently.
   // Purely additive bonuses/resistances layered on top of the base rules
   // above; nothing here changes base weapon stats or arena mechanics for
@@ -1986,6 +1984,12 @@ snake: {
     shield: 'assets/shield.png',
     knife: 'assets/knife.png',
     mutt: 'assets/mutt.png',
+    mutt: 'assets/mutt.png',
+    peacekeeper: 'assets/peacekeeper.png',
+    tunnelHole: 'assets/tunnel-hole.png',
+    entryHole: 'assets/entry-hole.png',
+    exitHole: 'assets/exit-hole.png',
+    tunnelWallImg: 'assets/tunnel-wall.png',
     squirrelMutt: 'assets/squirrel.png',
     rock: 'assets/rock.png',
     sandPath: 'assets/sand-path.png',
@@ -2777,9 +2781,12 @@ snake: {
       pondTickTimer: 0,
       inDeepWater: false,
       regenCooldown: 0,
-      gasTickTimer: 0
+      gasTickTimer: 0,
+      inTunnel: false
     };
   }
+  
+  
 
   function positionTributesOnPlates(){
     const total = tributes.length;
@@ -3336,7 +3343,7 @@ snake: {
     // Careers still banded together never target their own pack
     let target = null, best = 9999;
     for(const other of tributes){
-      if(other === attacker || !other.alive) continue;
+      if(other === attacker || !other.alive || other.inTunnel) continue;
       if(alliedCareer && other.isCareer) continue;
       const d = dist(attacker, other);
       if(d < range && d < best){ best = d; target = other; }
@@ -3397,7 +3404,7 @@ snake: {
       if(!removed){
         const ownerAlliedCareer = p.owner.isCareer && !allianceBroken;
         for(const t of tributes){
-          if(!t.alive || t === p.owner) continue;
+          if(!t.alive || t === p.owner || t.inTunnel) continue;
           if(ownerAlliedCareer && t.isCareer) continue;
           if(dist(p,t) < 15){
             const dmg = p.dmg + rand(-2,3);
@@ -3547,7 +3554,7 @@ snake: {
   // and dissolves into every-tribute-for-themselves once the field is small.
   function updateAlliance(){
     if(allianceBroken) return;
-    const aliveCareers = tributes.filter(t=>t.alive && t.isCareer);
+    const aliveCareers = tributes.filter(t=>t.alive && t.isCareer && !t.inTunnel);
     const totalAlive = tributes.filter(t=>t.alive).length;
     if(aliveCareers.length <= ALLIANCE_BREAK_ALIVE_CAREERS || totalAlive <= ALLIANCE_BREAK_TOTAL_ALIVE){
       allianceBroken = true;
@@ -3561,7 +3568,7 @@ snake: {
     cx/=aliveCareers.length; cy/=aliveCareers.length;
     let best=null, bd=9999;
     tributes.forEach(o=>{
-      if(!o.alive || o.isCareer) return;
+      if(!o.alive || o.isCareer || o.inTunnel) return;
       const d = dist({x:cx,y:cy}, o);
       if(d < bd){ bd = d; best = o; }
     });
@@ -3584,7 +3591,7 @@ snake: {
     // treat each other as threats or targets while the alliance holds
     let nearest = null, nd = 9999;
     for(const o of tributes){
-      if(o===t || !o.alive) continue;
+      if(o===t || !o.alive || o.inTunnel) continue;
       if(alliedCareer && o.isCareer) continue;
       const d = dist(t,o);
       if(d < nd){ nd = d; nearest = o; }
@@ -4067,6 +4074,14 @@ snake: {
     return false;
   }
 
+  function pickTunnelRivalTribute(){
+    const candidates = tributes.filter(t => !t.isPlayer && t.alive && !t.inTunnel);
+    if(!candidates.length) return null;
+    const t = candidates[randi(0, candidates.length-1)];
+    t.inTunnel = true;
+    return t;
+  }
+
   function buildTunnelLayout(entranceId){
     const { waypoints, start, end } = generateTunnelPath();
 
@@ -4093,7 +4108,7 @@ snake: {
         const x = clamp(w.x+Math.cos(ang)*r, 40, TUNNEL_W-40);
         const y = clamp(w.y+Math.sin(ang)*r, 40, TUNNEL_H-40);
         const roll = Math.random();
-        const type = roll<0.5 ? 'weapon' : roll<0.8 ? 'medkit' : 'shield';
+        const type = roll<0.25 ? 'weapon' : roll<0.6 ? 'medkit' : roll<0.9 ? 'berries' : 'shield';
         tItems.push({
           x,y,type,
           weaponType: type==='weapon' ? WEAPON_KEYS[randi(0,WEAPON_KEYS.length-1)] : null,
@@ -4108,7 +4123,7 @@ snake: {
     const snakeSpecies = ['snake','snakeTwo','snakeThree'];
     waypoints.forEach((w,i)=>{
       if(i===0) return; // nothing right on top of the entrance
-      if(Math.random() < 0.55){
+      if(Math.random() < 0.25){
         const key = snakeSpecies[randi(0,snakeSpecies.length-1)];
         const sp = MUTT_SPECIES[key];
         enemies.push(makeTunnelEnemy('snake', key, w.x+rand(-30,30), w.y+rand(-30,30), sp));
@@ -4117,7 +4132,10 @@ snake: {
     roomWaypoints.forEach((w,i)=>{
       enemies.push(makeTunnelEnemy('peacekeeper', null, w.x+rand(-40,40), w.y+rand(-40,40), PEACEKEEPER_STATS));
       if(i===roomWaypoints.length-1){
-        enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS));
+        const rivalTribute = pickTunnelRivalTribute();
+        if(rivalTribute){
+          enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS, rivalTribute));
+        }
       }
     });
 
@@ -4130,7 +4148,12 @@ snake: {
     };
   }
 
-  function makeTunnelEnemy(kind, speciesKey, x, y, stats){
+  function makeTunnelEnemy(kind, speciesKey, x, y, stats, refTribute){
+    const skin = refTribute
+      ? (refTribute.genderOverride
+          ? ('district-'+refTribute.district+'-'+refTribute.genderOverride)
+          : (refTribute.district % 2 === 0 ? 'district-'+refTribute.district+'-female' : 'district-'+refTribute.district+'-male'))
+      : null;
     return {
       id: Math.random().toString(36).slice(2),
       kind, species: speciesKey,
@@ -4141,7 +4164,8 @@ snake: {
       attackRange: stats.attackRange, attackCooldown: stats.attackCooldown, detectRange: stats.detectRange,
       cooldownTimer: 0, alive:true, hitFlash:0,
       wanderTarget:null, wanderTimer:0,
-      tributeSkin: kind==='rival' ? ('district-'+randi(1,12)+'-'+(Math.random()<0.5?'male':'female')) : null
+      tributeSkin: skin,
+      refTribute: refTribute || null
     };
   }
 
@@ -4191,9 +4215,25 @@ snake: {
     spawnFloatText(e.x, e.y-16, '-'+Math.round(amount), '#e8404a');
     if(e.hp <= 0 && e.alive){
       e.alive = false;
-      const label = e.kind==='snake' ? MUTT_SPECIES[e.species].name : e.kind==='peacekeeper' ? 'Peacekeeper' : 'rival tribute';
       spawnFloatText(e.x, e.y-26, 'DOWN', '#7ac97a');
-      if(source && source.isPlayer) feed('You take down a ' + label.toLowerCase() + ' in the tunnels.');
+      if(e.kind === 'rival' && e.refTribute){
+        const rt = e.refTribute;
+        rt.alive = false;
+        rt.hp = 0;
+        playCannonSound();
+        feed('🔔 A cannon sounds. District ' + rt.district + ' has fallen in the tunnels' + (source && source.isPlayer ? ' — slain by you' : '') + '.');
+        if(rt.weapon){
+          activeTunnel.items.push({
+            x: e.x, y: e.y, type:'weapon', weaponType: rt.weapon,
+            id: Math.random().toString(36).slice(2), bob: Math.random()*Math.PI*2
+          });
+          rt.weapon = null;
+        }
+        if(source && source.isPlayer){ source.kills++; kills++; }
+      } else {
+        const label = e.kind==='snake' ? MUTT_SPECIES[e.species].name : 'Peacekeeper';
+        if(source && source.isPlayer) feed('You take down a ' + label.toLowerCase() + ' in the tunnels.');
+      }
     }
   }
 
@@ -4336,6 +4376,24 @@ snake: {
         } else if(it.type==='shield'){
           player.shield = Math.min(40, player.shield+25);
           spawnFloatText(player.x,player.y-20,'+SHIELD','#7fb0e0');
+        } else if(it.type==='berries'){
+          feed('🍓 You found berries in the tunnel dark.');
+          const perk = player.perk || {};
+          const poisonChance = BERRY_POISON_CHANCE * (perk.poisonChanceMult != null ? perk.poisonChanceMult : 1);
+          if(Math.random() < poisonChance){
+            const poisonDurMult = perk.poisonResistMult != null ? perk.poisonResistMult : 1;
+            player.stunTimer = Math.max(player.stunTimer, POISON_STUN_DURATION*poisonDurMult);
+            player.poisonDmgPerTick = POISON_DOT_DAMAGE;
+            player.poisonTicksRemaining = POISON_DOT_TICKS;
+            player.poisonTickTimer = POISON_DOT_INTERVAL;
+            spawnFloatText(player.x,player.y-20,'POISONED!','#e8404a');
+            feed('☠ Those berries were poisonous.');
+          } else {
+            const foodMult = perk.foodMult || 1;
+            player.hunger = Math.min(HUNGER_MAX, player.hunger + 40*foodMult);
+            player.energy = Math.min(ENERGY_MAX, player.energy + 15*foodMult);
+            spawnFloatText(player.x,player.y-20,'+HUNGER','#e8c56a');
+          }
         }
         activeTunnel.items.splice(i,1);
       }
@@ -4412,20 +4470,29 @@ snake: {
     }
 
     // entry/exit glow markers
+
     ctx.save();
     ctx.translate(activeTunnel.entryPoint.x, activeTunnel.entryPoint.y);
-    ctx.fillStyle = 'rgba(184,35,43,0.35)';
-    ctx.beginPath(); ctx.ellipse(0,0,26,14,0,0,Math.PI*2); ctx.fill();
+    if(assetReady('entryHole')){
+      drawAssetAspect('entryHole', 60, false);
+    } else {
+      ctx.fillStyle = 'rgba(184,35,43,0.35)';
+      ctx.beginPath(); ctx.ellipse(0,0,26,14,0,0,Math.PI*2); ctx.fill();
+    }
     ctx.restore();
 
     ctx.save();
     ctx.translate(activeTunnel.exitPoint.x, activeTunnel.exitPoint.y);
-    const glow = 0.35 + Math.sin(performance.now()/220)*0.15;
-    ctx.fillStyle = 'rgba(212,175,55,'+glow+')';
-    ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(212,175,55,0.8)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.stroke();
+    if(assetReady('exitHole')){
+      drawAssetAspect('exitHole', 64, false);
+    } else {
+      const glow = 0.35 + Math.sin(performance.now()/220)*0.15;
+      ctx.fillStyle = 'rgba(212,175,55,'+glow+')';
+      ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(212,175,55,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0,0,30,17,0,0,Math.PI*2); ctx.stroke();
+    }
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f5dfa0';
     ctx.textAlign = 'center';
@@ -4436,12 +4503,16 @@ snake: {
     activeTunnel.walls.forEach(o=>{
       ctx.save();
       ctx.translate(o.x,o.y);
-      ctx.fillStyle = '#3a352c';
-      ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#18140f';
-      ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      ctx.beginPath(); ctx.arc(-o.r*0.25,-o.r*0.3,o.r*0.35,0,Math.PI*2); ctx.fill();
+      if(assetReady('tunnelWallImg')){
+        drawAssetAspect('tunnelWallImg', o.r*2.2, false);
+      } else {
+        ctx.fillStyle = '#3a352c';
+        ctx.beginPath(); ctx.arc(0,0,o.r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#18140f';
+        ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath(); ctx.arc(-o.r*0.25,-o.r*0.3,o.r*0.35,0,Math.PI*2); ctx.fill();
+      }
       ctx.restore();
     });
 
@@ -4500,26 +4571,33 @@ snake: {
       drawAssetAspect(e.tributeSkin, 30, true);
       ctx.restore();
     } else if(e.kind === 'peacekeeper'){
-      // white/silver armored Peacekeeper with a dark visor + baton/gun
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.beginPath(); ctx.ellipse(0,12,10,4,0,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle = flash ? '#ffffff' : '#2a2c2e';
-      ctx.fillRect(-6,4,4,8); ctx.fillRect(2,4,4,8);
-      ctx.fillStyle = flash ? '#ffffff' : '#d7d9d6';
-      ctx.fillRect(-8,-8,16,14);
-      ctx.fillStyle = flash ? '#ffffff' : '#aeb2ae';
-      ctx.fillRect(-8,-8,3,14); ctx.fillRect(5,-8,3,14);
-      ctx.fillStyle = '#e8e3d3';
-      ctx.fillRect(-6,-18,12,10);
-      ctx.fillStyle = '#14161a';
-      ctx.fillRect(-6,-16,12,4);
-      ctx.fillStyle = '#c81d25';
-      ctx.fillRect(-2,-6,4,4);
-      ctx.save();
-      ctx.translate(9,-2);
-      ctx.fillStyle = '#2a2c2e';
-      ctx.fillRect(0,-2,14,3);
-      ctx.restore();
+      if(assetReady('peacekeeper')){
+        ctx.save();
+        ctx.scale(e.facing.x < 0 ? -1 : 1, 1);
+        drawAssetAspect('peacekeeper', 30, true);
+        ctx.restore();
+      } else {
+        // white/silver armored Peacekeeper with a dark visor + baton/gun
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath(); ctx.ellipse(0,12,10,4,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = flash ? '#ffffff' : '#2a2c2e';
+        ctx.fillRect(-6,4,4,8); ctx.fillRect(2,4,4,8);
+        ctx.fillStyle = flash ? '#ffffff' : '#d7d9d6';
+        ctx.fillRect(-8,-8,16,14);
+        ctx.fillStyle = flash ? '#ffffff' : '#aeb2ae';
+        ctx.fillRect(-8,-8,3,14); ctx.fillRect(5,-8,3,14);
+        ctx.fillStyle = '#e8e3d3';
+        ctx.fillRect(-6,-18,12,10);
+        ctx.fillStyle = '#14161a';
+        ctx.fillRect(-6,-16,12,4);
+        ctx.fillStyle = '#c81d25';
+        ctx.fillRect(-2,-6,4,4);
+        ctx.save();
+        ctx.translate(9,-2);
+        ctx.fillStyle = '#2a2c2e';
+        ctx.fillRect(0,-2,14,3);
+        ctx.restore();
+      }
     } else {
       // fallback generic hostile silhouette
       ctx.fillStyle = flash ? '#ffffff' : '#7a3a3a';
@@ -4578,14 +4656,14 @@ snake: {
     updatePlayerMovement(dt);
     updateAlliance();
     for(const t of tributes){
-      if(t.isPlayer) continue;
+      if(t.isPlayer || t.inTunnel) continue;
       updateAI(t, dt);
     }
     updateMutts(dt);
     updateVolcano(dt);
     if(currentArenaCfg.clockArena) updateClockArena(dt);
     for(const t of tributes){
-      if(!t.alive) continue;
+      if(!t.alive || t.inTunnel) continue;
       t.x += t.vx*dt;
       t.y += t.vy*dt;
       t.x = clamp(t.x, 16, WORLD_W-16);
@@ -5553,14 +5631,18 @@ snake: {
   function drawTunnelEntrance(te){
     ctx.save();
     ctx.translate(te.x, te.y);
-    const pulse = 0.7 + Math.sin(performance.now()/260)*0.12;
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(184,35,43,'+pulse+')';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.stroke();
-    ctx.fillStyle = '#3a352c';
-    ctx.beginPath(); ctx.ellipse(0,0,20,26,0,Math.PI,0); ctx.fill();
+    if(assetReady('tunnelHole')){
+      drawAssetAspect('tunnelHole', 60, false);
+    } else {
+      const pulse = 0.7 + Math.sin(performance.now()/260)*0.12;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(184,35,43,'+pulse+')';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(0,4,26,16,0,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#3a352c';
+      ctx.beginPath(); ctx.ellipse(0,0,20,26,0,Math.PI,0); ctx.fill();
+    }
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#e8a33d';
     ctx.textAlign = 'center';
@@ -5722,7 +5804,7 @@ snake: {
       tributes.forEach(drawPlate);
     }
 
-    const drawOrder = [...tributes.filter(t=>t.alive), ...mutts.filter(m=>m.alive)].sort((a,b)=>a.y-b.y);
+    const drawOrder = [...tributes.filter(t=>t.alive && !t.inTunnel), ...mutts.filter(m=>m.alive)].sort((a,b)=>a.y-b.y);
     drawOrder.forEach(e => e.isMutt ? drawMutt(e) : drawPixelChar(e));
 
     // tall grass drawn again on top so it visually swallows tributes' feet
