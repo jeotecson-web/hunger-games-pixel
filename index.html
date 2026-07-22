@@ -1218,7 +1218,7 @@
         <div class="hudLabel hudRowStatus" style="margin-top:4px;">STATUS: <span id="statusText" style="color:var(--bone);">In the open</span></div>
         <div class="hudLabel hudRowAlert" style="margin-top:4px;">ALERT: <span id="alertText" style="color:var(--bone);">All quiet</span></div>
         <div class="hudLabel hudRowPerk" style="margin-top:4px;">PERK: <span id="perkText" style="color:var(--bone);">—</span></div>
-        <div class="hudLabel hudRowBackpack" style="margin-top:4px;">BACKPACK <span style="color:#6b6e60;">(Q/E or 1-6)</span></div>
+        <div class="hint">WASD/ARROWS TO MOVE — SPACE TO ATTACK — Q/E OR 1-6 TO SWITCH WEAPON</div>SWITCH WEAPON: Q/E or 1-4 / B Button
         <div id="invRow"></div>
       </div>
       <div class="hudBox" style="text-align:right;">
@@ -1318,6 +1318,7 @@
   const PLATE_RADIUS = 320;         // radius of the starting circle around the cornucopia
   const BLOODBATH_COUNTDOWN = 10;   // seconds tributes stand frozen on their plate before the gong
   const BLOODBATH_GRACE = 9000;     // ms after the gong where most tributes scatter instead of brawling
+  const BLOODBATH_LOOT_WINDOW = 18000; // ms after the gong that unarmed "looter" tributes spend racing for a weapon before giving up and falling back to normal behavior
 
   // Career alliance — tributes from these districts start banded together,
   // gang up on a shared target, and splinter once the field gets small.
@@ -1647,6 +1648,9 @@ snake: {
     inTunnel = false;
     activeTunnel = null;
     tunnelTransition = null;
+    tunnelInstances = {};
+    currentTunnelEntranceId = null;
+    justExitedEntranceId = null;
   }
   // DISTRICT PERKS — each home district trains its tributes differently.
   // Purely additive bonuses/resistances layered on top of the base rules
@@ -1688,6 +1692,7 @@ snake: {
   const WEAPON_KEYS = Object.keys(WEAPONS);
   const AMMO_PICKUP_MIN = 3;
   const AMMO_PICKUP_MAX = 6;
+  const MAX_INVENTORY_WEAPONS = 4; // most weapons the player's backpack can hold at once
 
   let selectedDistrict = 12;
   let selectedGender = 'male';
@@ -2369,6 +2374,9 @@ snake: {
   let activeTunnel = null;    // the generated layout+enemies+items for the current visit
   let tunnelTransition = null; // {phase:'out'|'hold'|'in', t, duration, pending} fade state
   let outdoorReturnPos = null; // {x,y} the player's outdoor position to restore on exit
+  let tunnelInstances = {};    // per-entrance tunnel state that PERSISTS across visits, keyed by entrance id
+  let currentTunnelEntranceId = null; // which entrance the player is currently inside, if any
+  let justExitedEntranceId = null;    // entrance just exited — ignored until the player leaves its radius, so exiting doesn't immediately re-trigger it
 
   const keys = {};
   const touchDir = {up:false,down:false,left:false,right:false};
@@ -2748,12 +2756,29 @@ snake: {
     const perk = perkFor(district);
     const baseHp = 150 + (perk.hpBonus || 0);
     const baseSpeed = (isPlayer ? 58 : rand(40,52)) * (perk.speedMult || 1);
+    const isCareerTribute = !isPlayer && CAREER_DISTRICTS.includes(district);
+
+    // Bloodbath temperament — decides how a tribute behaves in the opening
+    // scramble at the Cornucopia. Careers overwhelmingly beeline for a
+    // weapon; everyone else mostly does too, with a minority who hide
+    // immediately and a minority who throw hands unarmed from the gong.
+    let bloodbathTemperament = 'looter';
+    if(!isPlayer){
+      if(isCareerTribute){
+        bloodbathTemperament = Math.random() < 0.88 ? 'looter' : 'fighter';
+      } else {
+        const roll = Math.random();
+        bloodbathTemperament = roll < 0.15 ? 'hider' : roll < 0.30 ? 'fighter' : 'looter';
+      }
+    }
+
     return {
       id: Math.random().toString(36).slice(2),
       district,
       perk,
       isPlayer: !!isPlayer,
-      isCareer: !isPlayer && CAREER_DISTRICTS.includes(district),
+      isCareer: isCareerTribute,
+      bloodbathTemperament,
       genderOverride: forcedGender || null,
       x: CENTER_X, y: CENTER_Y,
       vx:0, vy:0,
@@ -3479,6 +3504,7 @@ snake: {
     for(let i=items.length-1;i>=0;i--){
       const it = items[i];
       if(dist(t,it) < 22){
+        let consumed = true;
         if(it.type === 'weapon'){
           const wpnDef = WEAPONS[it.weaponType];
           if(t.isPlayer){
@@ -3492,6 +3518,10 @@ snake: {
                 spawnFloatText(t.x,t.y-20,'HAVE IT','#8f9086');
                 feed('You already have a ' + wpnDef.name + ' in your pack.');
               }
+            } else if(t.inventory.length >= MAX_INVENTORY_WEAPONS){
+              spawnFloatText(t.x,t.y-20,'PACK FULL','#e8404a');
+              feed('Your backpack already holds ' + MAX_INVENTORY_WEAPONS + ' weapons — the max you can carry. Leave this one behind.');
+              consumed = false;
             } else {
               t.inventory.push(it.weaponType);
               if(wpnDef.type === 'ranged'){
@@ -3542,7 +3572,7 @@ snake: {
             if(t.isPlayer) feed('They\'re safe to eat. Hunger restored.');
           }
         }
-        items.splice(i,1);
+        if(consumed) items.splice(i,1);
       }
     }
   }
@@ -3650,12 +3680,26 @@ snake: {
     // aggression are playing scared, not hunting. They only ever fight back
     // once a threat is right on top of them (danger range), and otherwise
     // actively look for grass to hide in and sit tight once they find it.
-    const isSkittish = !t.isCareer && t.aggression < 0.55;
+    // A tribute flagged as a 'hider' at spawn is always treated this way,
+    // regardless of their random aggression roll.
+    const isSkittish = !t.isCareer && (t.aggression < 0.55 || t.bloodbathTemperament === 'hider');
     const dangerRange = wpn ? Math.min(wpn.range * 0.7, 60) : 42;
+
+    // Bloodbath looting: while the loot window is open and a 'looter'
+    // tribute is still unarmed, they beeline for the nearest weapon
+    // instead of fleeing every rival they spot — matching the real
+    // Cornucopia scramble. 'fighter' tributes do the opposite: they pick a
+    // fight the instant someone is in range, weapon or not.
+    const lootWindowActive = (elapsed - livePhaseStartTime) < BLOODBATH_LOOT_WINDOW;
+    const inLootWindow = !t.weapon && t.bloodbathTemperament === 'looter' && lootWindowActive;
 
     const hpRatio = t.hp / t.maxHp;
     let mode = 'wander';
-    if(nearest && nd < detectRange){
+    if(t.bloodbathTemperament === 'fighter' && lootWindowActive && nearest && nd < detectRange){
+      mode = 'chase';
+    } else if(inLootWindow && (!nearest || nd >= dangerRange)){
+      mode = 'seekWeapon';
+    } else if(nearest && nd < detectRange){
       if(isSkittish){
         // only ever bare teeth if the threat is basically on top of them
         mode = (nd < dangerRange) ? 'chase' : 'flee';
@@ -3693,6 +3737,17 @@ snake: {
       for(const it of items){
         const d = dist(t,it);
         if(d < 220 && d < bd){ bd = d; seekItem = it; }
+      }
+    }
+    // bloodbath looters look for a weapon specifically, and are willing to
+    // travel further than the normal 220-unit item-seeking radius to reach one
+    let seekWeaponItem = null;
+    if(mode === 'seekWeapon'){
+      let bd = 9999;
+      for(const it of items){
+        if(it.type !== 'weapon') continue;
+        const d = dist(t,it);
+        if(d < bd){ bd = d; seekWeaponItem = it; }
       }
     }
 
@@ -3762,6 +3817,7 @@ snake: {
         if(dist(t, te) < te.r + 8 && undergroundCount < 3){
           t.inTunnel = true;
           t.wantsTunnel = false;
+          addRivalToTunnel(te.id, t);
           feed((t.hp < t.maxHp*0.35 ? 'A wounded District ' : 'A hungry District ') + t.district + ' tribute slips into a tunnel.');
           tx = t.x; ty = t.y;
           holdStill = true;
@@ -3770,6 +3826,18 @@ snake: {
         }
       } else {
         t.wantsTunnel = false;
+      }
+    } else if(mode === 'seekWeapon'){
+      if(seekWeaponItem){
+        tx = seekWeaponItem.x; ty = seekWeaponItem.y;
+      } else {
+        // nothing left to grab anywhere — just wander instead
+        t.wanderTimer -= dt;
+        if(!t.wanderTarget || t.wanderTimer <= 0){
+          t.wanderTarget = pickWanderTarget(t);
+          t.wanderTimer = rand(2,4.5);
+        }
+        tx = t.wanderTarget.x; ty = t.wanderTarget.y;
       }
     } else if(seekItem){
       tx = seekItem.x; ty = seekItem.y;
@@ -4049,6 +4117,7 @@ snake: {
 
     for(const t of tributes){
       if(!t.alive) continue;
+      if(t.isPlayer && inTunnel) continue;
       // ellipse containment test, since the safe zone matches the arena's aspect ratio
       const nx = (t.x - zoneCenter.x) / zoneRadiusX;
       const ny = (t.y - zoneCenter.y) / zoneRadiusY;
@@ -4189,13 +4258,8 @@ snake: {
         enemies.push(makeTunnelEnemy('snake', key, w.x+rand(-30,30), w.y+rand(-30,30), sp));
       }
     });
-    const dwellers = pickTunnelDwellers(roomWaypoints.length);
     roomWaypoints.forEach((w,i)=>{
       enemies.push(makeTunnelEnemy('peacekeeper', null, w.x+rand(-40,40), w.y+rand(-40,40), PEACEKEEPER_STATS));
-      const rivalTribute = dwellers[i];
-      if(rivalTribute){
-        enemies.push(makeTunnelEnemy('rival', null, w.x+rand(-50,50), w.y+rand(-50,50), RIVAL_STATS, rivalTribute));
-      }
     });
 
     return {
@@ -4229,6 +4293,21 @@ snake: {
     };
   }
 
+  // Called the moment an outdoor tribute actually reaches a tunnel mouth and
+  // goes underground (see the 'seekTunnel' branch in updateAI). Drops them
+  // into that entrance's persistent tunnel instance as a fightable rival —
+  // building the instance fresh if nobody has been down there yet, or
+  // appending to the existing one so tributes can keep trickling in over
+  // time, including while the player is already down there.
+  function addRivalToTunnel(entranceId, tribute){
+    if(!tunnelInstances[entranceId]){
+      tunnelInstances[entranceId] = buildTunnelLayout(entranceId);
+    }
+    const layout = tunnelInstances[entranceId];
+    const spot = layout.entryPoint;
+    layout.enemies.push(makeTunnelEnemy('rival', null, spot.x+rand(-40,40), spot.y+rand(-40,40), RIVAL_STATS, tribute));
+  }
+
   function tunnelFadeTo(alpha, ms, cb){
     if(!tunnelFadeEl) { if(cb) cb(); return; }
     tunnelFadeEl.style.transition = 'opacity '+ms+'ms ease';
@@ -4239,11 +4318,15 @@ snake: {
   function enterTunnel(entrance){
     if(inTunnel || tunnelTransition) return;
     outdoorReturnPos = { x: player.x, y: player.y };
+    currentTunnelEntranceId = entrance.id;
     playDoorSound();
     feed('You duck into the tunnel mouth and disappear underground.');
     tunnelTransition = { phase:'out' };
     tunnelFadeTo(1, TUNNEL_FADE_MS, ()=>{
-      activeTunnel = buildTunnelLayout(entrance.id);
+      if(!tunnelInstances[entrance.id]){
+        tunnelInstances[entrance.id] = buildTunnelLayout(entrance.id);
+      }
+      activeTunnel = tunnelInstances[entrance.id];
       inTunnel = true;
       player.x = activeTunnel.entryPoint.x;
       player.y = activeTunnel.entryPoint.y;
@@ -4260,6 +4343,8 @@ snake: {
     tunnelFadeTo(1, TUNNEL_FADE_MS, ()=>{
       inTunnel = false;
       activeTunnel = null;
+      justExitedEntranceId = currentTunnelEntranceId;
+      currentTunnelEntranceId = null;
       const back = outdoorReturnPos || {x:CENTER_X,y:CENTER_Y};
       player.x = back.x; player.y = back.y;
       player.vx = 0; player.vy = 0;
@@ -4720,6 +4805,7 @@ snake: {
 
     if(inTunnel){
       updateTunnelWorld(dt);
+      updateOutdoorWhilePlayerUnderground(dt);
       return;
     }
 
@@ -4775,6 +4861,10 @@ snake: {
     // world transitions to the underground scene, Pokemon-house style.
     if(gamePhase === 'live' && !inTunnel){
       for(const te of tunnelEntrances){
+        if(te.id === justExitedEntranceId){
+          if(dist(player, te) >= te.r) justExitedEntranceId = null;
+          continue;
+        }
         if(dist(player, te) < te.r){ enterTunnel(te); break; }
       }
     }
@@ -4791,6 +4881,42 @@ snake: {
 
     updateHud();
     checkEndConditions();
+  }
+
+  function updateOutdoorWhilePlayerUnderground(dt){
+    updateAlliance();
+    for(const t of tributes){
+      if(t.isPlayer || t.inTunnel) continue;
+      updateAI(t, dt);
+    }
+    updateMutts(dt);
+    updateVolcano(dt);
+    if(currentArenaCfg.clockArena) updateClockArena(dt);
+
+    for(const t of tributes){
+      if(!t.alive || t.isPlayer || t.inTunnel) continue;
+      t.x += t.vx*dt;
+      t.y += t.vy*dt;
+      t.x = clamp(t.x, 16, WORLD_W-16);
+      t.y = clamp(t.y, 16, WORLD_H-16);
+      resolveObstacles(t);
+      t.attackCooldown = Math.max(0, t.attackCooldown - dt);
+      t.hitFlash = Math.max(0, t.hitFlash - dt);
+      checkItemPickup(t);
+      updateSurvival(t, dt);
+      updatePondEffects(t, dt);
+      updateVolcanoEffects(t, dt);
+    }
+
+    updateZone(dt);
+    updateProjectiles(dt);
+
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.life -= dt*0.8;
+      p.y += p.vy*dt;
+      if(p.life<=0) particles.splice(i,1);
+    }
   }
 
   function checkEndConditions(){
