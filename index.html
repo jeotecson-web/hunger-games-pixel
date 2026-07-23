@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>The Hunger Games</title>
 <link rel="icon" type="image/png" href="assets/mockingjay.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0d0a">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hunger Games">
+<link rel="apple-touch-icon" href="assets/mockingjay.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
@@ -153,6 +160,46 @@
   button.bigBtn:hover{filter:brightness(1.12);}
 
   .footNote{margin-top:16px; font-size:10px; color:#5c5f54; letter-spacing:1px;}
+  #installBanner{
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: rgba(10,13,10,.92);
+    border: 1px solid var(--gold);
+    box-shadow: 0 0 16px rgba(212,175,55,.35);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--bone);
+  }
+  #installBanner.show{ display: flex; }
+  #installBanner button{
+    font-family: inherit;
+    background: var(--gold);
+    color: #1a1400;
+    border: none;
+    padding: 5px 10px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  #installBanner .dismissBtn{
+    background: transparent;
+    color: #8a835f;
+    padding: 5px 6px;
+  }
+  @media (max-width:759px){
+    #installBanner{ font-size:9px; padding:6px 10px; bottom:8px; }
+    #installBanner button{ font-size:8px; padding:4px 8px; }
+  }
 
   /* ================= RETRO INTRO SCREENS ================= */
   #startScreen{
@@ -594,8 +641,12 @@
     }
     .districtItem{ font-size:7px; letter-spacing:1px; padding:4px 4px 4px 14px; }
     .districtPerkLabel{
-      font-size:7.5px; margin-top:8px; margin-bottom:6px; min-height:26px;
+      font-size:7.5px; margin-top:8px; margin-bottom:6px; min-height:0;
       padding:6px 8px; line-height:1.5;
+      max-width: 92vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .tributeCards{ gap:8px; margin-bottom:4px; }
@@ -1090,7 +1141,13 @@
       max-height:none;
     }
     .districtItem{ font-size:6.5px; padding:3px 3px 3px 12px; }
-    .districtPerkLabel{ font-size:6px; min-height:20px; padding:5px 6px; }
+    .districtPerkLabel{
+      font-size:6px; min-height:0; padding:5px 6px;
+      max-width: 88vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .tributeCards{ gap:6px; }
     .tributeCard{ width:44px; padding:3px 2px; }
     .tributeCard .tImgWrap{ height:20px; margin-bottom:2px; }
@@ -1273,6 +1330,11 @@
   </div>
 
   <div id="createdBy">Created by Jeo Mayku</div>
+  <div id="installBanner">
+    <span id="installText">Install this game on your device</span>
+    <button id="installBtn">Install</button>
+    <button id="installDismiss" class="dismissBtn">✕</button>
+  </div>
 
   <audio id="musicIntro" src="assets/hunger-games-theme.mp3" loop preload="auto"></audio>
   <audio id="musicArena" src="assets/arena-theme.mp3" loop preload="auto"></audio>
@@ -1282,6 +1344,55 @@
 <script>
 (function(){
   "use strict";
+  // ============================================================
+  // ADD TO HOME SCREEN — captures Chrome/Edge's install prompt and
+  // shows a custom banner; falls back to on-screen instructions for
+  // iOS Safari, which has no JS-triggerable install prompt at all.
+  // ============================================================
+  let deferredInstallPrompt = null;
+  const INSTALL_DISMISS_KEY = 'hg_install_dismissed';
+
+  function isStandaloneDisplay(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function setupInstallBanner(){
+    const banner = document.getElementById('installBanner');
+    const installBtn = document.getElementById('installBtn');
+    const dismissBtn = document.getElementById('installDismiss');
+    const textEl = document.getElementById('installText');
+    if(!banner || isStandaloneDisplay()) return;
+    if(sessionStorage.getItem(INSTALL_DISMISS_KEY)) return;
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    window.addEventListener('beforeinstallprompt', (e)=>{
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      banner.classList.add('show');
+    });
+
+    if(isIOS){
+      // iOS never fires beforeinstallprompt — show manual instructions instead
+      textEl.textContent = 'Tap Share, then "Add to Home Screen"';
+      installBtn.style.display = 'none';
+      banner.classList.add('show');
+    }
+
+    installBtn.addEventListener('click', async ()=>{
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      banner.classList.remove('show');
+    });
+
+    dismissBtn.addEventListener('click', ()=>{
+      banner.classList.remove('show');
+      sessionStorage.setItem(INSTALL_DISMISS_KEY, '1');
+    });
+  }
+  setupInstallBanner();
 
   // ============================================================
   // CONFIG
@@ -1537,7 +1648,7 @@ snake: {
     meadowlands: {
       id:'meadowlands',
       name:'The Meadowlands',
-      desc:'Balanced forest, meadow, cave and lake quadrants — the classic Games.',
+      desc:'Balanced forest, meadow, and lake quadrants - the classic Games.',
       swatch: 'linear-gradient(135deg,#3f7a42,#2e5c33 45%,#356a4a)',
       tint: null,
       biomeColors: { forest:'#2e5c33', meadow:'#3f7a42', cave:'#4a5245', water:'#356a4a' },
@@ -1552,7 +1663,7 @@ snake: {
     ruins: {
       id:'ruins',
       name:'The Shattered Coliseum',
-      desc:'A rebel bombing gutted this domed arena before the Games even began. No Cornucopia — just a pile of weapons ringed by bare plates and heaps of rubble. No food. No water. Nests of venomous snakes swarm the wreckage. Two tunnel mouths lead underground, where Peacekeepers and desperate tributes still lurk.',
+      desc:'Bombed-out ruins. No food, no water, just rubble, weapons, tunnels, and snakes.',
       swatch: 'linear-gradient(135deg,#9a958a,#6b665c 45%,#3a3730)',
       tint: 'rgba(110,105,95,0.14)',
       biomeColors: { forest:'#726c5f', meadow:'#807a6a', cave:'#5c584d', water:'#5c584d' },
@@ -1569,7 +1680,7 @@ snake: {
     scorched: {
       id:'scorched',
       name:'The Clockwork Shore',
-      desc:'A circular salt-water arena built like a clock — twelve jungle wedges ring a central lake and Cornucopia island, and every hour a new sector springs a lethal trap.',
+      desc:'A clock-shaped island arena. Each hour, a new sector springs a trap.',
       swatch: 'linear-gradient(135deg,#4f9a8a,#2e6a5c 45%,#c9a13b)',
       tint: 'rgba(60,140,120,0.10)',
       biomeColors: { forest:'#2e5c4a', meadow:'#3f7a5c', cave:'#4a6a56', water:'#2a7a94' },
@@ -1591,7 +1702,7 @@ snake: {
     jungle: {
       id:'jungle',
       name:'The Green Hollow',
-      desc:'A blooming, riotously colorful jungle around a live volcano — thick cover, thicker danger, and a menagerie of small mutts instead of one big threat.',
+      desc:'A colorful jungle around a live volcano, crawling with small mutts.',
       swatch: 'linear-gradient(135deg,#e8637a,#4f9a52 45%,#f0c869)',
       tint: 'rgba(20,60,30,0.10)',
       biomeColors: { forest:'#1f4a24', meadow:'#2e5c33', cave:'#233828', water:'#1f5c52' },
@@ -1661,15 +1772,15 @@ snake: {
     1:  { name:'Luxury',       desc:'Trained in combat from birth — deals 15% more damage.', dmgMult:1.15 },
     2:  { name:'Masonry',      desc:'Stonecutters\' toughness — +25 max HP.', hpBonus:25 },
     3:  { name:'Technology',   desc:'Engineers\' know-how — ranged weapons reload 20% faster.', rangedCooldownMult:0.8 },
-    4:  { name:'Fishing',      desc:'Raised on the water — cannot drown, swims at full speed, and gets more from drinking.', noDrown:true, waterSpeedMult:1.0, drinkMult:1.6 },
+    4:  { name:'Fishing', desc:'Raised on the water, never drowns, drinks extra fast.', noDrown:true, waterSpeedMult:1.0, drinkMult:1.6 },
     5:  { name:'Power',        desc:'Power-plant stamina — energy drains 25% slower.', energyDrainMult:0.75 },
     6:  { name:'Transportation', desc:'Built for speed — moves 12% faster.', speedMult:1.12 },
     7:  { name:'Lumber',       desc:'Lumberjack strength — deals 20% more damage near trees.', treeDmgMult:1.2 },
-    8:  { name:'Textiles',     desc:'Handles dyes and toxins daily — poison stuns and damage cut by 40%.', poisonResistMult:0.6 },
+    8:  { name:'Textiles', desc:'Toxin-resistant: poison stun and damage cut 40%.', poisonResistMult:0.6 },
     9:  { name:'Grain',        desc:'Grew up rationing the harvest — hunger drains 25% slower.', hungerDrainMult:0.75 },
     10: { name:'Livestock',    desc:'Herders\' vitality — slowly regenerates lost HP over time.', hpRegen:0.6 },
-    11: { name:'Agriculture',  desc:'Knows which plants are safe — half the poison chance and more food from berries.', poisonChanceMult:0.5, foodMult:1.3 },
-    12: { name:'Mining',       desc:'Endures harsh conditions underground — takes 30% less damage from the shrinking zone.', zoneDmgMult:0.7 }
+    11: { name:'Agriculture', desc:'Knows safe plants: half poison chance, more food.', poisonChanceMult:0.5, foodMult:1.3 },
+    12: { name:'Mining', desc:'Endures hardship, takes 30% less zone damage.', zoneDmgMult:0.7 }
   };
   function perkFor(district){
     return DISTRICT_PERKS[district] || {};
