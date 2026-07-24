@@ -1138,7 +1138,22 @@
       inset: -8px;
     }
     .dpad button{ width:30px; height:30px; font-size:12px; }
-    #midDeck{ display:none; }
+    #midDeck{
+      display:flex;
+      position:absolute;
+      left:50%;
+      bottom:4px;
+      transform:translateX(-50%);
+      z-index:9;
+      padding:0;
+    }
+    .pillRow{
+      transform:none;
+      gap:10px;
+    }
+    #swapBtn.pillBtn, #startHint.pillBtn, .pillBtn{
+      width:34px; height:11px; font-size:5px;
+    }
     #gbTopSwitch, #gbLogoRow, #batteryIndicator, #grille{ display:none; }
     #rightCluster{ order:3; align-self:center; flex:0 0 auto; }
     .actionStack{
