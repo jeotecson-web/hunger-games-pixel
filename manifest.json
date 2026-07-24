@@ -1,0 +1,25 @@
+{
+  "name": "The Hunger Games",
+  "short_name": "HungerGames",
+  "description": "A retro Game Boy style Hunger Games arena survival game.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0d0a",
+  "theme_color": "#0a0d0a",
+  "icons": [
+    {
+      "src": "assets/mockingjay.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/mockingjay.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -50,10 +50,10 @@
 
   /* ---------- Screens ---------- */
   .screen{
-    position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background: radial-gradient(ellipse at 50% 30%, #1a2418 0%, #060806 75%);
-    text-align:center; padding:20px; z-index:20;
-    overflow-y:auto;
+  position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background: radial-gradient(ellipse at 50% 30%, #1a2418 0%, #060806 75%);
+  text-align:center; padding:20px; z-index:20;
+  overflow-y:auto;
   }
   .hidden{display:none !important;}
 
@@ -353,6 +353,7 @@
     padding: 12px 18px;
   }
   .districtPerkLabel b{ color: #d7f0c2; font-size:13.5px; letter-spacing:1px; }
+   .perkTitleLabel{ font-size:10px !important; letter-spacing:0.5px !important; }
 
   .tributeCards{ display:flex; gap:36px; justify-content:center; margin-bottom: 8px; flex-wrap:wrap; }
   .tributeCard{
@@ -372,6 +373,39 @@
   .tributeCard .tImgWrap{ height:96px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
   .tributeCard .tImgWrap img{ height:96px; image-rendering:pixelated; }
   .tributeCard .tLabel{ font-weight:600; font-size: clamp(13px,2.4vw,17px); letter-spacing:1px; text-align:center; line-height:1.4; }
+  .battleStage{
+  position:relative;
+  width:100%;
+  max-width:560px;
+  height:200px;
+  margin: 0 auto 14px;
+}
+.battleOpponent{ position:absolute; top:4px; left:6%; display:flex; flex-direction:column; align-items:center; }
+.battlePlayer{ position:absolute; bottom:4px; right:6%; display:flex; flex-direction:column; align-items:center; }
+.battlePlatform{
+  width:104px; height:26px; border-radius:50%;
+  background: radial-gradient(ellipse at center, rgba(154,193,110,.55), rgba(154,193,110,0) 70%);
+  margin-top:-8px;
+}
+.battleSprite{ width:96px; height:96px; object-fit:contain; image-rendering:pixelated; filter: drop-shadow(2px 3px 0 rgba(0,0,0,.4)); }
+.battleOpponent .battleSprite{ width:104px; height:104px; }
+.battleDialogueBox{
+  background: var(--panel); border: 3px solid var(--gold); border-radius:4px;
+  padding: 12px 16px; max-width:560px; margin:0 auto;
+  box-shadow: 0 0 14px rgba(212,175,55,.25);
+}
+.battleDialogueText{ font-size:12px; line-height:1.7; color:#e8e3d3; margin-bottom:10px; min-height:40px; }
+.battleMenuGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:6px 14px; }
+.battleMenuItem{ font-size:12px; letter-spacing:1px; color:#8a6a3a; padding:5px 8px; cursor:pointer; border-radius:3px; }
+.battleMenuItem.selected{ color:#f5dfa0; background: rgba(245,223,160,0.12); }
+@media (max-width:759px){
+  .battleStage{ height:120px; margin-bottom:8px; }
+  .battleSprite{ width:56px; height:56px; }
+  .battleOpponent .battleSprite{ width:60px; height:60px; }
+  .battlePlatform{ width:64px; height:16px; }
+  .battleDialogueText{ font-size:8px; min-height:0; }
+  .battleMenuItem{ font-size:8px; padding:3px 5px; }
+}
 
   .arenaCards{ display:flex; gap:20px; justify-content:center; margin-bottom: 8px; flex-wrap:wrap; max-width:620px; }
   .arenaCard{
@@ -402,11 +436,11 @@
     .tributeCard{ width:118px; padding:10px 6px; }
     .tributeCard .tImgWrap{ height:70px; }
     .tributeCard .tImgWrap img{ height:70px; }
-    .arenaCards{ gap:10px; }
-    .arenaCard{ width:96px; padding:7px 6px; }
-    .arenaCard .aSwatch{ height:36px; margin-bottom:6px; }
-    .arenaCard .aName{ font-size:8px; }
-    .arenaCard .aDesc{ font-size:6px; }
+    .arenaCards{ gap:6px; }
+    .arenaCard{ width:70px; padding:5px 4px; }
+    .arenaCard .aSwatch{ height:28px; margin-bottom:4px; }
+    .arenaCard .aName{ font-size:6.5px; }
+    .arenaCard .aDesc{ display:none; }
     .menuList{ gap:20px; }
     .districtList{ max-height:none; }
   }
@@ -599,6 +633,7 @@
     .screen{
       position:absolute;
       inset:0;
+      justify-content:center;
       z-index:15;
       padding: 6px 8px;
       overflow-y:auto;
@@ -643,7 +678,7 @@
     .districtPerkLabel{
       font-size:7.5px; margin-top:8px; margin-bottom:6px; min-height:0;
       padding:6px 8px; line-height:1.5;
-      max-width: 92vw;
+      max-width: 92%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -791,6 +826,31 @@
     #killFeed .feedLine:nth-child(n+3){ display:none; }
     #zoneWarning{ font-size: 7px; letter-spacing: 1px; top: 3px; }
   }
+
+  @media (max-width: 932px) and (orientation: portrait){
+  .arenaCards{ gap:6px; }
+  .arenaCard{ width:70px; padding:5px 4px; }
+  .arenaCard .aSwatch{ height:28px; margin-bottom:4px; }
+  .arenaCard .aName{ font-size:6.5px; }
+  .arenaCard .aDesc{ display:none; }
+
+  .tributeCards{ gap:8px; margin-bottom:4px; }
+  .tributeCard{ width:52px; padding:4px 3px; border-width:1px; }
+  .tributeCard .tImgWrap{ height:26px; margin-bottom:3px; }
+  .tributeCard .tImgWrap img{ height:26px; }
+  .tributeCard .tLabel{ font-size:5.5px; line-height:1.2; }
+
+  .districtPerkLabel{
+    font-size:7.5px; margin-top:8px; margin-bottom:6px; min-height:0;
+    padding:6px 8px; line-height:1.5;
+    max-width: 92%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .introHeading{ font-size:10px; letter-spacing:1px; margin-bottom:7px; }
+}
 
   #countdownOverlay{
     position:absolute; inset:0;
@@ -1113,6 +1173,7 @@
     .screen{
       position:absolute;
       inset:0;
+      justify-content:center;
       z-index:15;
       padding: 4px 6px;
       overflow-y:auto;
@@ -1143,11 +1204,12 @@
     .districtItem{ font-size:6.5px; padding:3px 3px 3px 12px; }
     .districtPerkLabel{
       font-size:6px; min-height:0; padding:5px 6px;
-      max-width: 88vw;
+      max-width: 88%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .tributeCards{ gap:6px; }
     .tributeCard{ width:44px; padding:3px 2px; }
     .tributeCard .tImgWrap{ height:20px; margin-bottom:2px; }
@@ -1178,6 +1240,28 @@
       height: min(80dvh, calc((100vw - 150px) / 1.6));
     }
   }
+
+  @media (max-height: 480px){
+  .introHeading{ font-size:9px; margin-bottom:6px; }
+  .arenaCards{ gap:6px; }
+  .arenaCard{ width:70px; padding:5px 4px; }
+  .arenaCard .aSwatch{ height:26px; margin-bottom:4px; }
+  .arenaCard .aName{ font-size:6px; }
+  .arenaCard .aDesc{ display:none; }
+  .districtPerkLabel{
+    font-size:6.5px; padding:5px 7px; margin-top:6px; margin-bottom:4px; min-height:0;
+    max-width:90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tributeCards{ gap:6px; }
+  .tributeCard{ width:46px; padding:3px 2px; }
+  .tributeCard .tImgWrap{ height:22px; margin-bottom:2px; }
+  .tributeCard .tImgWrap img{ height:22px; }
+  .tributeCard .tLabel{ font-size:5px; }
+  .introHint{ font-size:6px; margin-top:5px; line-height:1.5; }
+}
 
   .statLine{font-size:13px; margin:4px 0; color:#c9c5b4;}
   .statLine b{color:var(--gold);}
@@ -1248,6 +1332,68 @@
         <div class="districtPerkLabel" id="tributePerkLabel"></div>
         <div class="introHint">PRESS A AGAIN TO LOCK IN YOUR PICK<br>PRESS B TO GO BACK</div>
       </div>
+
+      <div class="introPanel hidden" id="panelAlliance">
+        <div class="introHeading goldText">FORM AN ALLIANCE?</div>
+        <div class="introSubheading" id="allianceSubheading">CHOOSE UP TO 2 DISTRICTS</div>
+        <div class="districtList" id="allianceList"></div>
+        <div class="districtPerkLabel" id="alliancePerkLabel"></div>
+        <div class="introHint">PRESS A TO TOGGLE A DISTRICT<br>SELECT "CONTINUE" AND PRESS A WHEN READY<br>PRESS B TO GO BACK</div>
+      </div>
+
+      <div class="introPanel hidden" id="panelInterviewChoice">
+  <div class="battleStage">
+    <div class="battleOpponent">
+      <img class="battleSprite" id="caesarSpriteChoice" src="assets/caesar-flickerman.png" alt="Caesar Flickerman">
+      <div class="battlePlatform"></div>
+    </div>
+    <div class="battlePlayer">
+      <img class="battleSprite interviewTributeSprite" id="tributeSpriteChoice" alt="Tribute">
+      <div class="battlePlatform"></div>
+    </div>
+  </div>
+  <div class="battleDialogueBox">
+    <div class="battleDialogueText">Before the Games, Caesar Flickerman would like a word. A good interview can win you sponsors.</div>
+    <div class="battleMenuGrid" id="interviewChoiceList">
+      <div class="battleMenuItem" data-idx="0">ATTEND INTERVIEW</div>
+      <div class="battleMenuItem" data-idx="1">SKIP TO ARENA</div>
+    </div>
+  </div>
+</div>
+
+<div class="introPanel hidden" id="panelInterview">
+  <div class="battleStage">
+    <div class="battleOpponent">
+      <img class="battleSprite" id="caesarSpriteQuestion" src="assets/caesar-flickerman.png" alt="Caesar Flickerman">
+      <div class="battlePlatform"></div>
+    </div>
+    <div class="battlePlayer">
+      <img class="battleSprite interviewTributeSprite" id="tributeSpriteQuestion" alt="Tribute">
+      <div class="battlePlatform"></div>
+    </div>
+  </div>
+  <div class="battleDialogueBox">
+    <div class="battleDialogueText" id="interviewQuestionText">—</div>
+    <div class="battleMenuGrid" id="interviewAnswerList"></div>
+  </div>
+</div>
+
+<div class="introPanel hidden" id="panelInterviewResult">
+  <div class="battleStage">
+    <div class="battleOpponent">
+      <img class="battleSprite" id="caesarSpriteResult" src="assets/caesar-flickerman.png" alt="Caesar Flickerman">
+      <div class="battlePlatform"></div>
+    </div>
+    <div class="battlePlayer">
+      <img class="battleSprite interviewTributeSprite" id="tributeSpriteResult" alt="Tribute">
+      <div class="battlePlatform"></div>
+    </div>
+  </div>
+  <div class="battleDialogueBox">
+    <div class="battleDialogueText" id="interviewResultText">—</div>
+    <div class="pressStart goldText" id="interviewContinueBtn">PRESS A TO ENTER THE ARENA</div>
+  </div>
+</div>
 
     </div>
 
@@ -1737,7 +1883,7 @@ snake: {
     ZONE_SHRINK_INTERVAL = Math.round(BASE_ZONE_SHRINK_INTERVAL / a.shrinkMult);
     ZONE_SHRINK_AMOUNT_Y = BASE_ZONE_SHRINK_AMOUNT_Y * a.shrinkMult;
     ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
-    SUPPLY_DROP_INTERVAL = Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult);
+    SUPPLY_DROP_INTERVAL = Math.max(12000, Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult) - sponsorScore*1500);
     MUTT_SPAWN_DAY = Math.max(1, BASE_MUTT_SPAWN_DAY + a.muttDayOffset);
     MUTT_SPAWN_INTERVAL = Math.round(BASE_MUTT_SPAWN_INTERVAL * a.muttIntervalMult);
     MUTT_COUNT_MAX_ACTIVE = a.muttCountMax || MUTT_COUNT_MAX;
@@ -2077,12 +2223,14 @@ snake: {
       ()=>{ endSealImg.outerHTML = endSealFallbackSvg; });
   }
 
-  // ============================================================
-  // PIXEL-ART ASSETS — small square sprites swapped in for the
-  // procedurally-drawn terrain/obstacles. Falls back to the original
-  // vector art below if an asset hasn't loaded (or is missing) yet.
-  // ============================================================
+  document.querySelectorAll('#caesarSpriteChoice, #caesarSpriteQuestion, #caesarSpriteResult').forEach(img=>{
+  img.addEventListener('error', ()=>{ img.style.visibility = 'hidden'; });
+});
+document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
+  img.addEventListener('error', ()=>{ img.style.visibility = 'hidden'; });
+});
   const ASSET_PATHS = {
+    caesarFlickerman: 'assets/caesar-flickerman.png',
     tree: 'assets/tree.png',
     grass: 'assets/path.png',
     tallGrass: 'assets/grass.png',
@@ -2248,6 +2396,18 @@ snake: {
   const panelArena = document.getElementById('panelArena');
   const panelDistrict = document.getElementById('panelDistrict');
   const panelTribute = document.getElementById('panelTribute');
+  const panelAlliance = document.getElementById('panelAlliance');
+  const allianceListEl = document.getElementById('allianceList');
+  const alliancePerkLabelEl = document.getElementById('alliancePerkLabel');
+  const allianceSubheadingEl = document.getElementById('allianceSubheading');
+  const panelInterviewChoice = document.getElementById('panelInterviewChoice');
+  const panelInterview = document.getElementById('panelInterview');
+  const panelInterviewResult = document.getElementById('panelInterviewResult');
+  const interviewChoiceListEl = document.getElementById('interviewChoiceList');
+  const interviewQuestionTextEl = document.getElementById('interviewQuestionText');
+  const interviewAnswerListEl = document.getElementById('interviewAnswerList');
+  const interviewResultTextEl = document.getElementById('interviewResultText');
+  const interviewContinueBtn = document.getElementById('interviewContinueBtn');
   const menuListEl = document.getElementById('menuList');
   const textPanelTitleEl = document.getElementById('textPanelTitle');
   const textPanelBodyEl = document.getElementById('textPanelBody');
@@ -2265,10 +2425,46 @@ snake: {
   let introScreen = 'title';
   let menuIndex = 0, arenaIndex = 0, districtIndex = 0, tributeIndex = 0, tributeArmed = false, arenaArmed = false;
   let textPanelReturnsTo = 'menu';
+  let interviewChoiceIndex = 0, interviewQuestionIndex = 0, interviewAnswerIndex = 0;
+  let sponsorScore = 0;
+  let storyModeActive = false;
 
-  function showIntroPanel(name){
-    [panelTitle, panelMenu, panelText, panelArena, panelDistrict, panelTribute].forEach(p=>p.classList.add('hidden'));
-    ({title:panelTitle, menu:panelMenu, text:panelText, arena:panelArena, district:panelDistrict, tribute:panelTribute})[name].classList.remove('hidden');
+  const INTERVIEW_QUESTIONS = [
+    {
+      question: "So, tribute — how are you feeling about your chances out there?",
+      answers: [
+        { text:"Confident. I plan to win.", score:2, response:"Caesar grins. \"Bold! The crowd loves confidence.\"" },
+        { text:"Honestly? Terrified.", score:1, response:"A sympathetic murmur ripples through the crowd." },
+        { text:"I'd rather not say.", score:-1, response:"Caesar chuckles awkwardly. The crowd goes quiet." }
+      ]
+    },
+    {
+      question: "Tell us — who's waiting for you back home?",
+      answers: [
+        { text:"My family. I'm fighting for them.", score:2, response:"A wave of applause washes over the stage." },
+        { text:"No one important.", score:-2, response:"The audience shifts uncomfortably." },
+        { text:"That's between me and them.", score:0, response:"Caesar nods, respecting the privacy." }
+      ]
+    },
+    {
+      question: "If you had one word to describe your strategy, what would it be?",
+      answers: [
+        { text:"\"Ruthless.\"", score:1, response:"Gasps, then wild cheering — the crowd loves a fighter." },
+        { text:"\"Survival.\"", score:1, response:"A practical answer. The crowd nods along." },
+        { text:"\"Mercy.\"", score:2, response:"The crowd erupts — they weren't expecting that." }
+      ]
+    }
+  ];
+
+ function showIntroPanel(name){
+    const allPanels = {title:panelTitle, menu:panelMenu, text:panelText, arena:panelArena, district:panelDistrict, tribute:panelTribute, alliance:panelAlliance, interviewChoice:panelInterviewChoice, interview:panelInterview, interviewResult:panelInterviewResult};
+    Object.values(allPanels).forEach(p=>{ if(p) p.classList.add('hidden'); });
+    const target = allPanels[name];
+    if(target){
+      target.classList.remove('hidden');
+    } else {
+      console.error('showIntroPanel: unknown or missing panel for', name);
+    }
     introScreen = name;
     if(musicUnlocked) playIntroMusic();
   }
@@ -2282,13 +2478,16 @@ snake: {
 
   function confirmMenu(){
     if(menuIndex===0){
+      storyModeActive = false;
       arenaIndex = Math.max(0, ARENA_KEYS.indexOf(selectedArena));
       arenaArmed = false;
       renderArenaCards();
       showIntroPanel('arena');
     } else if(menuIndex===1){
+      storyModeActive = true;
       textPanelTitleEl.textContent='STORY MODE'; textPanelBodyEl.textContent=STORY_TEXT;
-      textPanelReturnsTo='menu'; showIntroPanel('text');
+      textPanelReturnsTo='arena';
+      showIntroPanel('text');
     } else {
       textPanelTitleEl.textContent='INSTRUCTIONS'; textPanelBodyEl.textContent=INSTRUCTIONS_TEXT;
       textPanelReturnsTo='menu'; showIntroPanel('text');
@@ -2310,7 +2509,7 @@ snake: {
     });
     const a = ARENAS[ARENA_KEYS[arenaIndex]];
     if(arenaPerkLabelEl){
-      arenaPerkLabelEl.innerHTML = '<b>'+a.name.toUpperCase()+':</b> '+a.desc;
+      arenaPerkLabelEl.innerHTML = '<b class="perkTitleLabel">'+a.name.toUpperCase()+':</b> '+a.desc;
     }
   }
 
@@ -2338,7 +2537,7 @@ snake: {
     const perk = perkFor(d);
     if(districtPerkLabelEl){
       districtPerkLabelEl.innerHTML = perk.name
-        ? '<b>'+perk.name.toUpperCase()+':</b> '+perk.desc
+        ? '<b class="perkTitleLabel">'+perk.name.toUpperCase()+':</b> '+perk.desc
         : '';
     }
   }
@@ -2347,7 +2546,11 @@ snake: {
     selectedDistrict = DISTRICTS[districtIndex];
     tributeIndex = selectedGender==='female' ? 1 : 0;
     tributeArmed = false;
-    renderTributeCards();
+    try{
+      renderTributeCards();
+    }catch(err){
+      console.error('renderTributeCards failed:', err);
+    }
     showIntroPanel('tribute');
   }
 
@@ -2371,14 +2574,145 @@ snake: {
     const perk = perkFor(selectedDistrict);
     if(tributePerkLabelEl){
       tributePerkLabelEl.innerHTML = perk.name
-        ? '<b>DISTRICT '+selectedDistrict+' — '+perk.name.toUpperCase()+':</b> '+perk.desc
+        ? '<b class="perkTitleLabel">'+perk.name.toUpperCase()+':</b> '+perk.desc
         : '';
     }
   }
 
+  function renderAllianceList(){
+    allianceListEl.innerHTML = '';
+    const eligibleDistricts = DISTRICTS.filter(d => d !== selectedDistrict);
+    eligibleDistricts.forEach((d, i)=>{
+      const item = document.createElement('div');
+      const isChosen = alliedDistricts.includes(d);
+      item.className = 'districtItem' + ((i===allianceIndex || isChosen) ? ' selected' : '');
+      item.innerHTML = '<span class="cursorArrow goldText">▶</span>' + (isChosen ? '✓ ' : '') + 'DISTRICT ' + d;
+      item.addEventListener('click', ()=>{ allianceIndex = i; toggleAllianceDistrict(d); });
+      allianceListEl.appendChild(item);
+    });
+    const continueIdx = eligibleDistricts.length;
+    const continueItem = document.createElement('div');
+    continueItem.className = 'districtItem' + (allianceIndex===continueIdx ? ' selected' : '');
+    continueItem.innerHTML = '<span class="cursorArrow goldText">▶</span>CONTINUE';
+    continueItem.addEventListener('click', ()=>{ allianceIndex = continueIdx; confirmAllianceScreen(); });
+    allianceListEl.appendChild(continueItem);
+
+    allianceSubheadingEl.textContent = alliedDistricts.length
+      ? ('ALLIED WITH: ' + alliedDistricts.map(d=>'D'+d).join(', '))
+      : ('CHOOSE UP TO ' + ALLY_MAX_COUNT + ' DISTRICTS (OR NONE)');
+    if(alliancePerkLabelEl){
+      alliancePerkLabelEl.innerHTML = '<b class="perkTitleLabel">ALLIES WON\'T ATTACK YOU</b> — but if you kill one early, the others will slowly stop trusting you, and may eventually turn on you.';
+    }
+  }
+
+  function toggleAllianceDistrict(d){
+    const idx = alliedDistricts.indexOf(d);
+    if(idx >= 0){
+      alliedDistricts.splice(idx,1);
+    } else if(alliedDistricts.length < ALLY_MAX_COUNT){
+      alliedDistricts.push(d);
+    }
+    renderAllianceList();
+  }
+
+  function confirmAllianceScreen(){
+    interviewChoiceIndex = 0;
+    renderInterviewChoice();
+    showIntroPanel('interviewChoice');
+  }
+
+  function updateInterviewTributeSprites(){
+  const key = 'district-' + selectedDistrict + '-' + selectedGender;
+  const src = ASSET_PATHS[key] || '';
+  document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
+    img.style.visibility = 'visible';
+    img.src = src;
+  });
+}
+
+  function renderInterviewChoice(){
+    updateInterviewTributeSprites();
+    interviewChoiceListEl.querySelectorAll('.battleMenuItem').forEach((el,i)=> el.classList.toggle('selected', i===interviewChoiceIndex));
+  }
+  interviewChoiceListEl.querySelectorAll('.battleMenuItem').forEach((el,i)=>{
+    el.addEventListener('click', ()=>{ interviewChoiceIndex=i; renderInterviewChoice(); confirmInterviewChoice(); });
+  });
+
+  function confirmInterviewChoice(){
+    if(interviewChoiceIndex === 0){
+      sponsorScore = 0;
+      interviewQuestionIndex = 0;
+      renderInterviewQuestion();
+      showIntroPanel('interview');
+    } else {
+      startGame();
+    }
+  }
+
+  function renderInterviewQuestion(){
+    updateInterviewTributeSprites();
+    const q = INTERVIEW_QUESTIONS[interviewQuestionIndex];
+    interviewQuestionTextEl.textContent = q.question;
+    interviewAnswerListEl.innerHTML = '';
+    interviewAnswerIndex = 0;
+    q.answers.forEach((a,i)=>{
+      const item = document.createElement('div');
+      item.className = 'battleMenuItem' + (i===0?' selected':'');
+      item.textContent = a.text;
+      item.addEventListener('click', ()=>{ interviewAnswerIndex=i; renderInterviewAnswerSelection(); confirmInterviewAnswer(); });
+      interviewAnswerListEl.appendChild(item);
+    });
+  }
+
+  function renderInterviewAnswerSelection(){
+    interviewAnswerListEl.querySelectorAll('.battleMenuItem').forEach((el,i)=> el.classList.toggle('selected', i===interviewAnswerIndex));
+  }
+
+  function confirmInterviewAnswer(){
+    const q = INTERVIEW_QUESTIONS[interviewQuestionIndex];
+    const chosen = q.answers[interviewAnswerIndex];
+    sponsorScore += chosen.score;
+    interviewQuestionIndex++;
+    if(interviewQuestionIndex < INTERVIEW_QUESTIONS.length){
+      renderInterviewQuestion();
+    } else {
+      showInterviewResult();
+    }
+  }
+
+  function showInterviewResult(){
+    updateInterviewTributeSprites();
+    let verdict, verdictDesc;
+    if(sponsorScore >= 5){
+      verdict = "THE CROWD ADORES YOU";
+      verdictDesc = "Sponsors will be generous — expect frequent supply drops.";
+    } else if(sponsorScore >= 2){
+      verdict = "A SOLID IMPRESSION";
+      verdictDesc = "You've won some favor. Sponsors may help you out.";
+    } else if(sponsorScore >= -1){
+      verdict = "A FORGETTABLE SHOW";
+      verdictDesc = "The crowd is indifferent. Don't expect much help.";
+    } else {
+      verdict = "THE CROWD TURNS ON YOU";
+      verdictDesc = "You've made enemies. Sponsors won't be quick to help.";
+    }
+    interviewResultTextEl.innerHTML = '<b style="color:#f5dfa0;">'+verdict+'</b><br><br>'+verdictDesc;
+    showIntroPanel('interviewResult');
+  }
+  interviewContinueBtn.addEventListener('click', startGame);
+
   function confirmTribute(){
     selectedGender = tributeIndex===1 ? 'female' : 'male';
-    startGame();
+    if(storyModeActive){
+      alliedDistricts = [];
+      allianceIndex = 0;
+      renderAllianceList();
+      showIntroPanel('alliance');
+    } else {
+      alliedDistricts = [];
+      sponsorScore = 0; // no interview happened, so no sponsor bonus this run
+      startGame();
+    }
   }
 
   // Shared intro-navigation logic, driven by an abstract action so both
@@ -2396,7 +2730,20 @@ snake: {
       else if(A){ confirmMenu(); }
       return;
     }
-    if(introScreen==='text'){ if(B||A){ showIntroPanel(textPanelReturnsTo); renderMenu(); } return; }
+    if(introScreen==='text'){
+      if(B||A){
+        if(textPanelReturnsTo === 'arena'){
+          arenaIndex = Math.max(0, ARENA_KEYS.indexOf(selectedArena));
+          arenaArmed = false;
+          renderArenaCards();
+          showIntroPanel('arena');
+        } else {
+          showIntroPanel(textPanelReturnsTo);
+          renderMenu();
+        }
+      }
+      return;
+    }
     if(introScreen==='arena'){
       const n = ARENA_KEYS.length;
       if(left||up){ arenaIndex=(arenaIndex-1+n)%n; arenaArmed=false; renderArenaCards(); }
@@ -2421,6 +2768,39 @@ snake: {
       else if(right||down){ tributeIndex=1; tributeArmed=false; renderTributeCards(); }
       else if(A){ if(tributeArmed) confirmTribute(); else { tributeArmed=true; renderTributeCards(); } }
       else if(B){ renderDistrictList(); showIntroPanel('district'); }
+      return;
+    }
+    if(introScreen==='alliance'){
+      const eligibleDistricts = DISTRICTS.filter(d => d !== selectedDistrict);
+      const n = eligibleDistricts.length + 1; // +1 for CONTINUE
+      const cols = DISTRICT_COLS;
+      if(up){ allianceIndex=(allianceIndex-cols+n)%n; renderAllianceList(); }
+      else if(down){ allianceIndex=(allianceIndex+cols)%n; renderAllianceList(); }
+      else if(left){ allianceIndex=(allianceIndex-1+n)%n; renderAllianceList(); }
+      else if(right){ allianceIndex=(allianceIndex+1)%n; renderAllianceList(); }
+      else if(A){
+        if(allianceIndex === eligibleDistricts.length){ confirmAllianceScreen(); }
+        else { toggleAllianceDistrict(eligibleDistricts[allianceIndex]); }
+      }
+      else if(B){ renderTributeCards(); showIntroPanel('tribute'); }
+      return;
+    }
+    if(introScreen==='interviewChoice'){
+      if(up||left||down||right){ interviewChoiceIndex=(interviewChoiceIndex+1)%2; renderInterviewChoice(); }
+      else if(A){ confirmInterviewChoice(); }
+      else if(B){ renderAllianceList(); showIntroPanel('alliance'); }
+      return;
+    }
+    if(introScreen==='interview'){
+      const q = INTERVIEW_QUESTIONS[interviewQuestionIndex];
+      const n = q.answers.length;
+      if(up||left){ interviewAnswerIndex=(interviewAnswerIndex-1+n)%n; renderInterviewAnswerSelection(); }
+      else if(down||right){ interviewAnswerIndex=(interviewAnswerIndex+1)%n; renderInterviewAnswerSelection(); }
+      else if(A){ confirmInterviewAnswer(); }
+      return;
+    }
+    if(introScreen==='interviewResult'){
+      if(A){ startGame(); }
       return;
     }
   }
@@ -2467,6 +2847,13 @@ snake: {
   let nextMuttSpawnAt = 0;
   let allianceBroken = false;
   let allianceTarget = null;
+  let alliedDistricts = [];      // districts (numbers) you chose to ally with — Story Mode only
+  const ALLY_MAX_COUNT = 2;      // max districts you can ally with
+  let allianceBetrayed = false;  // true once you've killed one of your own allies
+  let allyBetrayalStartAt = 0;
+  const ALLY_TRUST_MAX = 100;
+  const ALLY_TRUST_DECAY_PER_SEC = 2.5; // how fast remaining allies' trust drains after a betrayal
+  let allianceIndex = 0;         // cursor for the new alliance-picking screen
   let player = null;
   let zoneRadiusX, zoneRadiusY, zoneCenter, nextShrinkAt, nextSupplyAt, dayCount, kills, elapsed;
   let running = false;
@@ -2890,6 +3277,9 @@ snake: {
       isPlayer: !!isPlayer,
       isCareer: isCareerTribute,
       bloodbathTemperament,
+      isAlly: !isPlayer && alliedDistricts.includes(district),
+      allyTrust: ALLY_TRUST_MAX,
+      allyHostile: false,
       genderOverride: forcedGender || null,
       x: CENTER_X, y: CENTER_Y,
       vx:0, vy:0,
@@ -2991,7 +3381,7 @@ snake: {
     zoneRadiusX = zoneRadiusY * (WORLD_W/WORLD_H);
     zoneCenter = {x:CENTER_X,y:CENTER_Y};
     nextShrinkAt = ZONE_SHRINK_INTERVAL;
-    nextSupplyAt = SUPPLY_DROP_INTERVAL;
+    nextSupplyAt = Math.max(10000, SUPPLY_DROP_INTERVAL - sponsorScore*2000);
     dayCount = 1;
     kills = 0;
     elapsed = 0;
@@ -3002,6 +3392,8 @@ snake: {
     nextMuttSpawnAt = 0;
     allianceBroken = false;
     allianceTarget = null;
+    allianceBetrayed = false;
+    allyBetrayalStartAt = 0;
     killFeed.innerHTML = '';
 
     gamePhase = 'countdown';
@@ -3126,6 +3518,11 @@ snake: {
     if(t.hp <= 0 && t.alive){
       t.alive = false;
       t.hp = 0;
+      if(t.isAlly && source && source.isPlayer){
+        allianceBetrayed = true;
+        allyBetrayalStartAt = elapsed;
+        feed('💔 You betrayed your ally from District '+t.district+'. Word will spread through the arena...');
+      }
       if(source && source.alive && !source.isMutt){ source.kills++; if(source.isPlayer) kills++; }
       const name = t.isPlayer ? 'YOU' : 'District '+t.district;
       let killerName = 'the arena';
@@ -3499,6 +3896,7 @@ snake: {
     for(const other of tributes){
       if(other === attacker || !other.alive || other.inTunnel) continue;
       if(alliedCareer && other.isCareer) continue;
+      if(attacker.isAlly && !attacker.allyHostile && other.isPlayer) continue;
       const d = dist(attacker, other);
       if(d < range && d < best){ best = d; target = other; }
     }
@@ -3746,6 +4144,24 @@ snake: {
     }
   }
 
+  function updateAllyTrust(dt){
+    if(!allianceBetrayed) return;
+    for(const t of tributes){
+      if(!t.alive || t.isPlayer || !t.isAlly || t.allyHostile) continue;
+      const before = t.allyTrust;
+      t.allyTrust = Math.max(0, t.allyTrust - ALLY_TRUST_DECAY_PER_SEC*dt);
+      if(before > 66 && t.allyTrust <= 66){
+        feed('District '+t.district+' watches you a little more warily now.');
+      } else if(before > 33 && t.allyTrust <= 33){
+        feed('District '+t.district+' no longer fully trusts you.');
+      }
+      if(t.allyTrust <= 0){
+        t.allyHostile = true;
+        feed('⚔ District '+t.district+' has turned on you!');
+      }
+    }
+  }
+
   function updateAI(t, dt){
     if(!t.alive) return;
     if(t.stunTimer > 0){
@@ -3761,6 +4177,7 @@ snake: {
     for(const o of tributes){
       if(o===t || !o.alive || o.inTunnel) continue;
       if(alliedCareer && o.isCareer) continue;
+      if(t.isAlly && !t.allyHostile && o.isPlayer) continue;
       const d = dist(t,o);
       if(d < nd){ nd = d; nearest = o; }
     }
@@ -4942,6 +5359,7 @@ snake: {
 
     updatePlayerMovement(dt);
     updateAlliance();
+    updateAllyTrust(dt);
     for(const t of tributes){
       if(t.isPlayer || t.inTunnel) continue;
       updateAI(t, dt);
@@ -4996,6 +5414,7 @@ snake: {
 
   function updateOutdoorWhilePlayerUnderground(dt){
     updateAlliance();
+    updateAllyTrust(dt);
     for(const t of tributes){
       if(t.isPlayer || t.inTunnel) continue;
       updateAI(t, dt);
@@ -5168,6 +5587,17 @@ snake: {
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(0,-24,2.2,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    // Ally marker — small blue dot, turns red-outlined once they've turned on you
+    if(t.isAlly){
+      const hostile = t.allyHostile;
+      ctx.fillStyle = hostile ? 'rgba(232,64,74,0)' : '#7fb0e0';
+      ctx.strokeStyle = hostile ? '#e8404a' : '#7fb0e0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(t.isCareer ? 5 : 0, -24, 2.2, 0, Math.PI*2);
       ctx.fill();
       ctx.stroke();
     }
@@ -6234,6 +6664,12 @@ snake: {
 
     const alerts = [];
     if(!allianceBroken && allianceTarget && allianceTarget.isPlayer) alerts.push('Career pack hunting YOU');
+    if(alliedDistricts.length){
+      const aliveAllies = tributes.filter(t=>t.alive && t.isAlly && !t.allyHostile);
+      const hostileAllies = tributes.filter(t=>t.alive && t.isAlly && t.allyHostile);
+      if(aliveAllies.length) alerts.push(aliveAllies.length + ' ally at your side'.replace('ally', aliveAllies.length===1?'ally':'allies'));
+      if(hostileAllies.length) alerts.push('A former ally is hunting you!');
+    }
     if(muttsUnlocked) alerts.push(currentArenaCfg.ruins ? 'Snakes loose' : 'Mutts loose');
     if(VOLCANO && volcanoState === 'warning') alerts.push('Volcano rumbling');
     if(VOLCANO && volcanoState === 'erupting') alerts.push('Volcano erupting!');
@@ -6279,6 +6715,8 @@ snake: {
     const arenaCfg = ARENAS[selectedArena];
     feed('Welcome to ' + arenaCfg.name + '. Hold your position — the gong will sound soon.');
     if(perk.name) feed('District '+selectedDistrict+' perk — '+perk.name+': '+perk.desc);
+    if(alliedDistricts.length) feed('🤝 You have allied with ' + alliedDistricts.map(d=>'District '+d).join(' & ') + '. They won\'t attack you — unless you betray them.');
+    if(sponsorScore !== 0) feed(sponsorScore > 0 ? '📣 The sponsors are watching favorably.' : '📣 The sponsors seem unimpressed.');
     playArenaMusic();
     animId = requestAnimationFrame(loop);
   }
@@ -6304,7 +6742,12 @@ snake: {
     }, 900);
   }
 
-  showIntroPanel('title');
+  try{
+    showIntroPanel('title');
+  }catch(err){
+    console.error('Failed to initialize intro screen:', err);
+    if(panelTitle) panelTitle.classList.remove('hidden');
+  }
 
 })();
 </script>
