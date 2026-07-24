@@ -1583,6 +1583,9 @@
   const ALLIANCE_BREAK_ALIVE_CAREERS = 2;   // alliance frays once this few Careers remain
   const ALLIANCE_BREAK_TOTAL_ALIVE = 6;     // ...or once the whole field shrinks to this size
   const ALLIANCE_TARGET_RANGE = 520;        // how far the pack will commit to chasing a shared target
+  // Your own allies turn on you (and everyone else) once the field shrinks
+  // to this many tributes alive, even if you never betrayed them.
+  const ALLY_LATEGAME_BREAK_TOTAL_ALIVE = 5;
 
   // Mutts — Gamemaker-released creatures that hunt everyone, tributes included
   const BASE_MUTT_SPAWN_DAY = 3;         // mutts start appearing once this day count is reached
@@ -1883,7 +1886,7 @@ snake: {
     ZONE_SHRINK_INTERVAL = Math.round(BASE_ZONE_SHRINK_INTERVAL / a.shrinkMult);
     ZONE_SHRINK_AMOUNT_Y = BASE_ZONE_SHRINK_AMOUNT_Y * a.shrinkMult;
     ZONE_SHRINK_AMOUNT_X = ZONE_SHRINK_AMOUNT_Y * (WORLD_W/WORLD_H);
-    SUPPLY_DROP_INTERVAL = Math.max(12000, Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult) - sponsorScore*1500);
+    SUPPLY_DROP_INTERVAL = Math.max(10000, Math.round(BASE_SUPPLY_DROP_INTERVAL / a.supplyMult) - sponsorScore*3000);
     MUTT_SPAWN_DAY = Math.max(1, BASE_MUTT_SPAWN_DAY + a.muttDayOffset);
     MUTT_SPAWN_INTERVAL = Math.round(BASE_MUTT_SPAWN_INTERVAL * a.muttIntervalMult);
     MUTT_COUNT_MAX_ACTIVE = a.muttCountMax || MUTT_COUNT_MAX;
@@ -1908,6 +1911,7 @@ snake: {
     tunnelInstances = {};
     currentTunnelEntranceId = null;
     justExitedEntranceId = null;
+    tunnelAllies = [];
   }
   // DISTRICT PERKS — each home district trains its tributes differently.
   // Purely additive bonuses/resistances layered on top of the base rules
@@ -2435,7 +2439,8 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       answers: [
         { text:"Confident. I plan to win.", score:2, response:"Caesar grins. \"Bold! The crowd loves confidence.\"" },
         { text:"Honestly? Terrified.", score:1, response:"A sympathetic murmur ripples through the crowd." },
-        { text:"I'd rather not say.", score:-1, response:"Caesar chuckles awkwardly. The crowd goes quiet." }
+        { text:"I'd rather not say.", score:-1, response:"Caesar chuckles awkwardly. The crowd goes quiet." },
+        { text:"I'm ready for whatever comes.", score:1, response:"A steady answer. The crowd nods with quiet respect." }
       ]
     },
     {
@@ -2443,7 +2448,8 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       answers: [
         { text:"My family. I'm fighting for them.", score:2, response:"A wave of applause washes over the stage." },
         { text:"No one important.", score:-2, response:"The audience shifts uncomfortably." },
-        { text:"That's between me and them.", score:0, response:"Caesar nods, respecting the privacy." }
+        { text:"That's between me and them.", score:0, response:"Caesar nods, respecting the privacy." },
+        { text:"My whole district is behind me.", score:1, response:"A cheer erupts from your district's section." }
       ]
     },
     {
@@ -2451,7 +2457,8 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       answers: [
         { text:"\"Ruthless.\"", score:1, response:"Gasps, then wild cheering — the crowd loves a fighter." },
         { text:"\"Survival.\"", score:1, response:"A practical answer. The crowd nods along." },
-        { text:"\"Mercy.\"", score:2, response:"The crowd erupts — they weren't expecting that." }
+        { text:"\"Mercy.\"", score:2, response:"The crowd erupts — they weren't expecting that." },
+        { text:"\"Cunning.\"", score:2, response:"The crowd murmurs approvingly at your cleverness." }
       ]
     }
   ];
@@ -2854,6 +2861,9 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
   const ALLY_TRUST_MAX = 100;
   const ALLY_TRUST_DECAY_PER_SEC = 2.5; // how fast remaining allies' trust drains after a betrayal
   let allianceIndex = 0;         // cursor for the new alliance-picking screen
+  let sponsorGiftTier = 0;
+  let sponsorGiftPending = false;
+  let sponsorGiftAt = 0;
   let player = null;
   let zoneRadiusX, zoneRadiusY, zoneCenter, nextShrinkAt, nextSupplyAt, dayCount, kills, elapsed;
   let running = false;
@@ -2875,6 +2885,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
   let tunnelInstances = {};    // per-entrance tunnel state that PERSISTS across visits, keyed by entrance id
   let currentTunnelEntranceId = null; // which entrance the player is currently inside, if any
   let justExitedEntranceId = null;    // entrance just exited — ignored until the player leaves its radius, so exiting doesn't immediately re-trigger it
+  let tunnelAllies = [];       // ally tributes currently accompanying the player underground
 
   const keys = {};
   const touchDir = {up:false,down:false,left:false,right:false};
@@ -3381,7 +3392,10 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
     zoneRadiusX = zoneRadiusY * (WORLD_W/WORLD_H);
     zoneCenter = {x:CENTER_X,y:CENTER_Y};
     nextShrinkAt = ZONE_SHRINK_INTERVAL;
-    nextSupplyAt = Math.max(10000, SUPPLY_DROP_INTERVAL - sponsorScore*2000);
+    nextSupplyAt = Math.max(6000, SUPPLY_DROP_INTERVAL - sponsorScore*4000);
+    sponsorGiftTier = sponsorScore >= 5 ? 2 : sponsorScore >= 2 ? 1 : 0;
+    sponsorGiftPending = false;
+    sponsorGiftAt = 0;
     dayCount = 1;
     kills = 0;
     elapsed = 0;
@@ -3506,6 +3520,13 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
 
   function damageTribute(t, amount, source){
     if(!t.alive) return;
+
+    // Attacking your own living ally — even a graze, even early game —
+    // breaks the whole alliance immediately instead of waiting for a kill.
+    if(t.isAlly && !t.allyHostile && source && source.isPlayer){
+      breakAllianceImmediately(t.district, false);
+    }
+
     let dmg = amount;
     if(t.shield > 0){
       const absorbed = Math.min(t.shield, dmg);
@@ -3519,9 +3540,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       t.alive = false;
       t.hp = 0;
       if(t.isAlly && source && source.isPlayer){
-        allianceBetrayed = true;
-        allyBetrayalStartAt = elapsed;
-        feed('💔 You betrayed your ally from District '+t.district+'. Word will spread through the arena...');
+        feed('💀 District '+t.district+' — your former ally — has fallen by your hand.');
       }
       if(source && source.alive && !source.isMutt){ source.kills++; if(source.isPlayer) kills++; }
       const name = t.isPlayer ? 'YOU' : 'District '+t.district;
@@ -3532,7 +3551,14 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       spawnFloatText(t.x, t.y-30, 'ELIMINATED', '#ffcf5c');
       playCannonSound();
       if(t.weapon){
-        spawnItem(t.x, t.y, 'weapon', t.weapon);
+        if(t.inTunnel && activeTunnel){
+          activeTunnel.items.push({
+            x: t.x, y: t.y, type:'weapon', weaponType: t.weapon,
+            id: Math.random().toString(36).slice(2), bob: Math.random()*Math.PI*2
+          });
+        } else {
+          spawnItem(t.x, t.y, 'weapon', t.weapon);
+        }
         t.weapon = null;
       }
     }
@@ -4161,6 +4187,40 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       }
     }
   }
+  // Instantly turns every surviving ally hostile at once, instead of the
+  // gradual per-ally trust decay above. Used both when you strike an ally
+  // yourself (betrayedDistrict set, lateGame=false) and when the field gets
+  // small enough that they turn on you on their own (betrayedDistrict=null,
+  // lateGame=true). Once hostile, an ally behaves like any normal tribute —
+  // the only thing that was ever stopping them from attacking you was the
+  // `!t.allyHostile` check in tryAttack/updateAI, so this affects everyone,
+  // not just you.
+  function breakAllianceImmediately(betrayedDistrict, lateGame){
+    if(allianceBetrayed) return; // already shattered — nothing more to do
+    allianceBetrayed = true;
+    allyBetrayalStartAt = elapsed;
+    for(const t of tributes){
+      if(!t.alive || t.isPlayer || !t.isAlly) continue;
+      t.allyTrust = 0;
+      t.allyHostile = true;
+    }
+    if(lateGame){
+      feed('💔 With so few tributes left, your allies turn on you — and each other!');
+    } else {
+      feed('💔 You struck an ally from District '+betrayedDistrict+'. The alliance shatters instantly — your other allies turn on you!');
+    }
+  }
+
+  // Called every frame; once the alive tribute count drops to the
+  // threshold, your allies betray you automatically (only if the alliance
+  // hasn't already broken some other way).
+  function checkAllyLateGameBetrayal(){
+    if(allianceBetrayed || !alliedDistricts.length) return;
+    const totalAlive = tributes.filter(t=>t.alive).length;
+    if(totalAlive <= ALLY_LATEGAME_BREAK_TOTAL_ALIVE){
+      breakAllianceImmediately(null, true);
+    }
+  }
 
   function updateAI(t, dt){
     if(!t.alive) return;
@@ -4245,10 +4305,18 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       // rather than roam the open arena
       mode = 'seekHide';
     }
+
+    // Allies stick close to you whenever nothing else demands their
+    // attention (no fight, no loot rush, no fleeing) — this is what makes
+    // them actually follow you around instead of wandering off.
+    if(t.isAlly && !t.allyHostile && (mode === 'wander' || mode === 'seekHide')){
+      mode = 'followPlayer';
+    }
+
     // Tunnel-seeking: hungry or badly wounded tributes duck underground for
     // shelter and food when this arena has tunnels, as long as they aren't
     // actively locked in a chase.
-    if(tunnelEntrances.length && !t.isCareer && mode !== 'chase'){
+    if(tunnelEntrances.length && !t.isCareer && !t.isAlly && mode !== 'chase'){
       t.tunnelSeekCooldown -= dt;
       if(t.tunnelSeekCooldown <= 0){
         t.tunnelSeekCooldown = rand(6,14);
@@ -4367,6 +4435,13 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
         }
         tx = t.wanderTarget.x; ty = t.wanderTarget.y;
       }
+    } else if(mode === 'followPlayer'){
+      // each ally orbits you at a fixed angle (derived from their own id,
+      // so it's stable frame to frame) instead of all stacking on one spot
+      const followSeed = (t.id.charCodeAt(0) + t.id.charCodeAt(1) + t.id.charCodeAt(2)) % 360;
+      const followAngle = followSeed * Math.PI/180;
+      tx = player.x + Math.cos(followAngle)*70;
+      ty = player.y + Math.sin(followAngle)*70;
     } else if(seekItem){
       tx = seekItem.x; ty = seekItem.y;
     } else {
@@ -4617,11 +4692,34 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
     }
   }
 
+  // Delivers the scheduled sponsor gift once, choosing medkit vs shield
+  // based on the player's HP at the moment it lands — hurt tributes get
+  // patched up, healthy ones get armored instead.
+  function deliverSponsorGift(){
+    const hpRatio = player.hp / player.maxHp;
+    if(hpRatio < 0.7){
+      const healAmt = sponsorGiftTier >= 2 ? 45 : 28;
+      player.hp = Math.min(player.maxHp, player.hp + healAmt);
+      player.bleeding = false;
+      spawnFloatText(player.x, player.y-30, '+'+healAmt+' HP', '#7ac97a');
+      feed('🎁 A sponsor parachute drops a medkit at your feet — the crowd saw you were hurting.');
+    } else {
+      const shieldAmt = sponsorGiftTier >= 2 ? 25 : 15;
+      player.shield = Math.min(40, player.shield + shieldAmt);
+      spawnFloatText(player.x, player.y-30, '+SHIELD', '#7fb0e0');
+      feed('🎁 A sponsor parachute drops a shield at your feet.');
+    }
+  }
+
   // ============================================================
   // ZONE / GAS
   // ============================================================
   function updateZone(dt){
     elapsed += dt*1000;
+    if(sponsorGiftPending && elapsed >= sponsorGiftAt){
+      sponsorGiftPending = false;
+      deliverSponsorGift();
+    }
     nextShrinkAt -= dt*1000;
     if(nextShrinkAt <= 0 && zoneRadiusY > ZONE_MIN_RADIUS_Y){
       zoneRadiusY = Math.max(ZONE_MIN_RADIUS_Y, zoneRadiusY - ZONE_SHRINK_AMOUNT_Y);
@@ -4645,7 +4743,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
 
     for(const t of tributes){
       if(!t.alive) continue;
-      if(t.isPlayer && inTunnel) continue;
+      if((t.isPlayer && inTunnel) || t.inTunnel) continue;
       // ellipse containment test, since the safe zone matches the arena's aspect ratio
       const nx = (t.x - zoneCenter.x) / zoneRadiusX;
       const ny = (t.y - zoneCenter.y) / zoneRadiusY;
@@ -4671,6 +4769,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
   // the exact spot on the surface where the player went in.
   // ============================================================
   const TUNNEL_W = 1000, TUNNEL_H = 620;
+  const TUNNEL_ALLY_FOLLOW_RADIUS = 140; // allies within this range of the player get pulled underground with you
   const TUNNEL_CORRIDOR_HALF = 62;   // half-width of the walkable corridor
   const TUNNEL_ROOM_R = 130;         // radius of the open combat "rooms"
   const TUNNEL_WALL_R = 24;
@@ -4847,8 +4946,16 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
     if(inTunnel || tunnelTransition) return;
     outdoorReturnPos = { x: player.x, y: player.y };
     currentTunnelEntranceId = entrance.id;
+
+    // Nearby, non-hostile allies get pulled underground with you instead
+    // of being left outside to fend for themselves.
+    const nearbyAllies = tributes.filter(t => t.alive && t.isAlly && !t.allyHostile && !t.inTunnel && dist(t, player) < TUNNEL_ALLY_FOLLOW_RADIUS);
+    nearbyAllies.forEach(t=>{ t.inTunnel = true; });
+
     playDoorSound();
-    feed('You duck into the tunnel mouth and disappear underground.');
+    feed(nearbyAllies.length
+      ? (nearbyAllies.length > 1 ? 'You duck into the tunnel mouth — your allies follow close behind.' : 'You duck into the tunnel mouth — your ally follows close behind.')
+      : 'You duck into the tunnel mouth and disappear underground.');
     tunnelTransition = { phase:'out' };
     tunnelFadeTo(1, TUNNEL_FADE_MS, ()=>{
       if(!tunnelInstances[entrance.id]){
@@ -4859,6 +4966,15 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       player.x = activeTunnel.entryPoint.x;
       player.y = activeTunnel.entryPoint.y;
       player.vx = 0; player.vy = 0;
+
+      tunnelAllies = nearbyAllies;
+      tunnelAllies.forEach((t,i)=>{
+        const ang = (i/Math.max(1,tunnelAllies.length)) * Math.PI*2;
+        t.x = clamp(activeTunnel.entryPoint.x + Math.cos(ang)*36, 20, TUNNEL_W-20);
+        t.y = clamp(activeTunnel.entryPoint.y + Math.sin(ang)*36, 20, TUNNEL_H-20);
+        t.vx = 0; t.vy = 0;
+      });
+
       feed('🕯 The tunnels are cramped and dark. Something is moving nearby.');
       tunnelFadeTo(0, TUNNEL_FADE_MS, ()=>{ tunnelTransition = null; });
     });
@@ -4876,7 +4992,18 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       const back = outdoorReturnPos || {x:CENTER_X,y:CENTER_Y};
       player.x = back.x; player.y = back.y;
       player.vx = 0; player.vy = 0;
-      feed('You climb back out into the light of the arena.');
+
+      const survivors = tunnelAllies.filter(t=>t.alive);
+      survivors.forEach((t,i)=>{
+        t.inTunnel = false;
+        const ang = (i/Math.max(1,survivors.length)) * Math.PI*2;
+        t.x = clamp(back.x + Math.cos(ang)*50, 20, WORLD_W-20);
+        t.y = clamp(back.y + Math.sin(ang)*50, 20, WORLD_H-20);
+        t.vx = 0; t.vy = 0;
+      });
+      tunnelAllies = [];
+
+      feed(survivors.length ? 'You and your ally climb back out into the light of the arena.' : 'You climb back out into the light of the arena.');
       tunnelFadeTo(0, TUNNEL_FADE_MS, ()=>{ tunnelTransition = null; });
     });
   }
@@ -4910,6 +5037,87 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       } else {
         const label = e.kind==='snake' ? MUTT_SPECIES[e.species].name : 'Peacekeeper';
         if(source && source.isPlayer) feed('You take down a ' + label.toLowerCase() + ' in the tunnels.');
+      }
+    }
+  }
+
+  // Companion AI for allies who followed you underground: chase and fight
+  // whatever tunnel enemy is nearest, or orbit close to you if nothing's
+  // around. A betrayed ally (allyHostile) instead hunts and attacks you,
+  // same as they would outdoors.
+  function updateTunnelAllies(dt){
+    for(let i=tunnelAllies.length-1;i>=0;i--){
+      const t = tunnelAllies[i];
+      if(!t.alive){ tunnelAllies.splice(i,1); continue; }
+
+      t.hurtCooldown = Math.max(0, t.hurtCooldown-dt);
+      t.attackCooldown = Math.max(0, t.attackCooldown-dt);
+      t.hitFlash = Math.max(0, t.hitFlash-dt);
+
+      if(t.allyHostile){
+        const d = dist(t, player);
+        if(d > 40){
+          const dx = player.x-t.x, dy = player.y-t.y, len = Math.hypot(dx,dy)||1;
+          t.vx = (dx/len)*t.speed; t.vy = (dy/len)*t.speed;
+          t.facing = {x:dx/len,y:dy/len};
+        } else {
+          t.vx = 0; t.vy = 0;
+          if(t.attackCooldown <= 0){
+            t.attackCooldown = 0.5;
+            const dmg = t.baseDamage + rand(-1,3);
+            damageTribute(player, Math.max(2,dmg), t);
+            spawnFloatText(t.x, t.y-20, 'BETRAYED!', '#e8404a');
+          }
+        }
+        t.x += t.vx*dt; t.y += t.vy*dt;
+        t.x = clamp(t.x, 16, TUNNEL_W-16);
+        t.y = clamp(t.y, 16, TUNNEL_H-16);
+        resolveObstacles(t);
+        continue;
+      }
+
+      let nearestEnemy = null, nd = 9999;
+      for(const e of activeTunnel.enemies){
+        if(!e.alive) continue;
+        const d = dist(t,e);
+        if(d < nd){ nd = d; nearestEnemy = e; }
+      }
+
+      const atkRange = 44;
+      let tx = t.x, ty = t.y;
+      if(nearestEnemy && nd < 220){
+        tx = nearestEnemy.x; ty = nearestEnemy.y;
+      } else {
+        const followSeed = (t.id.charCodeAt(0) + t.id.charCodeAt(1) + t.id.charCodeAt(2)) % 360;
+        const followAngle = followSeed * Math.PI/180;
+        tx = player.x + Math.cos(followAngle)*50;
+        ty = player.y + Math.sin(followAngle)*50;
+      }
+
+      const dx = tx-t.x, dy = ty-t.y, len = Math.hypot(dx,dy)||1;
+      if(len > 6){
+        t.vx = (dx/len)*t.speed;
+        t.vy = (dy/len)*t.speed;
+        const blend = Math.min(1, 10*dt);
+        let fx = t.facing.x + (dx/len - t.facing.x)*blend;
+        let fy = t.facing.y + (dy/len - t.facing.y)*blend;
+        const flen = Math.hypot(fx,fy)||1;
+        t.facing = {x:fx/flen,y:fy/flen};
+      } else {
+        t.vx = 0; t.vy = 0;
+      }
+      t.x += t.vx*dt; t.y += t.vy*dt;
+      t.x = clamp(t.x, 16, TUNNEL_W-16);
+      t.y = clamp(t.y, 16, TUNNEL_H-16);
+      resolveObstacles(t);
+
+      if(nearestEnemy && nd < atkRange && t.attackCooldown <= 0){
+        t.attackCooldown = 0.5;
+        const perk = t.perk || {};
+        let dmg = t.baseDamage + rand(0,5);
+        if(perk.dmgMult) dmg *= perk.dmgMult;
+        damageTunnelEnemy(nearestEnemy, Math.max(3,dmg), t);
+        spawnFloatText(t.x, t.y-20, 'ALLY STRIKE!', '#7fb0e0');
       }
     }
   }
@@ -4980,6 +5188,11 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       const dPlayer = dist(e, player);
       if(dPlayer < e.detectRange){ target = player; nd = dPlayer; }
     }
+    for(const ally of tunnelAllies){
+      if(!ally.alive || ally.allyHostile) continue;
+      const d = dist(e, ally);
+      if(d < e.detectRange && d < nd){ target = ally; nd = d; }
+    }
     if(e.kind === 'peacekeeper' && activeTunnel){
       for(const other of activeTunnel.enemies){
         if(other===e || !other.alive || other.kind !== 'rival') continue;
@@ -5012,22 +5225,22 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
 
     if(target && nd < e.attackRange && e.cooldownTimer<=0){
       e.cooldownTimer = e.attackCooldown;
-      if(target === player){
+      if(target === player || target.isAlly){
         if(e.kind==='peacekeeper'){
-          damageTribute(player, 3, {isMutt:false, alive:true, isPlayer:false, district:'?'});
-          player.bleeding = true;
+          damageTribute(target, 3, {isMutt:false, alive:true, isPlayer:false, district:'?'});
+          target.bleeding = true;
           spawnFloatText(e.x, e.y-20, 'SHOT!', '#e8e3d3');
-          feed('A Peacekeeper opens fire on you — you\'re bleeding and need a medkit.');
+          feed(target.isPlayer ? 'A Peacekeeper opens fire on you — you\'re bleeding and need a medkit.' : ('A Peacekeeper opens fire on your ally from District '+target.district+'!'));
         } else {
           const dmg = e.dmg + rand(-2,3);
-          damageTribute(player, Math.max(1,dmg), {isMutt:false, alive:true, isPlayer:false, district:'?'});
+          damageTribute(target, Math.max(1,dmg), {isMutt:false, alive:true, isPlayer:false, district:'?'});
           if(e.kind==='snake'){
             const sp = MUTT_SPECIES[e.species];
-            player.poisonDmgPerTick = sp.venomTickDmg;
-            player.poisonTicksRemaining = Math.max(player.poisonTicksRemaining, sp.venomTicks);
-            player.poisonTickTimer = sp.venomTickInterval;
+            target.poisonDmgPerTick = sp.venomTickDmg;
+            target.poisonTicksRemaining = Math.max(target.poisonTicksRemaining, sp.venomTicks);
+            target.poisonTickTimer = sp.venomTickInterval;
             spawnFloatText(e.x, e.y-20, 'VENOM!', '#8ee06a');
-            feed('🐍 A snake bites you in the dark.');
+            if(target.isPlayer) feed('🐍 A snake bites you in the dark.');
           } else {
             spawnFloatText(e.x, e.y-20, 'HIT!', '#e8404a');
           }
@@ -5101,6 +5314,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
       e.y = clamp(e.y, 16, TUNNEL_H-16);
       resolveObstacles(e);
     }
+    updateTunnelAllies(dt);
 
     // tunnel-scoped projectile update (walls + enemies only)
     for(let i=projectiles.length-1;i>=0;i--){
@@ -5221,9 +5435,9 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
 
     activeTunnel.items.forEach(drawItem);
 
-    const drawList = [...activeTunnel.enemies.filter(e=>e.alive)];
+    const drawList = [...activeTunnel.enemies.filter(e=>e.alive), ...tunnelAllies.filter(t=>t.alive)];
     drawList.sort((a,b)=>a.y-b.y);
-    drawList.forEach(drawTunnelEnemy);
+    drawList.forEach(e => e.kind ? drawTunnelEnemy(e) : drawPixelChar(e));
     if(player.alive) drawPixelChar(player);
 
     projectiles.filter(p=>p.tunnelShot).forEach(drawProjectile);
@@ -5352,6 +5566,10 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
         countdownOverlay.classList.add('hidden');
         playGongSound();
         feed('🔔 The gong sounds! Let the Games begin.');
+        if(sponsorGiftTier > 0){
+          sponsorGiftPending = true;
+          sponsorGiftAt = livePhaseStartTime + rand(25000, 45000);
+        }
       }
       // keep camera/render fresh but skip movement, AI, zone, combat
       return;
@@ -5360,6 +5578,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
     updatePlayerMovement(dt);
     updateAlliance();
     updateAllyTrust(dt);
+    checkAllyLateGameBetrayal();
     for(const t of tributes){
       if(t.isPlayer || t.inTunnel) continue;
       updateAI(t, dt);
@@ -5415,6 +5634,7 @@ document.querySelectorAll('.interviewTributeSprite').forEach(img=>{
   function updateOutdoorWhilePlayerUnderground(dt){
     updateAlliance();
     updateAllyTrust(dt);
+    checkAllyLateGameBetrayal();
     for(const t of tributes){
       if(t.isPlayer || t.inTunnel) continue;
       updateAI(t, dt);
